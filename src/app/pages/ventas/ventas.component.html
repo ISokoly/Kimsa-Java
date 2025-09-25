@@ -1,0 +1,85 @@
+<div class="ventas-container">
+  <h1 class="titulo">Ventas</h1>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Seleccionar Fecha</mat-label>
+    <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" (dateChange)="filtrarVentasPorFecha()">
+    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+
+  <div class="ventas-grid">
+    <div>
+      <table class="ventas-tabla">
+        <thead>
+          <tr>
+            <th style="width: 5%" class="celdas-centradas">N°</th>
+            <th class="cabecera-izquierda">Producto</th>
+            <th class="celdas-centradas">Estado</th>
+            <th class="celdas-centradas">Ganancia</th>
+            <th class="celdas-centradas">Opciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let venta of dataSource.data; let i = index">
+            <td class="celdas-centradas">{{ paginator.pageIndex * paginator.pageSize + i + 1 }}</td>
+            <td class="cabecera-izquierda">
+              <ng-container
+                *ngIf="venta.detalles?.length > 0 && venta.estado !== 'Cancelado'; else sinProductosOCancelado">
+                <label><em>{{ obtenerDetallesLimitados(venta) }}</em></label>
+              </ng-container>
+              <ng-template #sinProductosOCancelado>
+                <ng-container *ngIf="venta.estado === 'Cancelado'; else sinProductos">
+                  <em>***********************</em>
+                </ng-container>
+                <ng-template #sinProductos>
+                  <em>Sin productos</em>
+                </ng-template>
+              </ng-template>
+            </td>
+            <td class="celdas-centradas">{{ venta.estado }}</td>
+            <td class="celdas-centradas">
+              <ng-container [ngSwitch]="venta.estado">
+                <span *ngSwitchCase="'Confirmado'">S/{{ venta.total }}</span>
+                <span *ngSwitchCase="'Pendiente'">S/{{ venta.total }}</span>
+                <span *ngSwitchCase="'Cancelado'">***</span>
+                <span *ngSwitchDefault>---</span>
+              </ng-container>
+            </td>
+            <td class="cabecera-derecha">
+              <div class="opciones-botones">
+                <button mat-icon-button color="primary" (click)="editarVenta(venta)" class="icon-edit"
+                  [disabled]="venta.estado === 'Cancelado' || venta.yaPagado">
+                  <mat-icon>edit</mat-icon>
+                </button>
+
+                <button mat-icon-button color="primary" (click)="pagarVenta(venta)" class="icon-pay"
+                  [disabled]="venta.estado === 'Cancelado' || venta.total == 0">
+                  <mat-icon>attach_money</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!dataSource.data || dataSource.data.length === 0">
+            <td colspan="5" class="empty"><em>No hay ventas registradas</em></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <mat-paginator [length]="ventas.length" [pageSize]="10" (page)="cambiarPagina($event)">
+      </mat-paginator>
+
+    </div>
+
+    <div>
+      <div class="imagen-contenedor">
+        <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
+      </div>
+      <div class="contenedor-boton">
+        <button mat-raised-button color="primary" (click)="registrarNuevaVenta()" class="boton-agregar">
+          Agregar venta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

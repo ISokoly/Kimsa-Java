@@ -1,0 +1,262 @@
+@use "sass:color";
+
+$primary-color: #0b6e4f;
+$secondary-color: #007acc;
+$danger-color: #e74c3c;
+$warning-color: #f4d03f;
+$success-color: #76dfa2;
+$bg-color: #f9f9f9;
+
+h1,
+h2 {
+    color: $primary-color;
+    border-bottom: 2px dashed $primary-color;
+    padding-bottom: 8px;
+}
+
+.usuarios-container {
+    padding: 2rem;
+    border-radius: 10px;
+    background-color: $bg-color;
+}
+
+.info-admin {
+    margin: 20px;
+    padding-bottom: 5px;
+
+    p {
+        font-size: 16px;
+        color: #333;
+    }
+
+    strong {
+        color: $primary-color;
+    }
+}
+
+.empleados,
+.empleado-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.empleado-card {
+    flex: 1 1 calc(20% - 24px);
+    background: #c7edff;
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+
+    &:hover {
+        transform: scale(1.02);
+    }
+}
+
+@media (max-width: 800px) {
+    .empleado-card {
+        flex: 1 1 calc(50% - 12px);
+    }
+}
+
+@media (max-width: 500px) {
+    .empleado-card {
+        flex: 1 1 100%;
+    }
+}
+
+.tabla-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    margin: 5px;
+
+    &.btn-verde {
+        background: $primary-color;
+        color: #fff;
+    }
+
+    &.btn-verde:hover {
+        background: color.scale($primary-color, $lightness: -30%);
+    }
+
+    &.btn-azul {
+        background: $secondary-color;
+        color: #fff;
+    }
+
+    &.btn-azul:hover {
+        background: color.scale($secondary-color, $lightness: -30%);
+    }
+
+    &.btn-rojo {
+        background: $danger-color;
+        color: #fff;
+    }
+
+    &.btn-rojo:hover {
+        background: color.scale($danger-color, $lightness: -30%);
+    }
+
+    &.btn-amarillo {
+        background: $warning-color;
+        color: #000;
+    }
+
+    &.btn-amarillo:hover {
+        background: color.scale($warning-color, $lightness: -30%);
+    }
+}
+
+.error-msg {
+    color: $danger-color;
+    font-size: 13px;
+    margin: 0;
+    margin-top: 2px;
+    line-height: 1.2;
+}
+
+/* Formularios (usuarios y contraseña) */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+}
+
+.form-modal {
+    position: fixed;
+    top: 52.5%;
+    left: 56.5%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in-out;
+    width: 400px;
+}
+
+.form-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: $primary-color;
+    margin: 20px;
+    margin-bottom: 30px;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.form-grid label {
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1.5px solid $primary-color;
+    background-color: #f9fdf9;
+    outline: none;
+    transition: border 0.3s, box-shadow 0.2s;
+    box-sizing: border-box;
+
+    &:focus {
+        background: color.scale($primary-color, $lightness: -30%);
+        box-shadow: 0 0 5px rgba(7, 92, 57, 0.3);
+    }
+}
+
+.botones {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-btn-verde {
+    width: 48%;
+    background: $primary-color;
+    color: #fff;
+
+    &:hover {
+        background: color.scale($primary-color, $lightness: -30%);
+    }
+}
+
+.form-btn-gris {
+    width: 48%;
+    background: #777;
+    color: #fff;
+
+    &:hover {
+        background: #555;
+    }
+}
+
+@media (max-width: 600px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -55%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* --- NUEVO: Link para editar contraseña --- */
+.editar-contrasena {
+    margin-bottom: 20px;
+    text-align: center;
+
+    label {
+        color: $secondary-color;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: underline;
+
+        &:hover {
+            color: color.scale($secondary-color, $lightness: -35%);
+        }
+    }
+}

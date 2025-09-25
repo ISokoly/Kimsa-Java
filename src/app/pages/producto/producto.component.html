@@ -1,0 +1,144 @@
+<div class="tabla-scroll">
+  <div class="products-container">
+    <h1>Productos - {{categoriaNombre}}</h1>
+    <div class="filtros">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <mat-form-field appearance="fill" style="flex: 1;">
+          <mat-label>Buscar producto</mat-label>
+          <input matInput [(ngModel)]="filtro"
+            [placeholder]="tipoFiltro === 'nombre' ? 'Ingrese nombre...' : 'Ingrese marca...'" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" style="width: 30%;">
+          <mat-label>Buscar por</mat-label>
+          <mat-select [(ngModel)]="tipoFiltro">
+            <mat-option value="nombre">Nombre</mat-option>
+            <mat-option value="marca">Marca</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="products-grid">
+      @for (p of filtrarProductos(); track p.idProduct ?? $index) {
+      <div class="product-item">
+        <h2 class="product-name" style="cursor: pointer;">
+          {{ p.name }}
+        </h2>
+
+        @if (p.idImage) {
+        <div class="img-container horizontal-container" style="cursor: pointer;">
+          <img [src]="getUrlImagen(p.idImage)" alt="Imagen de la Categoría" class="preview-img img-horizontal"
+            (error)="onImageError($event)" />
+        </div>
+        } @else {
+        <div class="img-container horizontal-container">
+          <img src="/img/no-image.png" alt="Sin imagen" class="preview-img img-horizontal" />
+        </div>
+        }
+
+        <p class="product-price">Precio: S/. {{ p.price }}</p>
+
+        <div class="actions">
+          <button class="form-btn-verde" (click)="editProducto(p)" [disabled]="isLoading">Editar</button>
+          <button class="form-btn-rojo" (click)="deshabilitar(p.idProduct)" [disabled]="isLoading">Deshabilitar</button>
+        </div>
+      </div>
+      }
+    </div>
+    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+      <button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()" [disabled]="isLoading">
+        Añadir Nuevo Producto
+      </button>
+    </div>
+
+    @if (marcas && marcas.length > 0) {
+    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+      <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioMarca()"
+        [disabled]="isLoading">
+        Organizar Marcas
+      </button>
+    </div>
+    }
+    @if (mostrarFormularioMarca) {
+    <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="false"
+      (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(categoriaId!)" (marcaDeleted)="onMarcaDeleted($event)">
+    </app-marcas>
+    }
+
+    @if (mostrarFormularioCrearMarca) {
+    <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true"
+      (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(categoriaId!)"
+      (marcaDeleted)="onMarcaDeleted($event)">
+    </app-marcas>
+    }
+  </div>
+</div>
+@if(mostrarFormulario) {
+<div class="overlay">
+  <div class="form-modal">
+    <h2 class="form-title">
+      @if (!selectedProducto) { Añadir Producto } @else { Editar Producto }
+    </h2>
+    <form class="form-container">
+      <div class="form-grid">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nombre del producto</mat-label>
+          <input matInput type="text" [(ngModel)]="formData.name" name="nombre" placeholder="Nombre" required
+            [disabled]="isLoading" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Precio</mat-label>
+          <input matInput type="number" [(ngModel)]="formData.price" name="precio" placeholder="Precio" required
+            [disabled]="isLoading" />
+        </mat-form-field>
+
+        @if (mostrarMasOpciones) {
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Marca</mat-label>
+          <mat-select [(ngModel)]="formData.brand" name="brand">
+            @for(marca of marcas; track $index) {
+            <mat-option [value]="marca.idBrand">
+              {{ marca.name }}
+            </mat-option>
+            }
+            <mat-option [value]="null">
+              ➖ Sin marca
+            </mat-option>
+            <mat-option (click)="abrirFormularioCrearMarca()">
+              ➕ Crear nueva marca
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        }
+
+        <div class="mas-opciones full-width">
+          <label (click)="mostrarMasOpciones = !mostrarMasOpciones">
+            {{ mostrarMasOpciones ? 'Menos opciones' : 'Más opciones' }}
+          </label>
+        </div>
+        <div class="full-width">
+          <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="isLoading">
+            Seleccionar Imagen
+          </button>
+          <span style="margin-left: 10px;">{{ nombreArchivo || 'Ningún archivo seleccionado' }}</span>
+          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden
+            [disabled]="isLoading" />
+        </div>
+      </div>
+
+      <div class="botones">
+        @if (!selectedProducto) {
+        <button type="button" (click)="crearProducto()" class="form-btn-verde" [disabled]="isLoading">Crear</button>
+        } @else {
+        <button type="button" (click)="actualizarProducto()" class="form-btn-verde"
+          [disabled]="isLoading">Actualizar</button>
+        }
+        <button type="button" (click)="cerrarFormulario()" class="form-btn-gris"
+          [disabled]="isLoading">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

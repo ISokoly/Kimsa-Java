@@ -1,0 +1,49 @@
+/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+@use './style/theme-colors';
+
+@include mat.app-background();
+
+html{
+  color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: theme-colors.$primary-palette,
+      tertiary: theme-colors.$tertiary-palette,
+    ),
+    typography: Roboto,
+    density: 0
+  ));
+  
+}
+
+textarea{
+  margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.dark{
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body { 
+  margin: 0; 
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+ 
+};
+
+.mat-drawer-inner-container{
+  overflow: hidden !important;
+}
+
+:root {
+  @include mat.list-overrides((
+    active-indicator-shape:none,
+  ));
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

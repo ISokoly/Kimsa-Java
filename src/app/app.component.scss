@@ -1,0 +1,80 @@
+.mensaje-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 99999;
+}
+
+.mensaje-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: white;
+    animation: aparecerDesaparecer 5s forwards;
+    transition: background-color 0.3s ease;
+}
+
+.mensaje-texto {
+    flex: 1;
+    margin-right: 8px;
+}
+
+.mensaje-btn {
+    background-color: transparent;
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    transition: background-color 0.2s ease;
+}
+
+.mensaje-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.mensaje-exito {
+    background-color: #76dfa2;
+}
+
+.mensaje-error {
+    background-color: #e67a6e;
+}
+
+.mensaje-alert {
+    background-color: #e78f0b;
+}
+
+@keyframes aparecerDesaparecer {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}

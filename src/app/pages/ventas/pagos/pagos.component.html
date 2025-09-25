@@ -1,0 +1,90 @@
+@if (!yaPagado) {
+<div class="pagos-container">
+    <h1 class="titulo">Registrar Pagos</h1>
+    <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form">
+
+        <label for="tipo_pago">Tipo de Pago:</label>
+        <select id="tipo_pago" name="tipo_pago" [(ngModel)]="nuevoPago.tipo_pago" required class="form-input">
+            <option value="" disabled selected>Seleccione un tipo</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+        </select>
+
+        <label for="fecha_pago">Fecha de Pago:</label>
+        <input type="datetime-local" id="fecha_pago" name="fecha_pago" [(ngModel)]="nuevoPago.fecha_pago" required
+            class="form-input" />
+
+        <button type="submit" [disabled]="!boletaForm.valid" class="btn">
+            Registrar Pago
+        </button>
+    </form>
+    <div *ngIf="productos.length > 0" class="boleta">
+        <h3>Detalle del Pedido</h3>
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let detalle of detallesPedido">
+                    <td>{{ obtenerNombreProducto(detalle.id_producto) }}</td>
+                    <td>{{ detalle.cantidad }}</td>
+                    <td>S/ {{ detalle.subtotal | number: '1.2-2' }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            <strong>Total:</strong> S/ {{ pedidoActual.total | number: '1.2-2' }}
+        </div>
+    </div>
+</div>}
+@else {
+<div class="pagos-container">
+    <h1 class="titulo">Pago Registrado</h1>
+
+    <div class="form">
+        <label for="tipo_pago">Tipo de Pago:</label>
+        <select id="tipo_pago" name="tipo_pago" [(ngModel)]="nuevoPago.tipo_pago" disabled class="form-input">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+        </select>
+
+        <label for="fecha_pago">Fecha de Pago:</label>
+        <input type="datetime-local" id="fecha_pago" name="fecha_pago" [(ngModel)]="nuevoPago.fecha_pago" disabled
+            class="form-input" />
+
+        <button type="submit" disabled class="btn">
+            Pago Registrado
+        </button>
+    </div>
+    <div *ngIf="productos.length > 0" class="boleta">
+        <h3>Detalle del Pedido</h3>
+        <table class="tabla">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let detalle of detallesPedido">
+                    <td>{{ obtenerNombreProducto(detalle.id_producto) }}</td>
+                    <td>{{ detalle.cantidad }}</td>
+                    <td>S/ {{ detalle.subtotal | number: '1.2-2' }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            <strong>Total:</strong> S/ {{ pedidoActual.total | number: '1.2-2' }}
+        </div>
+    </div>
+</div>
+}

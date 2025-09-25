@@ -1,0 +1,63 @@
+<div class="overlay">
+  @if (soloFormulario || mostrarFormularioAgregarMarca) {
+  <div class="form-modal-create">
+    <h2 class="form-title">
+      {{ selectedMarca ? 'Editar Marca' : 'Crear Marca' }}
+    </h2>
+    <form class="form-container">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Nombre de la marca</mat-label>
+        <input matInput [(ngModel)]="formMarca.name" name="nombre" placeholder="Escriba el nombre de la marca" required
+          autocomplete="off" />
+      </mat-form-field>
+
+      <div class="botones">
+        <button type="button" class="form-btn-verde" (click)="selectedMarca ? updateMarca() : createMarca()">
+          {{ selectedMarca ? 'Actualizar' : 'Crear' }}
+        </button>
+        <button type="button" (click)="cancelEditMarca()" class="form-btn-gris">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+  }
+  @if (!soloFormulario && !mostrarFormularioAgregarMarca) {
+  <div class="form-modal" [ngStyle]="{'width': getModalWidth()}">
+    <h2 class="form-title">Marcas actuales</h2>
+
+    <div class="lista-marcas" [ngStyle]="{'grid-template-columns': 'repeat(' + getGridColumns() + ', 1fr)'}"
+      [class.grid-list]="marcas.length > 3">
+
+      @for (marca of marcas; track $index) {
+      <div class="marca-item">
+        <div class="marca-name-wrapper">
+          @if(marca.name.length > 5) {
+          <span class="marca-name" appHoverScroll>{{ marca.name }}</span>
+          } @else {
+          <span class="marca-name">{{ marca.name }}</span>
+          }
+        </div>
+
+        <span class="actions">
+          <button class="icon-button edit-btn" (click)="editMarca(marca)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button class="icon-button x-btn" (click)="deleteMarca(marca.idBrand)">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </span>
+      </div>
+      }
+    </div>
+    <div class="botones">
+      <button type="button" class="form-btn-verde" (click)="abrirFormularioAgregarMarca()">
+        Agregar Marca
+      </button>
+      <button type="button" class="form-btn-gris" (click)="cerrarFormularioMarca()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+  }
+</div>

@@ -1,0 +1,59 @@
+<div class="ventas-container">
+    <h1>Estadisticas</h1>
+    <mat-form-field appearance="fill">
+        <mat-label>Seleccionar Mes</mat-label>
+        <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" [readonly]="true">
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker startView="year" (monthSelected)="onMesSeleccionado($event, picker)"
+            panelClass="datepicker-month-year"></mat-datepicker>
+    </mat-form-field>
+    <div class="ventas-grid">
+        <div class="estadisticas-tabla">
+            <h2 class="title-one">Productos mas vendidos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Semana</th>
+                        <th>Producto mayor vendido</th>
+                        <th>Ganancias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let estadistica of estadisticasSemanales">
+                        <td>{{ estadistica.semana }}</td>
+                        <td>{{ estadistica.producto }}</td>
+                        <td>S/ {{ estadistica.ganancia }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h2 class="title">Ganancias Semanales</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Semana</th>
+                        <th>Ganancias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let ganancias of gananciasSemanales">
+                        <td>{{ ganancias.semana }}</td>
+                        <td>S/ {{ ganancias.ganancia }}</td>
+                    </tr>
+
+                    <tr class="fila-total">
+                        <td colspan="1"><strong>Ganancia del mes</strong></td>
+                        <td><strong>S/ {{ gananciaMensual }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+        <div>
+            <br><br><br><br>
+            <div class="imagen-contenedor">
+                <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
+            </div>
+        </div>
+    </div>
+</div>

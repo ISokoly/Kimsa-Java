@@ -1,0 +1,13 @@
+<router-outlet></router-outlet>
+<div class="mensaje-container">
+    @for (mensaje of mensajes; track mensaje.id) {
+    <div class="mensaje-card" [ngClass]="{
+      'mensaje-exito': mensaje.texto.startsWith('✅'),
+      'mensaje-error': mensaje.texto.startsWith('❌'),
+      'mensaje-alert': mensaje.texto.startsWith('⚠️')
+    }">
+        <span class="mensaje-texto">{{ mensaje.texto }}</span>
+        <button class="mensaje-btn" (click)="cerrarMensaje(mensaje)">✖</button>
+    </div>
+    }
+</div>

@@ -1,0 +1,109 @@
+<div class="contenedor">
+  <h1>Clientes</h1>
+  <!-- Barra de búsqueda -->
+  <div class="filtros-clientes">
+    <mat-form-field appearance="fill">
+      <mat-label>Buscar cliente</mat-label>
+      <input matInput [(ngModel)]="terminoBusqueda"
+        [placeholder]="filtroPor === 'dni' ? 'Escriba DNI' : 'Escriba nombre'">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Buscar por</mat-label>
+      <mat-select [(ngModel)]="filtroPor">
+        <mat-option value="name">Nombre</mat-option>
+        <mat-option value="dni">DNI</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if(clientsFiltrados.length > 0) {
+  <div class="grid-clientes">
+    @for (client of clientsFiltrados; track $index) {
+    <div class="client-card">
+      <div class="mesa-numero">
+        <p><strong>Nombre del cliente:</strong> {{ client.name }}</p>
+      </div>
+
+      <div class="client-check">
+        <p><strong>DNI:</strong> {{ client.dni }}</p>
+        <p><strong>Fecha de nacimiento:</strong> {{ client.birthdate | date: 'yyyy-MM-dd' }}</p>
+      </div>
+
+      <button class="btn-verde" (click)="seleccionarClient(client)">Editar</button>
+    </div>
+    }
+  </div>
+  }
+
+  @if(mostrarFormularioCliente && selectedClient) {
+  <div class="overlay">
+    <div class="form-modal">
+      <h2 class="form-title">Editar Cliente</h2>
+      <div class="form-container">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nombre</mat-label>
+          <input matInput [(ngModel)]="selectedClient.name" placeholder="Escriba el nombre del cliente">
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>DNI</mat-label>
+          <input matInput [(ngModel)]="selectedClient.dni" placeholder="Escriba el DNI del cliente" maxlength="8"
+            pattern="\d*" (keypress)="soloNumeros($event)">
+        </mat-form-field>
+
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Fecha de nacimiento</mat-label>
+          <input matInput [matDatepicker]="picker1" [(ngModel)]="selectedClient.birthdate">
+          <mat-datepicker-toggle matSuffix [for]="picker1"></mat-datepicker-toggle>
+          <mat-datepicker #picker1></mat-datepicker>
+        </mat-form-field>
+
+        <div class="botones">
+          <button class="form-btn-verde" (click)="actualizarClient()">Guardar</button>
+          <button class="form-btn-gris" (click)="cerrarFormularioCliente()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  @if(mostrarFormularioNuevoCliente) {
+  <div class="overlay">
+    <div class="form-modal">
+      <h2 class="form-title">Registrar Cliente</h2>
+      <div class="form-container">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nombre</mat-label>
+          <input matInput [(ngModel)]="nuevoClient.name" placeholder="Escriba el nombre del cliente">
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>DNI</mat-label>
+          <input matInput [(ngModel)]="nuevoClient.dni" placeholder="Escriba el DNI del cliente" maxlength="8"
+            pattern="\d*" (keypress)="soloNumeros($event)">
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Fecha de nacimiento</mat-label>
+          <input matInput [matDatepicker]="picker2" [(ngModel)]="nuevoClient.birthdate">
+          <mat-datepicker-toggle matSuffix [for]="picker2"></mat-datepicker-toggle>
+          <mat-datepicker #picker2></mat-datepicker>
+        </mat-form-field>
+
+        <div class="botones">
+          <button class="form-btn-verde" (click)="crearClient()">Guardar</button>
+          <button class="form-btn-gris" (click)="cerrarFormularioNuevoCliente()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+    <button class="btn-azul" style="width: 200px; height: 50px;" (click)="abrirFormularioNuevoCliente()">
+      Añadir Nuevo Cliente
+    </button>
+  </div>
+</div>

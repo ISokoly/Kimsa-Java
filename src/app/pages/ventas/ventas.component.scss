@@ -1,0 +1,236 @@
+$color-bg: #f9f9f9;
+$color-verde: #0b6e4f;
+
+.ventas-container {
+  padding: 2rem;
+  border-radius: 10px;
+  background-color: $color-bg;
+
+  .ventas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    align-items: flex-start;
+  }
+}
+
+h1,
+h2 {
+  color: $color-verde;
+  border-bottom: 2px dashed $color-verde;
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.ventas-tabla {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  td {
+    border: 2px solid black;
+    padding: 2px 5px;
+    vertical-align: middle;
+  }
+  
+  th {
+    border: 2px solid black;
+    padding: 12px;
+    vertical-align: middle;
+    background-color: #097d4c;
+    color: #f9f9f9;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  .empty{
+    border: 2px solid black;
+    padding: 12px;
+    vertical-align: middle;
+  }
+  
+  .cabecera-principal-1 {
+    background-color: #097d4c;
+    color: white;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 10px;
+  }
+
+  .celdas-centradas {
+    text-align: center;
+  }
+
+  select.form-input {
+    width: 100%;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .opciones-botones {
+    display: flex;
+    gap: 8px;
+
+    button.icon-edit {
+      font-size: 30px;
+      background-color: #71b0f8;
+      border-radius: 50%;
+      padding: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: #a8d0fd;
+        color: #395b81;
+      }
+
+      &:disabled {
+        background-color: #d0e1fd;
+        cursor: not-allowed;
+        color: #555;
+      }
+    }
+
+    button.icon-pay {
+      font-size: 30px;
+      background-color: #ffd859;
+      border-radius: 50%;
+      padding: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: rgb(250, 229, 160);
+        color: #395b81;
+      }
+
+      &:disabled {
+        background-color: #fdf3cc;
+        cursor: not-allowed;
+        color: #555;
+      }
+    }
+  }
+
+  em {
+    color: #444;
+    padding: 5px;
+  }
+}
+
+.contenedor-boton {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.boton-agregar {
+  background-color: #00c897; // Verde azulado vibrante
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+
+  &:hover {
+    background-color: #00b388;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  &:disabled {
+    background-color: #a7dacf;
+    color: #ffffff;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+.imagen-contenedor {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pizza-imagen {
+  width: 400px;
+  max-width: 100%;
+  opacity: 0.9;
+}
+
+.opciones-botones {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+button.icon-edit {
+  font-size: 30px;
+  background-color: #71b0f8;
+  border-radius: 50%;
+  padding: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    background-color: #b7d2ff;
+    cursor: not-allowed;
+    color: #555;
+  }
+}
+
+button.icon-pay {
+  font-size: 30px;
+  background-color: #f8d971;
+  border-radius: 50%;
+  padding: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    background-color: #f7e9b3;
+    cursor: not-allowed;
+    color: #555;
+  }
+}
+
+.fila-sin-datos {
+  text-align: center;
+  font-style: italic;
+  color: #999;
+  background-color: #f9f9f9;
+}
+
+.fila-sin-datos td {
+  text-align: center;
+  padding: 16px;
+  font-size: 16px;
+}

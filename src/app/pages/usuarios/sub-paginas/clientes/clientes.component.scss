@@ -1,0 +1,197 @@
+@use "sass:color";
+
+$primary-color: #0b6e4f;
+$secondary-color: #007acc;
+$danger-color: #e74c3c;
+$warning-color: #f4d03f;
+$success-color: #76dfa2;
+$bg-color: #f9f9f9;
+
+h1,
+h2 {
+    color: $primary-color;
+    border-bottom: 2px dashed $primary-color;
+    padding-bottom: 8px;
+    text-align: center;
+}
+
+.contenedor {
+    padding: 2rem;
+    border-radius: 10px;
+    background-color: $bg-color;
+}
+
+.grid-clientes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.client-card {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .client-info {
+        p {
+            font-size: 14px;
+            color: #333;
+
+            strong {
+                color: $primary-color;
+            }
+        }
+    }
+
+    button {
+        margin-top: 10px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .client-card {
+        flex: 1 1 calc(50% - 12px);
+    }
+}
+
+@media (max-width: 600px) {
+    .client-card {
+        flex: 1 1 100%;
+    }
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    margin: 5px;
+
+    &.btn-verde {
+        background: $primary-color;
+        color: #fff;
+
+        &:hover {
+            background: color.scale($primary-color, $lightness: -30%);
+        }
+    }
+
+    &.btn-azul {
+        background: $secondary-color;
+        color: #fff;
+
+        &:hover {
+            background: color.scale($secondary-color, $lightness: -30%);
+        }
+    }
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 998;
+}
+
+.modal,
+.form-modal {
+    position: fixed;
+    top: 52.5%;
+    left: 56.5%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.form-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: $primary-color;
+    margin-bottom: 30px;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.mat-mdc-form-field {
+    width: 100%;
+}
+
+.botones {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-btn-verde {
+    width: 48%;
+    background: $primary-color;
+    color: #fff;
+
+    &:hover {
+        background: color.scale($primary-color, $lightness: -30%);
+    }
+}
+
+.form-btn-gris {
+    width: 48%;
+    background: #777;
+    color: #fff;
+
+    &:hover {
+        background: #555;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -55%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.filtros-clientes {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    mat-form-field {
+        flex: 1;
+        min-width: 150px;
+    }
+}
+
+.tabla-scroll {
+    width: 100%;
+    overflow-x: auto;
+}

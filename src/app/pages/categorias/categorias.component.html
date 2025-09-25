@@ -1,0 +1,167 @@
+<div class="tabla-scroll">
+  <div class="categoria-container">
+    <h1>Categorías de la pizzería</h1>
+    <div class="products-grid">
+      @for (categoria of categorias; track $index) {
+      <div class="product-item">
+        <h2 class="category-name" (click)="verProductos(categoria.name)" style="cursor: pointer;">
+          {{ categoria.name }}
+        </h2>
+        @if (categoria.idImage) {
+        <div class="img-container horizontal-container" (click)="verProductos(categoria.name)" style="cursor: pointer;">
+          <img [src]="getUrlImagen(categoria.idImage)" alt="Imagen de la Categoría" class="preview-img img-horizontal"
+            (error)="onImageError($event)" />
+        </div>
+        } @else {
+        <div class="img-container horizontal-container">
+          <img src="/img/no-image.png" alt="Sin imagen" class="preview-img img-horizontal" />
+        </div>
+        }
+        <div class="category-description-wrapper" (click)="verProductos(categoria.name)">
+          @if(categoria.description.length > 39) {
+          <p class="category-description" appHoverScroll>
+            {{ categoria.description }}
+          </p>
+          } @else {
+          <p class="category-description">
+            {{ categoria.description }}
+          </p>
+          }
+        </div>
+        <div class="actions">
+          <button class="form-btn-verde" (click)="abrirFormulario(categoria)" [disabled]="isLoading">Editar</button>
+          <button class="form-btn-rojo" (click)="deshabilitar(categoria.idCategory)" [disabled]="isLoading">Deshabilitar</button>
+        </div>
+      </div>
+      }
+    </div>
+    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+      <button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()" [disabled]="isLoading">
+        Añadir Nueva Categoría
+      </button>
+    </div>
+    @if (categorias && categorias.length > 0) {
+    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+      <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioProducto()"
+        [disabled]="isLoading">
+        Añadir Nuevo Producto
+      </button>
+    </div>
+    }
+  </div>
+</div>
+
+@if (mostrarFormularioMarca) {
+<app-marcas [currentCategoryId]="formDataProducts.category" [soloFormulario]="false"
+  (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(formDataProducts.category!);">
+</app-marcas>
+}
+
+@if (mostrarFormularioCrearMarca) {
+<app-marcas [currentCategoryId]="formDataProducts.category" [soloFormulario]="true"
+  (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(formDataProducts.category!);">
+</app-marcas>
+}
+
+@if(mostrarFormulario) {
+<div class="overlay">
+  <div class="form-modal">
+    <h2 class="form-title">
+      @if (!selectedCategoria) { Añadir Categoría } @else { Editar Categoría }
+    </h2>
+    <form class="form-container">
+      <div class="form-grid">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nombre de la categoría</mat-label>
+          <input matInput type="text" [(ngModel)]="formData.name" name="name" placeholder="Nombre" required
+            autocomplete="off" [disabled]="isLoading" />
+        </mat-form-field>
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Descripción</mat-label>
+          <textarea matInput [(ngModel)]="formData.description" name="description"
+            placeholder="Descripción de la categoría" required (input)="limitarCaracteres()" maxlength="100"
+            [disabled]="isLoading" style="resize: none;"></textarea>
+          <mat-hint align="end">{{ caracteresRestantes }} caracteres restantes</mat-hint>
+        </mat-form-field>
+        <div class="full-width">
+          <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="isLoading">
+            Seleccionar Imagen
+          </button>
+          <span style="margin-left: 10px;">{{ nombreArchivo || 'Ningún archivo seleccionado' }}</span>
+          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden
+            [disabled]="isLoading" />
+        </div>
+      </div>
+      <div class="botones">
+        @if (!selectedCategoria) {
+        <button type="button" (click)="crearCategoria()" class="form-btn-verde" [disabled]="isLoading">Crear</button>
+        } @else {
+        <button type="button" (click)="actualizarCategoria()" class="form-btn-verde" [disabled]="isLoading">Actualizar</button>
+        }
+        <button type="button" (click)="cerrarFormulario()" class="form-btn-gris" [disabled]="isLoading">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+@if(mostrarFormularioProducto) {
+<div class="overlay">
+  <div class="form-modal">
+    <h2 class="form-title">Añadir Producto</h2>
+    <form class="form-container">
+      <div class="form-grid">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nombre del producto</mat-label>
+          <input matInput type="text" [(ngModel)]="formDataProducts.name" name="nombre" placeholder="Nombre" required
+            [disabled]="isLoading" />
+        </mat-form-field>
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Precio</mat-label>
+          <input matInput type="number" [(ngModel)]="formDataProducts.price" name="precio" placeholder="Precio" required
+            [disabled]="isLoading" />
+        </mat-form-field>
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Categoría</mat-label>
+          <mat-select [(ngModel)]="formDataProducts.category" name="categoria"
+            (selectionChange)="onCategoriaChange()">
+            @for (cat of categorias; track cat.idCategory) {
+            <mat-option [value]="cat.idCategory">{{ cat.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (mostrarMasOpciones) {
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Marca</mat-label>
+          <mat-select [(ngModel)]="formDataProducts.brand" name="marca">
+            @for (marca of marcas; track marca.idBrand) {
+            <mat-option [value]="marca.idBrand">{{ marca.name }}</mat-option>
+            }
+            <mat-option [value]="null">➖ Sin marca</mat-option>
+            <mat-option (click)="abrirFormularioCrearMarca()">➕ Crear nueva marca</mat-option>
+          </mat-select>
+        </mat-form-field>
+        }
+        <div class="mas-opciones full-width">
+          <label class="toggle-label" [class.disabled]="!formDataProducts.category"
+            (click)="formDataProducts.category && (mostrarMasOpciones = !mostrarMasOpciones)">
+            {{ mostrarMasOpciones ? 'Menos opciones' : 'Más opciones' }}
+          </label>
+        </div>
+        <div class="full-width">
+          <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="isLoading">
+            Seleccionar Imagen
+          </button>
+          <span style="margin-left: 10px;">{{ nombreArchivo || 'Ningún archivo seleccionado' }}</span>
+          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden
+            [disabled]="isLoading" />
+        </div>
+      </div>
+      <div class="botones">
+        <button type="button" (click)="crearProducto()" class="form-btn-verde" [disabled]="isLoading">Crear</button>
+        <button type="button" (click)="cerrarFormularioProducto()" class="form-btn-gris" [disabled]="isLoading">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

@@ -1,0 +1,148 @@
+@use "sass:color";
+
+$color-bg: #f9f9f9;
+$color-verde: #097d4c;
+$color-azul: #007acc;
+$color-rojo: #a30e0e;
+
+.contenedor {
+  padding: 2rem;
+  border-radius: 10px;
+  background-color: $color-bg;
+
+  h1,
+  h2 {
+    color: $color-verde;
+    border-bottom: 2px dashed $color-verde;
+    padding-bottom: 8px;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .grid-mesas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  .mesa-card {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .mesa-numero {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    margin-top: 1rem;
+  }
+
+.mesa-check {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+
+  mat-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+
+    ::ng-deep .mdc-label {
+      font-size: 1.2rem;
+    }
+  }
+}
+
+
+  .badge-ocupada {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: #a30e0e;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-azul {
+    background: $color-azul;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 20px auto;
+    min-width: 200px;
+    max-width: 300px;
+    transition: 0.2s, transform 0.2s;
+
+    &:hover {
+      background: color.scale($color-azul, $lightness: -30%);
+    }
+  }
+}
+
+.utilidades {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+
+  label {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  input {
+    flex: 0 0 80px;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  button {
+    flex: 0 0 auto;
+    padding: 0.6rem 1.2rem;
+    background-color: $color-azul;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background: color.scale($color-azul, $lightness: -30%);
+    }
+  }
+}
+
+.info {
+  font-style: italic;
+  color: $color-verde;
+  margin-top: 0.5rem;
+}
+
+.tabla-scroll {
+  width: 100%;
+  overflow-x: auto;
+}

@@ -1,0 +1,28 @@
+<mat-toolbar>
+  <button mat-icon-button (click)="collapsed.set(!collapsed())">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="example-spacer"></span>
+
+  <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': isUsuariosPage }" (click)="irAUsuarios()">
+    <mat-icon>account_circle</mat-icon>
+    Bienvenido: {{ usuarioNombre }}
+  </button>
+
+  <span class="example-spacer"></span>
+
+  <button mat-icon-button (click)="logout()">
+    <mat-icon>logout</mat-icon>
+  </button>
+</mat-toolbar>
+
+<mat-sidenav-container>
+  <mat-sidenav opened mode="side" [style.width]="sidenavWidth()">
+    <app-menu [collapsed]="collapsed()" />
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content" [style.margin-left]="sidenavWidth()">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

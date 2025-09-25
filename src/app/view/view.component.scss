@@ -1,0 +1,87 @@
+mat-toolbar {
+  position: relative;
+  z-index: 5;
+  box-shadow: var(--mat-sys-level3);
+  background: #05492C;
+  color: white;
+  transition: width 0.3s ease-in-out;
+  border: 3px solid;
+  border-color: #032D1B;
+}
+
+button[mat-icon-button] {
+  background-color: #307055;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.3s ease-in-out, transform 0.2s ease;
+  color: white;
+
+  &:hover {
+    background-color: #76C7A0;
+    transform: scale(1.1);
+  }
+}
+
+.content {
+  padding: 24px;
+}
+
+mat-sidenav-container {
+  height: calc(100vh - 64px);
+}
+
+mat-sidenav {
+  border-radius: 0;
+  background: #6e0018;
+  transition: width 0.3s ease-in-out !important;
+  border: 3px solid;
+  border-color: #3a000d;
+}
+
+mat-sidenav-content {
+  transition: margin-left 0.3s ease-in-out !important;
+}
+
+.example-spacer {
+  flex: 1 1 auto;
+}
+
+.usuario-btn {
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.3s ease-in-out;
+
+  &:hover {
+    background-color: #76C7A0;
+    transform: scale(1.1);
+  }
+
+  mat-icon {
+    margin-right: 5px;
+    color: white;
+  }
+}
+
+.selected-button {
+  border: 2px solid white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+button[mat-button] {
+  background-color: #307055;
+  color: white;
+  border-radius: 5px;
+  padding: 6px 12px;
+  transition: background-color 0.3s ease-in-out, transform 0.2s ease;
+
+  &:hover {
+    background-color: #76C7A0;
+    transform: scale(1.1);
+  }
+}
