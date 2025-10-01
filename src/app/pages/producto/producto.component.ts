@@ -91,12 +91,11 @@ export class ProductoComponent implements OnInit {
 
   loadProductosPorCategoria(idCategory: number): void {
     this.apiService.getProductos().subscribe(data => {
-      // Filtrar usando product.category.idCategory
       this.productos = data
-        .filter((p: any) => !p.disabled && p.category?.idCategory === idCategory)
+        .filter((p: any) => !p.disabled && p.idCategory === idCategory)
         .map((p: any) => ({
           ...p,
-          brand: p.brand ? p.brand : null
+          brand: p.idBrand ? { idBrand: p.idBrand, name: this.marcaMap[p.idBrand] } : null
         }));
 
       this.productos.forEach(p => {

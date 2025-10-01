@@ -144,7 +144,7 @@ export class MenuComponent {
 
     if (rol === 'Employee') {
       this.menuItems.set([
-        { icon: 'local_pizza', label: 'Productos', route: 'categoria' },
+        { icon: 'local_pizza', label: 'Categorias - Productos', route: 'categoria' },
         { icon: 'store', label: 'Ventas', route: 'ventas' }
       ]);
     }
