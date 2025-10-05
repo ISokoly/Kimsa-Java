@@ -1,0 +1,70 @@
+<div class="overlay">
+  <!-- ================= FORMULARIO CREAR/EDITAR FEATURE ================= -->
+  @if (soloFormulario || mostrarFormularioAgregarFeature) {
+  <div class="form-modal-create">
+    <h2 class="form-title">
+      {{ selectedFeature ? 'Editar Característica' : 'Crear Característica' }}
+    </h2>
+
+    <form class="form-container">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Nombre de la característica</mat-label>
+        <input matInput [(ngModel)]="formFeature.featureName" name="nombre"
+          placeholder="Escriba el nombre de la característica" required autocomplete="off" />
+      </mat-form-field>
+
+      <div class="botones">
+        <button type="button" class="form-btn-verde" (click)="selectedFeature ? updateFeature() : createFeature()">
+          {{ selectedFeature ? 'Actualizar' : 'Crear' }}
+        </button>
+        <button type="button" (click)="cancelEditFeature()" class="form-btn-gris">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+  }
+
+  <!-- ================= LISTA DE FEATURES EXISTENTES ================= -->
+  @if (!soloFormulario && !mostrarFormularioAgregarFeature) {
+  <div class="form-modal">
+    <h2 class="form-title">Características actuales</h2>
+
+    <!-- LISTA DE CARACTERÍSTICAS -->
+    <div class="lista-features" [ngStyle]="{'grid-template-columns': 'repeat(' + getGridColumns() + ', 1fr)'}"
+      [class.grid-list]="features.length > 3">
+
+      @for (feature of features; track $index) {
+      <div class="feature-item">
+        <div class="feature-name-wrapper">
+          @if (feature.featureName?.length > 10) {
+          <span class="feature-name" appHoverScroll>{{ feature.featureName }}</span>
+          } @else {
+          <span class="feature-name">{{ feature.featureName }}</span>
+          }
+        </div>
+
+        <span class="actions">
+          <button type="button" class="icon-button edit-btn" (click)="editFeature(feature)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button type="button" class="icon-button x-btn" (click)="deleteFeature(feature.idFeature)">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </span>
+      </div>
+      }
+    </div>
+
+    <!-- BOTONES -->
+    <div class="botones botones-principales">
+      <button type="button" class="form-btn-verde" (click)="abrirFormularioAgregarFeature()">
+        Agregar Característica
+      </button>
+      <button type="button" class="form-btn-gris" (click)="cerrarFormularioFeature()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+  }
+</div>

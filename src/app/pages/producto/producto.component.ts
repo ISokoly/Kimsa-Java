@@ -8,6 +8,7 @@ import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { MarcasComponent } from "./marcas/marcas.component";
 import { MatSelectModule } from "@angular/material/select";
+import { CaracteristicasProductoComponent } from "./caracteristicas-producto/caracteristicas-producto.component";
 
 @Component({
   selector: 'app-producto',
@@ -19,7 +20,8 @@ import { MatSelectModule } from "@angular/material/select";
     MatGridListModule,
     MatButtonModule,
     MarcasComponent,
-    MatSelectModule
+    MatSelectModule,
+    CaracteristicasProductoComponent
   ],
   templateUrl: './producto.component.html',
   styleUrls: ['./producto.component.scss']
@@ -54,9 +56,13 @@ export class ProductoComponent implements OnInit {
   categoriaId: number | null = null;
   categoriaNombre: string = '';
 
+  features: any[] = [];
+  productFeatures: any[] = [];
+
   mostrarFormularioMarca = false;
   mostrarFormularioCrearMarca = false;
   mostrarMasOpciones = false;
+  mostrarCaracteristicasProducto: boolean = false;
 
   constructor(private apiService: ApiService, private toastService: ToastService, private route: ActivatedRoute) { }
 
@@ -109,6 +115,26 @@ export class ProductoComponent implements OnInit {
       this.marcas = data.filter((m: any) => m.category === idCategory);
       this.marcaMap = {};
       this.marcas.forEach(m => this.marcaMap[m.idBrand] = m.name);
+    });
+  }
+
+  loadCaracteristicasPorCategoria(idCategory: number): void {
+    this.apiService.getCaracteristicasByCategoriaId(idCategory).subscribe({
+      next: (data) => this.features = data,
+      error: () => {
+        this.toastService.mostrarMensaje('❌ Error al cargar características de la categoría');
+        this.features = [];
+      }
+    });
+  }
+
+  loadCaracteristicasPorProducto(idProduct: number): void {
+    this.apiService.getCaracteristicasByProductoId(idProduct).subscribe({
+      next: (data) => this.productFeatures = data,
+      error: () => {
+        this.toastService.mostrarMensaje('❌ Error al cargar características del producto');
+        this.productFeatures = [];
+      }
     });
   }
 
@@ -325,6 +351,10 @@ export class ProductoComponent implements OnInit {
     this.mostrarFormularioCrearMarca = true;
   }
 
+  abrirFormularioCrearCaracteristicaProducto(): void {
+    this.mostrarCaracteristicasProducto = true;
+  }
+
   abrirFormularioMarcaDesdeSelect(): void {
     this.mostrarFormularioMarca = true;
   }
@@ -336,6 +366,11 @@ export class ProductoComponent implements OnInit {
   cerrarFormularioMarca(): void {
     this.mostrarFormularioMarca = false;
   }
+
+  cerrarFormularioCaracteristicaProducto(): void {
+    this.mostrarCaracteristicasProducto = false;
+  }
+
 
   /* ==================== UTILIDADES ==================== */
   deshabilitar(idProduct: number): void {

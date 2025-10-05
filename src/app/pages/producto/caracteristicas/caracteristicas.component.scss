@@ -14,7 +14,7 @@ h2 {
   text-align: center;
 }
 
-// ==================== MODAL ====================
+// ==================== OVERLAY ====================
 .overlay {
   position: fixed;
   top: 0;
@@ -25,23 +25,14 @@ h2 {
   z-index: 1000;
 }
 
-.form-modal {
-  position: fixed;
-  top: 52.5%;
-  left: 56.5%;
-  transform: translate(-50%, -50%);
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
-}
-
+// ==================== MODALES ====================
+.form-modal,
 .form-modal-create {
   position: fixed;
   top: 52.5%;
   left: 56.5%;
   transform: translate(-50%, -50%);
+
   background: #fff;
   border-radius: 12px;
   padding: 20px;
@@ -59,29 +50,39 @@ h2 {
   margin-bottom: 30px;
 }
 
-.actions {
+// ==================== FORMULARIO ====================
+.form-container {
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 20px;
 }
 
-/* ==================== LISTA DE MARCAS ==================== */
-.lista-marcas {
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.botones {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+// ==================== LISTA DE FEATURES ====================
+.lista-features {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 30px;
 
-
   &.grid-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 30px;
+    gap: 12px;
   }
 }
 
-.marca-item {
+.feature-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -97,28 +98,29 @@ h2 {
     transform: scale(1.02);
   }
 
-  .marca-name-wrapper {
-    width: 60px;
-    flex: none;
+  .feature-name-wrapper {
+    width: 100%;
+    flex: 1;
     overflow: hidden;
 
-    .marca-name {
+    .feature-name {
       display: inline-block;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      vertical-align: middle;
+      font-weight: 600;
+      color: $primary-color;
     }
   }
 
-  .buttons-right {
+  .actions {
     display: flex;
     gap: 6px;
-    flex-shrink: 0; // no se encoge
+    flex-shrink: 0;
   }
 
-  .icon-btn {
-    padding: 8px 12px;
+  .icon-button {
+    padding: 6px 10px;
     border: none;
     border-radius: 8px;
     font-size: 14px;
@@ -145,35 +147,7 @@ h2 {
   }
 }
 
-// ==================== FORMULARIO ====================
-.form-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.form-input {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  outline: none;
-  font-size: 14px;
-  transition: border-color 0.2s;
-
-  &:focus {
-    border-color: $secondary-color;
-  }
-}
-
-// ==================== BOTONES ====================
+// ==================== BOTONES PRINCIPALES ====================
 button {
   padding: 10px 15px;
   border: none;
@@ -181,11 +155,6 @@ button {
   font-size: 14px;
   cursor: pointer;
   transition: 0.3s ease-in-out;
-}
-
-.botones {
-  display: flex;
-  justify-content: space-between;
 }
 
 .form-btn-verde {

@@ -326,5 +326,27 @@ select[disabled] {
 app-marcas {
   position: relative;
   z-index: 1000;
+}
 
+.btn-caracteristicas-producto {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 500;
+  background-color: $secondary-color;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-bottom: 15px;
+
+  &:hover {
+    background-color: color.scale($secondary-color, $lightness: -40%);
+    transform: scale(1.02);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }

@@ -196,7 +196,7 @@ export class ApiService {
   disableCategoriaYProductos(id: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/categories/${id}/disable`, {});
   }
-  
+
   deleteCategoria(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/categories/${id}`);
   }
@@ -286,27 +286,76 @@ export class ApiService {
     return this.http.delete(`${this.apiUrl}/brands/${id}`);
   }
 
+  /* ==================== FEATURES ==================== */
 
+  // Obtener todas las características
+  getFeatures(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/features`);
+  }
 
-  // Caracteristicas
-  getCaracteristicas(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/caracteristicas_productos/producto`);
+  // Obtener una característica por ID
+  getFeatureById(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/features/${encodeURIComponent(id)}`);
+  }
+
+  // Obtener características filtradas por categoría
+  getFeaturesByCategory(idCategory: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/features/category/${encodeURIComponent(idCategory)}`);
+  }
+
+  // Crear característica
+  createFeature(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/features`, data);
+  }
+
+  // Actualizar característica
+  updateFeature(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/features/${encodeURIComponent(id)}`, data);
+  }
+
+  // Eliminar característica
+  deleteFeature(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/features/${encodeURIComponent(id)}`);
+  }
+
+  /* ==================== PRODUCT FEATURES ==================== */
+
+  // Obtener todos los productFeatures
+  getProductFeatures(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/product-features`);
+  }
+
+  // Obtener un productFeature por ID
+  getProductFeatureById(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`);
+  }
+
+  // Obtener características por producto
+  getProductFeaturesByProduct(idProduct: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/product-features/product/${encodeURIComponent(idProduct)}`);
+  }
+
+  // Crear detalle de característica
+  createProductFeature(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/product-features`, data);
+  }
+
+  // Actualizar detalle de característica
+  updateProductFeature(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`, data);
+  }
+
+  // Eliminar detalle de característica
+  deleteProductFeature(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`);
+  }
+
+  getCaracteristicasByCategoriaId(categoria_id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/features/category/${encodeURIComponent(categoria_id)}`);
   }
 
   getCaracteristicasByProductoId(producto_id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/caracteristicas_productos/${encodeURIComponent(producto_id)}`);
-  }
-
-  createCaracteristicas(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/caracteristicas_productos/producto`, data);
-  }
-
-  updateCaracteristicas(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/caracteristicas_productos/producto/${id}`, data);
-  }
-
-  deleteCaracteristicas(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/caracteristicas_productos/producto/${id}`);
   }
 
   getVentas(): Observable<any> {

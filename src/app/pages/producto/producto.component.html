@@ -72,6 +72,12 @@
       (marcaDeleted)="onMarcaDeleted($event)">
     </app-marcas>
     }
+    @if (mostrarCaracteristicasProducto) {
+    @if (selectedProducto) {
+    <app-caracteristicas-producto [productoSeleccionado]="selectedProducto?.idProduct"
+      [categoriaSeleccionada]="selectedProducto?.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
+    </app-caracteristicas-producto>
+    }}
   </div>
 </div>
 @if(mostrarFormulario) {
@@ -94,6 +100,8 @@
             [disabled]="isLoading" />
         </mat-form-field>
 
+        <!-- ================== Botón para abrir características de producto ================== -->
+
         @if (mostrarMasOpciones) {
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Marca</mat-label>
@@ -111,6 +119,14 @@
             </mat-option>
           </mat-select>
         </mat-form-field>
+        }
+
+        @if (selectedProducto) {
+        <div class="full-width">
+          <button class="btn-caracteristicas-producto" (click)="abrirFormularioCrearCaracteristicaProducto()">
+            🧩 Gestionar características del producto
+          </button>
+        </div>
         }
 
         <div class="mas-opciones full-width">
