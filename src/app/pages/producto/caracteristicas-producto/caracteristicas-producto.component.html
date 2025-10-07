@@ -9,7 +9,7 @@
     <form class="form-container">
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Característica base</mat-label>
-        <mat-select [(ngModel)]="formProductFeature.feature" name="feature" required>
+        <mat-select [(ngModel)]="formProductFeature.feature" name="feature" required (openedChange)="onSelectOpened($event)">
           <mat-option [value]="null" disabled>Seleccione una característica</mat-option>
 
           @for (feature of features; track feature.idFeature) {
@@ -51,7 +51,7 @@
       @for (pf of productFeatures; track $index) {
       <div class="product-feature-item">
         <div class="product-feature-wrapper">
-          <span class="product-feature-name">{{ pf.featureName }}</span>
+          <span class="product-feature-name">{{ pf.feature?.featureName }}</span>
           <span class="product-feature-value">- {{ pf.featureValue }}</span>
         </div>
 

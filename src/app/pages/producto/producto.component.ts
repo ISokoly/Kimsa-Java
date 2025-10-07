@@ -118,16 +118,6 @@ export class ProductoComponent implements OnInit {
     });
   }
 
-  loadCaracteristicasPorCategoria(idCategory: number): void {
-    this.apiService.getCaracteristicasByCategoriaId(idCategory).subscribe({
-      next: (data) => this.features = data,
-      error: () => {
-        this.toastService.mostrarMensaje('❌ Error al cargar características de la categoría');
-        this.features = [];
-      }
-    });
-  }
-
   loadCaracteristicasPorProducto(idProduct: number): void {
     this.apiService.getCaracteristicasByProductoId(idProduct).subscribe({
       next: (data) => this.productFeatures = data,
@@ -135,6 +125,12 @@ export class ProductoComponent implements OnInit {
         this.toastService.mostrarMensaje('❌ Error al cargar características del producto');
         this.productFeatures = [];
       }
+    });
+  }
+
+  loadFeatures(): void {
+    this.apiService.getFeatures().subscribe((data: any[]) => {
+      this.features = data || [];
     });
   }
 
@@ -353,6 +349,7 @@ export class ProductoComponent implements OnInit {
 
   abrirFormularioCrearCaracteristicaProducto(): void {
     this.mostrarCaracteristicasProducto = true;
+    this.loadFeatures();
   }
 
   abrirFormularioMarcaDesdeSelect(): void {

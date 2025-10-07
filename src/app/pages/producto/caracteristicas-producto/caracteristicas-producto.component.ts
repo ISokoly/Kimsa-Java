@@ -70,10 +70,8 @@ export class CaracteristicasProductoComponent implements OnInit {
   /* ==================== CARGA ==================== */
   loadProductData(idProduct: number): void {
     this.apiService.getProductoById(idProduct).subscribe((product: any) => {
-      // Guardamos el id del producto
       this.formProductFeature.product = product.idProduct;
 
-      // Ya no filtramos por categoría, simplemente cargamos todas las características
       this.loadAllFeatures();
     });
   }
@@ -92,6 +90,11 @@ export class CaracteristicasProductoComponent implements OnInit {
     });
   }
 
+  onSelectOpened(opened: boolean): void {
+    if (opened) {
+      this.loadAllFeatures();
+    }
+  }
   /* ==================== CREAR / ACTUALIZAR ==================== */
   createProductFeature(): void {
     if (!this.formProductFeature.featureValue.trim()) {
@@ -101,7 +104,7 @@ export class CaracteristicasProductoComponent implements OnInit {
 
     const payload = {
       featureValue: this.formProductFeature.featureValue,
-      product: { idProduct: this.productoSeleccionado }, // ✅ debe ser un objeto
+      product: { idProduct: this.productoSeleccionado },
       feature: this.formProductFeature.feature ? { idFeature: Number(this.formProductFeature.feature) } : null
     };
 

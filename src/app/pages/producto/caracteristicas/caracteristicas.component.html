@@ -1,5 +1,4 @@
 <div class="overlay">
-  <!-- ================= FORMULARIO CREAR/EDITAR FEATURE ================= -->
   @if (soloFormulario || mostrarFormularioAgregarFeature) {
   <div class="form-modal-create">
     <h2 class="form-title">
@@ -29,8 +28,6 @@
   @if (!soloFormulario && !mostrarFormularioAgregarFeature) {
   <div class="form-modal">
     <h2 class="form-title">Características actuales</h2>
-
-    <!-- LISTA DE CARACTERÍSTICAS -->
     <div class="lista-features" [ngStyle]="{'grid-template-columns': 'repeat(' + getGridColumns() + ', 1fr)'}"
       [class.grid-list]="features.length > 3">
 
