@@ -1,0 +1,139 @@
+<div class="ventas-container">
+    <h1 class="titulo">Registrar Venta (POS)</h1>
+
+    <div class="ventas-grid">
+        <div>
+            <!-- Datos de venta -->
+            <table class="cliente-tabla">
+                <tr>
+                    <th colspan="2" class="cabecera-principal-1">Datos de la venta</th>
+                </tr>
+
+                <tr>
+                    <td><strong>Mesa</strong></td>
+                    <td>
+                        <mat-form-field appearance="fill" style="width:100%;">
+                            <mat-label>Selecciona una mesa</mat-label>
+                            <mat-select [(ngModel)]="selectedTableId">
+                                <mat-option [value]="null" disabled>Seleccione</mat-option>
+                                @for (mesa of tables; track mesa.idTable) {
+                                <mat-option [value]="mesa.idTable">
+                                    {{ mesa.number === 'delivery' ? 'Delivery' : ('Mesa ' + mesa.number) }}
+                                    @if (mesa.activo === 1) { - (ocupada) }
+                                </mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>Cliente genérico</strong></td>
+                    <td>
+                        <button mat-raised-button color="primary" (click)="toggleGeneric()">
+                            {{ isGeneric ? 'Sí (cambiar a cliente)' : 'No (usar genérico)' }}
+                        </button>
+                    </td>
+                </tr>
+
+                @if (!isGeneric) {
+                <tr>
+                    <td><strong>Nombre</strong></td>
+                    <td><input matInput class="form-input" [(ngModel)]="customerName"
+                            placeholder="Nombre del cliente" /></td>
+                </tr>
+                <tr>
+                    <td><strong>DNI</strong></td>
+                    <td><input matInput class="form-input" [(ngModel)]="customerDni" placeholder="DNI" /></td>
+                </tr>
+                }
+            </table>
+
+            <!-- Carrito -->
+            <table class="ventas-tabla">
+                <tr class="cabecera-principal-2">
+                    <th class="tr-c">Producto</th>
+                    <th class="tr-c" style="width:120px">Cant.</th>
+                    <th class="tr-c" style="width:140px">Precio</th>
+                    <th class="tr-c" style="width:140px">Subtotal</th>
+                    <th class="tr-c" style="width:90px">Opciones</th>
+                </tr>
+
+                <!-- Selector para agregar -->
+                <tr>
+                    <td>
+                        <mat-form-field appearance="fill" style="width:100%;">
+                            <mat-label>Seleccionar producto</mat-label>
+                            <mat-select [(ngModel)]="selectedProductId">
+                                @if (products.length === 0) {
+                                <mat-option [value]="null" disabled>— Sin productos —</mat-option>
+                                } @else {
+                                @for (p of products; track p.idProduct) {
+                                <mat-option [value]="p.idProduct">{{ p.name }} — S/{{ p.price }}</mat-option>
+                                }
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </td>
+                    <td><input matInput type="number" min="1" [(ngModel)]="selectedQty" /></td>
+                    <td class="tr-c">—</td>
+                    <td class="tr-c">—</td>
+                    <td class="tr-c">
+                        <button mat-icon-button color="primary" (click)="addToCart()"><mat-icon>add</mat-icon></button>
+                    </td>
+                </tr>
+
+                <!-- Ítems -->
+                @for (item of cart; track item.idProduct) {
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>
+                        <input matInput type="number" min="1" [ngModel]="item.quantity"
+                            (ngModelChange)="updateQty(item, $event)" />
+                    </td>
+                    <td class="tr-c">S/{{ item.unitPrice }}</td>
+                    <td class="tr-c">S/{{ item.subtotal }}</td>
+                    <td class="tr-c">
+                        <button mat-icon-button color="warn"
+                            (click)="removeItem(item)"><mat-icon>delete</mat-icon></button>
+                    </td>
+                </tr>
+                }
+
+                @if (cart.length === 0) {
+                <tr>
+                    <td colspan="5" class="fila-sin-datos"><em>Sin productos</em></td>
+                </tr>
+                }
+
+                <tr>
+                    <td colspan="3" class="centered-cell"><strong>Total</strong></td>
+                    <td class="centered-cell">S/{{ total }}</td>
+                    <td class="centered-cell">
+                        <button mat-icon-button color="warn" (click)="clearCart()" [disabled]="cart.length===0">
+                            <mat-icon>clear_all</mat-icon>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Acciones -->
+        <div>
+            <div class="imagen-contenedor">
+                <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
+            </div>
+
+            <div class="contenedor-boton">
+                <button mat-raised-button color="primary" class="boton-agregar" (click)="saveSale()"
+                    [disabled]="isSaving">
+                    {{ saleId ? 'Actualizar venta' : 'Registrar venta' }}
+                </button>
+
+                <button mat-raised-button color="accent" class="boton-cancelar" (click)="goBack()">
+                    Volver
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

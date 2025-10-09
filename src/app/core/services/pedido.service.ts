@@ -12,7 +12,7 @@ export class PedidoService {
     constructor(private apiService: ApiService, private router: Router) { }
 
     validarEstadoPedido(idPedido: number): Observable<boolean> {
-        return this.apiService.getVentasById(idPedido).pipe(
+        return this.apiService.getSaleById(idPedido).pipe(
             tap(pedido => console.log('Estado recibido:', pedido.estado)),
             map(pedido => {
                 if (pedido.estado === 'Confirmado' || pedido.estado === 'Cancelado') {

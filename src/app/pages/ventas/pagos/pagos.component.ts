@@ -40,7 +40,7 @@ export class PagosComponent implements OnInit {
   }
 
   cargarPedidoExistente(id: number): void {
-    this.apiService.getVentasById(id).subscribe({
+    this.apiService.getSaleById(id).subscribe({
       next: (pedido: any) => {
         this.pedidoActual = {
           id: pedido.id,
@@ -77,7 +77,7 @@ export class PagosComponent implements OnInit {
   }
 
   cargarPagosHechos(id_pedido: number): void {
-    this.apiService.getPagosByIdPedido(id_pedido).subscribe({
+    this.apiService.getPaymentsByOrderId(id_pedido).subscribe({
       next: (pagos: any[]) => {
         if (pagos && pagos.length > 0) {
           const pagoExistente = pagos[0];
@@ -122,7 +122,7 @@ export class PagosComponent implements OnInit {
 
   cargarDetallesPedido() {
     if (this.pedidoActual.id) {
-      this.apiService.getDetallePedidoByIdPedido(this.pedidoActual.id).subscribe({
+      this.apiService.getOrderDetailsByOrderId(this.pedidoActual.id).subscribe({
         next: (response) => {
           if (Array.isArray(response)) {
             this.detallesPedido = response;
@@ -149,11 +149,11 @@ export class PagosComponent implements OnInit {
   }
 
   registrarPago() {
-    this.apiService.createPago(this.nuevoPago).subscribe({
+    this.apiService.createPayment(this.nuevoPago).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Pago registrado correctamente');
 
-        this.apiService.updateVentas(this.pedidoActual.id, { estado: 'Confirmado' }).subscribe({
+        this.apiService.updateSale(this.pedidoActual.id, { estado: 'Confirmado' }).subscribe({
           next: () => {
             if (this.pedidoActual.id_mesa) {
               this.apiService.updateMesa(this.pedidoActual.id_mesa, { activo: false }).subscribe({

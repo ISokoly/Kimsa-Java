@@ -3,72 +3,91 @@
 
   <mat-form-field appearance="fill">
     <mat-label>Seleccionar Fecha</mat-label>
-    <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" (dateChange)="filtrarVentasPorFecha()">
+    <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" (dateChange)="filterByDate()" />
     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
     <mat-datepicker #picker></mat-datepicker>
   </mat-form-field>
 
   <div class="ventas-grid">
     <div>
-      <table class="ventas-tabla">
-        <thead>
-          <tr>
-            <th style="width: 5%" class="celdas-centradas">N°</th>
-            <th class="cabecera-izquierda">Producto</th>
-            <th class="celdas-centradas">Estado</th>
-            <th class="celdas-centradas">Ganancia</th>
-            <th class="celdas-centradas">Opciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let venta of dataSource.data; let i = index">
-            <td class="celdas-centradas">{{ paginator.pageIndex * paginator.pageSize + i + 1 }}</td>
-            <td class="cabecera-izquierda">
-              <ng-container
-                *ngIf="venta.detalles?.length > 0 && venta.estado !== 'Cancelado'; else sinProductosOCancelado">
-                <label><em>{{ obtenerDetallesLimitados(venta) }}</em></label>
-              </ng-container>
-              <ng-template #sinProductosOCancelado>
-                <ng-container *ngIf="venta.estado === 'Cancelado'; else sinProductos">
-                  <em>***********************</em>
-                </ng-container>
-                <ng-template #sinProductos>
-                  <em>Sin productos</em>
-                </ng-template>
-              </ng-template>
-            </td>
-            <td class="celdas-centradas">{{ venta.estado }}</td>
-            <td class="celdas-centradas">
-              <ng-container [ngSwitch]="venta.estado">
-                <span *ngSwitchCase="'Confirmado'">S/{{ venta.total }}</span>
-                <span *ngSwitchCase="'Pendiente'">S/{{ venta.total }}</span>
-                <span *ngSwitchCase="'Cancelado'">***</span>
-                <span *ngSwitchDefault>---</span>
-              </ng-container>
-            </td>
-            <td class="cabecera-derecha">
-              <div class="opciones-botones">
-                <button mat-icon-button color="primary" (click)="editarVenta(venta)" class="icon-edit"
-                  [disabled]="venta.estado === 'Cancelado' || venta.yaPagado">
-                  <mat-icon>edit</mat-icon>
-                </button>
+      <!-- === MAT-TABLE === -->
+      <table mat-table [dataSource]="dataSource" class="mat-elevation-z1 ventas-tabla">
 
-                <button mat-icon-button color="primary" (click)="pagarVenta(venta)" class="icon-pay"
-                  [disabled]="venta.estado === 'Cancelado' || venta.total == 0">
-                  <mat-icon>attach_money</mat-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="!dataSource.data || dataSource.data.length === 0">
-            <td colspan="5" class="empty"><em>No hay ventas registradas</em></td>
-          </tr>
-        </tbody>
+        <!-- # Columna -->
+        <ng-container matColumnDef="number">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:5%">N°</th>
+          <td mat-cell *matCellDef="let row; let i = index" class="celdas-centradas">
+            {{ paginator.pageIndex * paginator.pageSize + i + 1 }}
+          </td>
+        </ng-container>
+
+        <!-- Producto(s) -->
+        <ng-container matColumnDef="producto">
+          <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
+          <td mat-cell *matCellDef="let row" class="cabecera-izquierda">
+            @if (row.details?.length > 0 && row.status !== 'Canceled') {
+              <label><em>{{ getLimitedDetails(row) }}</em></label>
+            } @else {
+              @if (row.status === 'Canceled') {
+                <em>***********************</em>
+              } @else {
+                <em>Sin productos</em>
+              }
+            }
+          </td>
+        </ng-container>
+
+        <!-- Estado -->
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Estado</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">
+            {{ row.status }}
+          </td>
+        </ng-container>
+
+        <!-- Ganancia -->
+        <ng-container matColumnDef="ganancia">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Ganancia</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">
+            @switch (row.status) {
+              @case ('Confirmed') { <span>S/{{ row.total }}</span> }
+              @case ('Pending')   { <span>S/{{ row.total }}</span> }
+              @case ('Canceled')  { <span>***</span> }
+              @default            { <span>---</span> }
+            }
+          </td>
+        </ng-container>
+
+        <!-- Opciones -->
+        <ng-container matColumnDef="opciones">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Opciones</th>
+          <td mat-cell *matCellDef="let row" class="cabecera-derecha">
+            <div class="opciones-botones">
+              <button mat-icon-button color="primary" (click)="editSale(row)"
+                      [disabled]="row.status === 'Canceled' || row.alreadyPaid">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <button mat-icon-button color="primary" (click)="paySale(row)"
+                      [disabled]="row.status === 'Canceled' || row.total == 0">
+                <mat-icon>attach_money</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Header y Rows -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row        *matRowDef="let row; columns: displayedColumns"></tr>
+
+        <!-- Empty state (Material no tiene row empty; lo dibujamos abajo) -->
       </table>
 
-      <mat-paginator [length]="ventas.length" [pageSize]="10" (page)="cambiarPagina($event)">
-      </mat-paginator>
+      @if (!dataSource.data || dataSource.data.length === 0) {
+        <div class="empty"><em>No hay ventas registradas</em></div>
+      }
 
+      <mat-paginator [length]="sales.length" [pageSize]="10" (page)="onPage($event)"></mat-paginator>
     </div>
 
     <div>
@@ -76,7 +95,7 @@
         <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
       </div>
       <div class="contenedor-boton">
-        <button mat-raised-button color="primary" (click)="registrarNuevaVenta()" class="boton-agregar">
+        <button mat-raised-button color="primary" (click)="registerNewSale()" class="boton-agregar">
           Agregar venta
         </button>
       </div>

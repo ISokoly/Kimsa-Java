@@ -57,7 +57,7 @@ export class EstadisticasComponent implements OnInit {
   }
 
   cargarVentas() {
-    this.apiService.getVentas().subscribe(response => {
+    this.apiService.getSales().subscribe(response => {
       this.ventas = response;
       this.ventasCargadas = true;
       this.intentarGenerarEstadisticas();
@@ -65,7 +65,7 @@ export class EstadisticasComponent implements OnInit {
   }
 
   cargarDetallesPedido() {
-    this.apiService.getDetallePedido().subscribe(response => {
+    this.apiService.getOrderDetails().subscribe(response => {
       this.detallesPedido = response;
       this.detallesCargados = true;
       this.intentarGenerarEstadisticas();

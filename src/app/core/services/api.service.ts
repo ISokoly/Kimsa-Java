@@ -288,64 +288,52 @@ export class ApiService {
 
   /* ==================== FEATURES ==================== */
 
-  // Obtener todas las características
   getFeatures(): Observable<any> {
     return this.http.get(`${this.apiUrl}/features`);
   }
 
-  // Obtener una característica por ID
   getFeatureById(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/features/${encodeURIComponent(id)}`);
   }
 
-  // Obtener características filtradas por categoría
   getFeaturesByCategory(idCategory: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/features/category/${encodeURIComponent(idCategory)}`);
   }
 
-  // Crear característica
   createFeature(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/features`, data);
   }
 
-  // Actualizar característica
   updateFeature(id: number, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/features/${encodeURIComponent(id)}`, data);
   }
 
-  // Eliminar característica
   deleteFeature(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/features/${encodeURIComponent(id)}`);
   }
 
   /* ==================== PRODUCT FEATURES ==================== */
 
-  // Obtener todos los productFeatures
   getProductFeatures(): Observable<any> {
     return this.http.get(`${this.apiUrl}/product-features`);
   }
 
-  // Obtener un productFeature por ID
   getProductFeatureById(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`);
   }
 
-  // Obtener características por producto
   getProductFeaturesByProduct(idProduct: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/product-features/product/${encodeURIComponent(idProduct)}`);
   }
 
-  // Crear detalle de característica
   createProductFeature(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/product-features`, data);
   }
 
-  // Actualizar detalle de característica
   updateProductFeature(id: number, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`, data);
   }
 
-  // Eliminar detalle de característica
   deleteProductFeature(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/product-features/${encodeURIComponent(id)}`);
   }
@@ -358,82 +346,80 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/caracteristicas_productos/${encodeURIComponent(producto_id)}`);
   }
 
-  getVentas(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/pedidos/ventas`);
+  /* ==================== SALES ==================== */
+
+  getSales(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/orders/sales`);
   }
 
-  getVentasById(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/pedidos/ventas/${id}`);
+  getSaleById(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/orders/sales/${id}`);
   }
 
-  createVentas(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/pedidos/ventas`, data);
+  createSale(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/orders/sales`, data);
   }
 
-  updateVentas(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pedidos/ventas/${id}`, data);
+  updateSale(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/orders/sales/${id}`, data);
   }
 
-  updatePrecioVentas(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pedidos/ventas/${id}`, data);
+  updateSalePrice(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/orders/sales/${id}`, data);
   }
 
-  updateEstadoVentas(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pedidos/ventas/${id}`, data);
+  updateSaleStatus(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/orders/sales/${id}`, data);
   }
 
-  deleteVentas(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/pedidos/ventas/${id}`);
+  getConfirmedSales(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/orders/confirmed`);
   }
 
-  getVentasConfirmadas(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/pedidos/ventas-confirmadas/confirmados`);
+  /* ==================== ORDER DETAILS ==================== */
+
+  createOrderDetail(orderDetail: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/order-details/sales`, orderDetail);
   }
 
-  crearDetallePedido(detallePedido: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/detalle-pedidos/ventas`, detallePedido);
+  getOrderDetails(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/order-details/sales`);
   }
 
-  getDetallePedido(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/detalle-pedidos/ventas`);
+  getOrderDetailById(id_detail: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/order-details/sales/${id_detail}`);
   }
 
-  getDetallePedidoById(id_detalle: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/detalle-pedidos/ventas/${id_detalle}`);
+  updateOrderDetail(id_detail: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/order-details/sales/${id_detail}`, data);
   }
 
-  updateDetallePedido(id_detalle: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/detalle-pedidos/ventas/${id_detalle}`, data);
+  deleteOrderDetail(id_detail: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/order-details/sales/${id_detail}`);
   }
 
-  deleteDetallePedido(id_detalle: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/detalle-pedidos/ventas/${id_detalle}`);
+  getOrderDetailsByOrderId(order_id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/order-details/by-order/${order_id}`);
   }
 
-  getDetallePedidoByIdPedido(id_pedido: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/detalle-pedido/pedidos/${id_pedido}`);
+  /* ==================== PAYMENTS ==================== */
+
+  getPayments(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/payments`);
   }
 
-  // Pagos
-  getPagos(): Observable<any> {
-    return this.http.get<any[]>(`${this.apiUrl}/pizzeria/pagos`);
+  getPaymentsByOrderId(order_id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/payments/by-order/${order_id}`);
   }
 
-  getPagosByIdPedido(id: number): Observable<any> {
-    return this.http.get(`${this.apiUrl}/pagados/pagos/${id}`);
+  createPayment(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/payments`, data);
   }
 
-  createPago(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/pizzeria/pagos`, data);
+  updatePayment(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/payments/${id}`, data);
   }
-
-  updatePago(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pizzeria/pagos/${id}`, data);
-  }
-
-  deletePago(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/pizzeria/pagos/${id}`);
-  }
+  /* ==================== DISCOUNTS ==================== */
 
   getDescuentos(): Observable<any> {
     return this.http.get<any[]>(`${this.apiUrl}/discounts`);
