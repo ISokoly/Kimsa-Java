@@ -1,10 +1,10 @@
 <div class="ventas-container">
-    <h1 class="titulo">Registrar Venta (POS)</h1>
+    <h1 class="titulo">Registrar Venta</h1>
 
     <div class="ventas-grid">
         <div>
             <!-- Datos de venta -->
-            <table class="cliente-tabla">
+            <table mat-table class="cliente-tabla">
                 <tr>
                     <th colspan="2" class="cabecera-principal-1">Datos de la venta</th>
                 </tr>
@@ -12,7 +12,7 @@
                 <tr>
                     <td><strong>Mesa</strong></td>
                     <td>
-                        <mat-form-field appearance="fill" style="width:100%;">
+                        <mat-form-field appearance="outline" style="width:90%;">
                             <mat-label>Selecciona una mesa</mat-label>
                             <mat-select [(ngModel)]="selectedTableId">
                                 <mat-option [value]="null" disabled>Seleccione</mat-option>
@@ -28,10 +28,15 @@
                 </tr>
 
                 <tr>
+                    @if (isGeneric) {
                     <td><strong>Cliente genérico</strong></td>
+                    }
+                    @else {
+                    <td><strong>Cliente</strong></td>
+                    }
                     <td>
-                        <button mat-raised-button color="primary" (click)="toggleGeneric()">
-                            {{ isGeneric ? 'Sí (cambiar a cliente)' : 'No (usar genérico)' }}
+                        <button mat-raised-button color="primary" style="width:90%;" (click)="toggleGeneric()">
+                            {{ isGeneric ? 'Cambiar a Cliente' : 'Usar genérico' }}
                         </button>
                     </td>
                 </tr>
@@ -39,30 +44,39 @@
                 @if (!isGeneric) {
                 <tr>
                     <td><strong>Nombre</strong></td>
-                    <td><input matInput class="form-input" [(ngModel)]="customerName"
-                            placeholder="Nombre del cliente" /></td>
+                    <td>
+                        <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
+                            <mat-label>Nombre del cliente</mat-label>
+                            <input matInput [(ngModel)]="customerName" placeholder="Nombre del cliente" />
+                        </mat-form-field>
+                    </td>
                 </tr>
+
                 <tr>
                     <td><strong>DNI</strong></td>
-                    <td><input matInput class="form-input" [(ngModel)]="customerDni" placeholder="DNI" /></td>
+                    <td>
+                        <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
+                            <mat-label>DNI</mat-label>
+                            <input matInput [(ngModel)]="customerDni" placeholder="DNI" />
+                        </mat-form-field>
+                    </td>
                 </tr>
                 }
             </table>
 
             <!-- Carrito -->
-            <table class="ventas-tabla">
+            <table mat-table class="ventas-tabla">
                 <tr class="cabecera-principal-2">
-                    <th class="tr-c">Producto</th>
-                    <th class="tr-c" style="width:120px">Cant.</th>
-                    <th class="tr-c" style="width:140px">Precio</th>
-                    <th class="tr-c" style="width:140px">Subtotal</th>
-                    <th class="tr-c" style="width:90px">Opciones</th>
+                    <th mat-header-cell >Producto</th>
+                    <th mat-header-cell style="width:120px">Cantidad</th>
+                    <th mat-header-cell style="width:140px">Precio</th>
+                    <th mat-header-cell tyle="width:140px">Subtotal</th>
+                    <th mat-header-cell style="width:90px">Opciones</th>
                 </tr>
 
-                <!-- Selector para agregar -->
                 <tr>
                     <td>
-                        <mat-form-field appearance="fill" style="width:100%;">
+                        <mat-form-field appearance="outline" style="width:90%;">
                             <mat-label>Seleccionar producto</mat-label>
                             <mat-select [(ngModel)]="selectedProductId">
                                 @if (products.length === 0) {
@@ -75,10 +89,15 @@
                             </mat-select>
                         </mat-form-field>
                     </td>
-                    <td><input matInput type="number" min="1" [(ngModel)]="selectedQty" /></td>
-                    <td class="tr-c">—</td>
-                    <td class="tr-c">—</td>
-                    <td class="tr-c">
+                    <td>
+                        <mat-form-field appearance="outline" class="cantidad-field">
+                            <mat-label>Cantidad</mat-label>
+                            <input matInput type="number" min="1" [(ngModel)]="selectedQty" />
+                        </mat-form-field>
+                    </td>
+                    <td >—</td>
+                    <td >—</td>
+                    <td >
                         <button mat-icon-button color="primary" (click)="addToCart()"><mat-icon>add</mat-icon></button>
                     </td>
                 </tr>
@@ -88,12 +107,15 @@
                 <tr>
                     <td>{{ item.name }}</td>
                     <td>
-                        <input matInput type="number" min="1" [ngModel]="item.quantity"
-                            (ngModelChange)="updateQty(item, $event)" />
+                        <mat-form-field appearance="outline" class="cantidad-field">
+                            <mat-label>Cantidad</mat-label>
+                            <input matInput type="number" min="1" [ngModel]="item.quantity"
+                                (ngModelChange)="updateQty(item, $event)" />
+                        </mat-form-field>
                     </td>
-                    <td class="tr-c">S/{{ item.unitPrice }}</td>
-                    <td class="tr-c">S/{{ item.subtotal }}</td>
-                    <td class="tr-c">
+                    <td >S/{{ item.unitPrice }}</td>
+                    <td >S/{{ item.subtotal }}</td>
+                    <td >
                         <button mat-icon-button color="warn"
                             (click)="removeItem(item)"><mat-icon>delete</mat-icon></button>
                     </td>

@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { HoverScrollDirective } from './hover-scroll.directive';
+import { HoverScrollDirective } from '../../core/services/hover-scroll.directive';
 import { MarcasComponent } from '../producto/marcas/marcas.component';
 
 @Component({

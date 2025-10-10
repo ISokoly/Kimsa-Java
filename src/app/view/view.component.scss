@@ -25,6 +25,8 @@ button[mat-icon-button] {
 
 .content {
   padding: 24px;
+  padding-bottom: 4rem; // 🟢 agrega más espacio en la parte inferior
+
 }
 
 mat-sidenav-container {
@@ -41,6 +43,13 @@ mat-sidenav {
 
 mat-sidenav-content {
   transition: margin-left 0.3s ease-in-out !important;
+
+  padding: 24px;
+  box-sizing: border-box;
+
+  border-radius: 12px;
+  margin: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .example-spacer {

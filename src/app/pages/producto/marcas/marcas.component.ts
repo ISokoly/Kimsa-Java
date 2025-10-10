@@ -8,7 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from "@angular/material/list";
 import { CommonModule } from '@angular/common';
-import { HoverScrollDirective } from "../../categorias/hover-scroll.directive";
+import { HoverScrollDirective } from "../../../core/services/hover-scroll.directive";
 
 @Component({
   selector: 'app-marcas',

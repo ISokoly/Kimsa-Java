@@ -95,13 +95,11 @@ export class VentasComponent implements OnInit {
           details: []
         }));
 
-        // Filtra comparando 'yyyy-MM-dd' (evita crear Date)
         this.sales = normalized
           .filter(v => (v.orderDate === targetIsoLima))
           .sort((a, b) => this.localMillis(a.orderDate, a.orderTime) - this.localMillis(b.orderDate, b.orderTime))
           .reverse(); // más recientes primero
 
-        // Carga detalles/pagos
         this.sales.forEach((sale) => {
           this.apiService.getOrderDetailsByOrderId(sale.idOrder).subscribe({
             next: (details: any[]) => {
@@ -120,7 +118,6 @@ export class VentasComponent implements OnInit {
           this.loadPaymentsDone(sale);
         });
 
-        // Primera página
         this.dataSource.data = this.sales.slice(0, 10);
         if (this.paginator) {
           this.dataSource.paginator = this.paginator;
@@ -172,7 +169,7 @@ export class VentasComponent implements OnInit {
   }
 
   private toIsoDateInLima(d: Date): string {
-    return new Intl.DateTimeFormat('en-CA', { // en-CA => yyyy-MM-dd
+    return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Lima',
       year: 'numeric',
       month: '2-digit',
@@ -180,7 +177,6 @@ export class VentasComponent implements OnInit {
     }).format(d);
   }
 
-  /** Convierte orderDate ('yyyy-MM-dd') + orderTime ('HH:mm:ss[.SSS]') a millis *locales* (sin UTC). */
   private localMillis(orderDate: string, orderTime?: string): number {
     const [y, m, d] = orderDate.split('-').map(n => parseInt(n, 10));
     let hh = 0, mm = 0, ss = 0, ms = 0;

@@ -10,10 +10,7 @@
 
   <div class="ventas-grid">
     <div>
-      <!-- === MAT-TABLE === -->
       <table mat-table [dataSource]="dataSource" class="mat-elevation-z1 ventas-tabla">
-
-        <!-- # Columna -->
         <ng-container matColumnDef="number">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:5%">N°</th>
           <td mat-cell *matCellDef="let row; let i = index" class="celdas-centradas">
@@ -26,13 +23,13 @@
           <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
           <td mat-cell *matCellDef="let row" class="cabecera-izquierda">
             @if (row.details?.length > 0 && row.status !== 'Canceled') {
-              <label><em>{{ getLimitedDetails(row) }}</em></label>
+            <label><em>{{ getLimitedDetails(row) }}</em></label>
             } @else {
-              @if (row.status === 'Canceled') {
-                <em>***********************</em>
-              } @else {
-                <em>Sin productos</em>
-              }
+            @if (row.status === 'Canceled') {
+            <em>***********************</em>
+            } @else {
+            <em>Sin productos</em>
+            }
             }
           </td>
         </ng-container>
@@ -50,10 +47,10 @@
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Ganancia</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">
             @switch (row.status) {
-              @case ('Confirmed') { <span>S/{{ row.total }}</span> }
-              @case ('Pending')   { <span>S/{{ row.total }}</span> }
-              @case ('Canceled')  { <span>***</span> }
-              @default            { <span>---</span> }
+            @case ('Confirmed') { <span>S/{{ row.total }}</span> }
+            @case ('Pending') { <span>S/{{ row.total }}</span> }
+            @case ('Canceled') { <span>***</span> }
+            @default { <span>---</span> }
             }
           </td>
         </ng-container>
@@ -63,13 +60,13 @@
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Opciones</th>
           <td mat-cell *matCellDef="let row" class="cabecera-derecha">
             <div class="opciones-botones">
-              <button mat-icon-button color="primary" (click)="editSale(row)"
-                      [disabled]="row.status === 'Canceled' || row.alreadyPaid">
+              <button class="edit-btn" (click)="editSale(row)"
+                [disabled]="row.status === 'Canceled' || row.alreadyPaid">
                 <mat-icon>edit</mat-icon>
               </button>
 
-              <button mat-icon-button color="primary" (click)="paySale(row)"
-                      [disabled]="row.status === 'Canceled' || row.total == 0">
+              <button class="pay-btn" (click)="paySale(row)"
+                [disabled]="row.status === 'Canceled' || row.total == 0">
                 <mat-icon>attach_money</mat-icon>
               </button>
             </div>
@@ -78,13 +75,13 @@
 
         <!-- Header y Rows -->
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row        *matRowDef="let row; columns: displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
 
         <!-- Empty state (Material no tiene row empty; lo dibujamos abajo) -->
       </table>
 
       @if (!dataSource.data || dataSource.data.length === 0) {
-        <div class="empty"><em>No hay ventas registradas</em></div>
+      <div class="empty"><em>No hay ventas registradas</em></div>
       }
 
       <mat-paginator [length]="sales.length" [pageSize]="10" (page)="onPage($event)"></mat-paginator>
