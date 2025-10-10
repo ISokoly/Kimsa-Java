@@ -149,6 +149,16 @@ button {
         font-weight: bold;
         text-align: center;
     }
+
+    tr {
+        &:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        &:hover td {
+            background: color.scale($primary-color, $lightness: 90%);
+        }
+    }
 }
 
 .filtros-usuarios {
@@ -261,6 +271,22 @@ button {
     }
 }
 
+.editar-contrasena {
+    margin-bottom: 10px;
+    text-align: center;
+
+    label {
+        color: $secondary-color;
+        font-size: 16px;
+        cursor: pointer;
+        text-decoration: underline;
+
+        &:hover {
+            color: color.scale($secondary-color, $lightness: -35%);
+        }
+    }
+}
+
 @media (max-width: 600px) {
     .form-grid {
         grid-template-columns: 1fr;
@@ -276,21 +302,5 @@ button {
     to {
         opacity: 1;
         transform: translate(-50%, -50%);
-    }
-}
-
-.editar-contrasena {
-    margin-bottom: 10px;
-    text-align: center;
-
-    label {
-        color: $secondary-color;
-        font-size: 16px;
-        cursor: pointer;
-        text-decoration: underline;
-
-        &:hover {
-            color: color.scale($secondary-color, $lightness: -35%);
-        }
     }
 }
