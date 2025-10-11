@@ -3,7 +3,6 @@
 
     <div class="ventas-grid">
         <div>
-            <!-- Datos de venta -->
             <table mat-table class="cliente-tabla">
                 <tr>
                     <th colspan="2" class="cabecera-principal-1">Datos de la venta</th>
@@ -40,34 +39,61 @@
                         </button>
                     </td>
                 </tr>
-
                 @if (!isGeneric) {
-                <tr>
-                    <td><strong>Nombre</strong></td>
-                    <td>
-                        <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
-                            <mat-label>Nombre del cliente</mat-label>
-                            <input matInput [(ngModel)]="customerName" placeholder="Nombre del cliente" />
-                        </mat-form-field>
-                    </td>
-                </tr>
-
                 <tr>
                     <td><strong>DNI</strong></td>
                     <td>
                         <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
                             <mat-label>DNI</mat-label>
-                            <input matInput [(ngModel)]="customerDni" placeholder="DNI" />
+
+                            <input matInput [(ngModel)]="customerDni" placeholder="DNI"
+                                (input)="onDniInput($any($event.target).value)"
+                            (ngModelChange)="onDniChange()"
+                            [matAutocomplete]="dniAuto"
+                            maxlength="8"
+                            (keypress)="soloNumeros($event)" />
+
+                            <mat-autocomplete #dniAuto="matAutocomplete"
+                                (optionSelected)="onDniSelected($event.option.value)">
+
+                                @for (c of dniSuggestions; track c.dni) {
+                                <mat-option [value]="c.dni">
+                                    {{ c.dni }} — {{ c.name }}
+                                </mat-option>
+                                }
+                            </mat-autocomplete>
+                        </mat-form-field>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Nombre</strong></td>
+                    <td>
+                        <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
+                            <mat-label>Nombre del cliente</mat-label>
+                            <input matInput [(ngModel)]="customerName" placeholder="Nombre del cliente"
+                                [disabled]="isExistingClient" /> <!-- ⬅️ aquí -->
                         </mat-form-field>
                     </td>
                 </tr>
+
+                <tr>
+                    <td><strong>Fecha de Nacimiento</strong></td>
+                    <td>
+                        <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
+                            <mat-label>Fecha de nacimiento</mat-label>
+                            <input matInput type="date" [(ngModel)]="customerBirthdate" [disabled]="isExistingClient" />
+                        </mat-form-field>
+                    </td>
+                </tr>
+
                 }
             </table>
 
             <!-- Carrito -->
             <table mat-table class="ventas-tabla">
                 <tr class="cabecera-principal-2">
-                    <th mat-header-cell >Producto</th>
+                    <th mat-header-cell>Producto</th>
                     <th mat-header-cell style="width:120px">Cantidad</th>
                     <th mat-header-cell style="width:140px">Precio</th>
                     <th mat-header-cell tyle="width:140px">Subtotal</th>
@@ -95,9 +121,9 @@
                             <input matInput type="number" min="1" [(ngModel)]="selectedQty" />
                         </mat-form-field>
                     </td>
-                    <td >—</td>
-                    <td >—</td>
-                    <td >
+                    <td>—</td>
+                    <td>—</td>
+                    <td>
                         <button mat-icon-button color="primary" (click)="addToCart()"><mat-icon>add</mat-icon></button>
                     </td>
                 </tr>
@@ -113,9 +139,9 @@
                                 (ngModelChange)="updateQty(item, $event)" />
                         </mat-form-field>
                     </td>
-                    <td >S/{{ item.unitPrice }}</td>
-                    <td >S/{{ item.subtotal }}</td>
-                    <td >
+                    <td>S/{{ item.unitPrice }}</td>
+                    <td>S/{{ item.subtotal }}</td>
+                    <td>
                         <button mat-icon-button color="warn"
                             (click)="removeItem(item)"><mat-icon>delete</mat-icon></button>
                     </td>

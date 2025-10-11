@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -160,12 +160,21 @@ export class ApiService {
     return this.http.get<any>(`${this.apiUrl}/clients/${id}`);
   }
 
-  getClientesByDNI(dni: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/clients/${dni}`);
+  getClientesByDNI(dni: string) {
+    return this.http
+      .get<any>(`${this.apiUrl}/clients/dni/${dni}`, { observe: 'response' })
+      .pipe(
+        map(res => (res.status === 204 ? null : res.body)),
+        catchError(() => of(null))
+      );
   }
 
   getClientesByNombre(name: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/clients/search?name=${encodeURIComponent(name)}`);
+  }
+
+  ensureCliente(data: { name: string; dni: string; birthdate: string }) {
+    return this.http.post<any>(`${this.apiUrl}/clients/ensure`, data);
   }
 
   createClientes(data: any): Observable<any> {

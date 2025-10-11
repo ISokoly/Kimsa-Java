@@ -73,11 +73,9 @@
           </td>
         </ng-container>
 
-        <!-- Header y Rows -->
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
 
-        <!-- Empty state (Material no tiene row empty; lo dibujamos abajo) -->
       </table>
 
       @if (!dataSource.data || dataSource.data.length === 0) {

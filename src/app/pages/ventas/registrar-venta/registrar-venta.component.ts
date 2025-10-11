@@ -10,63 +10,63 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
 const GENERIC_DNI = '00000001';
-
 type DayWeek = 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado' | 'Domingo' | 'General';
+
+type Product = { idProduct: number; name: string; price: number };
+type CartItem = { idProduct: number; name: string; unitPrice: number; quantity: number; subtotal: number; discountPct?: number };
+type Discount = { idProduct: number; percentage: number; typeDay: DayWeek; disabled: boolean };
 
 @Component({
   selector: 'app-registrar-venta',
   standalone: true,
-  imports: [
-    FormsModule,
-    RouterModule,
-    MatInputModule,
-    MatGridListModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatIconModule,
-    MatFormFieldModule
-  ],
+  imports: [FormsModule, RouterModule, MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule, MatIconModule, MatFormFieldModule, MatAutocompleteModule],
   templateUrl: './registrar-venta.component.html',
   styleUrls: ['./registrar-venta.component.scss']
 })
 export class RegistrarVentaComponent implements OnInit {
-  /* ==================== PROPIEDADES ==================== */
   saleId: number | null = null;
   isSaving = false;
-
   isGeneric = true;
+
+  isExistingClient = false;
   customerName = 'Cliente Genérico';
   customerDni = GENERIC_DNI;
-  currentCustomer: any = null;
+  customerBirthdate = '2000-01-01';
+  currentCustomer: { idClient: number; name: string; dni: string } | null = null;
 
   tables: any[] = [];
   selectedTableId: number | null = null;
 
-  products: Array<{ idProduct: number; name: string; price: number; }> = [];
+  products: Product[] = [];
   selectedProductId: number | null = null;
   selectedQty = 1;
-  cart: Array<{
-    idProduct: number; name: string; unitPrice: number; quantity: number; subtotal: number;
-    discountPct?: number
-  }> = [];
+  cart: CartItem[] = [];
 
-  private discounts: Array<{ idProduct: number; percentage: number; typeDay: DayWeek; disabled: boolean; }> = [];
+  private discounts: Discount[] = [];
   private saleRefDate: Date = new Date();
 
-  /* ==================== GETTERS ==================== */
-  get total(): number {
-    return this.cart.reduce((acc, it) => acc + (it.subtotal || 0), 0);
-  }
+  dniSuggestions: Array<{ dni: string; name: string; idClient?: number; birthdate?: string }> = [];
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router,) { }
+  private allClientsCache: Array<{ dni: string; name: string; idClient?: number; birthdate?: string }> = [];
+  private allClientsLoaded = false;
+  private dniSuggestTimer?: any;
 
+  // ---- getters
+  get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
+
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router) { }
+
+  // ======================================================
+  // ciclo de vida
+  // ======================================================
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      this.saleId = id ? +id : null;
+    this.route.paramMap.subscribe(p => {
+      this.saleId = p.get('id') ? +p.get('id')! : null;
       this.init();
+      this.onDniChange(); // primer check si viene pre-llenado
     });
   }
 
@@ -79,17 +79,21 @@ export class RegistrarVentaComponent implements OnInit {
       this.isGeneric = false;
       this.loadExistingSale(this.saleId);
     } else {
+      // venta nueva
       this.isGeneric = true;
-      this.customerName = 'Cliente Genérico';
-      this.customerDni = GENERIC_DNI;
+      this.setGenericCustomer();
       this.saleRefDate = new Date();
     }
   }
 
-  /* ==================== NAVEGACIÓN ==================== */
+  // ======================================================
+  // navegación
+  // ======================================================
   goBack(): void { this.router.navigate(['/view/ventas']); }
 
-  /* ==================== CARGA DE DATOS ==================== */
+  // ======================================================
+  // carga de datos (compacta)
+  // ======================================================
   loadTables(): void {
     this.api.getMesas().subscribe({
       next: (res: any[]) => this.tables = res || [],
@@ -99,30 +103,14 @@ export class RegistrarVentaComponent implements OnInit {
 
   loadProducts(): void {
     this.api.getProductos().subscribe({
-      next: (res: any) => {
-        const arr = Array.isArray(res) ? res : (res ? [res] : []);
-        this.products = arr.map((raw: any) => ({
-          idProduct: Number(raw?.idProduct ?? raw?.id_producto ?? raw?.id),
-          name: String(raw?.name ?? raw?.nombre ?? ''),
-          price: Number(raw?.price ?? raw?.precio ?? 0),
-        }));
-        if (this.products.length === 0) this.toast.mostrarMensaje('⚠️ No hay productos disponibles');
-      },
-      error: () => { this.toast.mostrarMensaje('❌ Error al cargar productos'); this.products = []; }
+      next: (res: any) => this.products = arr(res).map(this.mapProduct),
+      error: () => { this.products = []; this.toast.mostrarMensaje('❌ Error al cargar productos'); }
     });
   }
 
   loadDiscounts(): void {
     this.api.getDescuentos().subscribe({
-      next: (list: any[]) => {
-        const arr = Array.isArray(list) ? list : (list ? [list] : []);
-        this.discounts = arr.map(d => ({
-          idProduct: Number(d?.idProduct ?? d?.id_producto),
-          percentage: Number(d?.percentage ?? d?.porcentaje ?? 0),
-          typeDay: (String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek),
-          disabled: !!d?.disabled
-        }));
-      },
+      next: (list: any[]) => this.discounts = arr(list).map(this.mapDiscount).filter(d => d.idProduct),
       error: () => { this.discounts = []; }
     });
   }
@@ -130,36 +118,23 @@ export class RegistrarVentaComponent implements OnInit {
   loadExistingSale(id: number): void {
     this.api.getSaleById(id).subscribe({
       next: (sale: any) => {
-        this.selectedTableId = sale?.idTable ?? sale?.id_mesa ?? null;
-
-        const od = String(sale?.orderDate ?? sale?.fecha_pedido ?? '');
-        const ot = String(sale?.orderTime ?? sale?.hora_pedido ?? '00:00:00');
+        const od = String(sale?.orderDate ?? '');
+        const ot = String(sale?.orderTime ?? '00:00:00');
         this.saleRefDate = this.buildLocalDate(od, ot);
-
-        if (sale?.idClient) {
-          this.currentCustomer = { idClient: sale.idClient, name: sale.customerName ?? '', dni: sale.customerDni ?? '' };
-          this.customerName = this.currentCustomer.name || '';
-          this.customerDni = this.currentCustomer.dni || '';
+        this.selectedTableId = sale?.idTable ?? null;
+        const idClient = sale?.idClient ?? null;
+        if (idClient) {
+          this.api.getClientesById(idClient).subscribe({
+            next: (c: any) => this.applyLoadedClient(c),
+            error: () => this.setGenericCustomer()
+          });
+        } else {
+          this.setGenericCustomer();
         }
 
+        // detalles -> carrito
         this.api.getOrderDetailsByOrderId(id).subscribe({
-          next: (details: any[]) => {
-            this.cart = (details || []).map((d: any) => {
-              const idProduct = Number(d?.idProduct ?? d?.id_producto);
-              const prod = this.products.find(p => p.idProduct === idProduct);
-              const qty = Number(d?.quantity ?? d?.cantidad ?? 1);
-              const unitPrice = prod?.price ?? (Number(d?.subtotal) / Math.max(1, qty));
-              const pct = this.getDiscountPct(idProduct); // ⬅️ % del día
-              return {
-                idProduct,
-                name: prod?.name ?? `#${idProduct}`,
-                unitPrice,
-                quantity: qty,
-                subtotal: this.calcSubtotal(unitPrice, qty, pct),
-                discountPct: pct
-              };
-            });
-          },
+          next: (details: any[]) => this.cart = arr(details).map(this.mapDetailToCart, this),
           error: () => this.cart = []
         });
       },
@@ -167,142 +142,172 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
-  /* ==================== CREAR / ACTUALIZAR ==================== */
+  // ======================================================
+  // crear / actualizar (payload unificado)
+  // ======================================================
   async saveSale(): Promise<void> {
-    if (!this.selectedTableId) {
-      this.toast.mostrarMensaje('⚠️ Seleccione una mesa');
-      return;
-    }
-    if (!this.cart.length) {
-      this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
-      return;
-    }
+    if (!this.selectedTableId) return this.toast.mostrarMensaje('⚠️ Seleccione una mesa');
+    if (!this.cart.length) return this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
 
     this.isSaving = true;
     try {
-      const customer = await this.ensureCustomer();
+      const customer = await this.ensureCustomer();  // usa /ensure del backend
       const user = this.api.getUsuarioActual?.();
-      const idUser = user?.idUser ?? user?.id_usuario ?? 1;
+      const idUser = toNum(user?.idUser ?? user?.id_usuario ?? 1);
 
-      // Armar payload general
       const payload = {
         idClient: customer.idClient,
         idUser,
         idTable: this.selectedTableId,
-        items: this.cart.map(i => ({
-          idProduct: i.idProduct,
-          quantity: i.quantity
-        }))
+        items: this.cart.map(i => ({ idProduct: i.idProduct, quantity: i.quantity }))
       };
 
-      if (this.saleId) {
-        // === ACTUALIZAR VENTA EXISTENTE ===
-        this.api.updateSale(this.saleId, payload).subscribe({
-          next: () => {
-            this.toast.mostrarMensaje('✅ Venta actualizada correctamente');
-            this.router.navigate(['/view/ventas']);
-          },
-          error: (err) => {
-            console.error('[VENTAS] Error al actualizar:', err);
-            this.toast.mostrarMensaje('❌ Error al actualizar la venta');
-          }
-        });
-      } else {
-        // === CREAR NUEVA VENTA ===
-        this.api.createSale(payload).subscribe({
-          next: () => {
-            this.toast.mostrarMensaje('✅ Venta registrada correctamente');
-            this.router.navigate(['/view/ventas']);
-          },
-          error: (err) => {
-            console.error('[VENTAS] Error al crear:', err);
-            this.toast.mostrarMensaje('❌ Error al registrar la venta');
-          }
-        });
-      }
-    } catch (err: any) {
-      this.toast.mostrarMensaje('❌ ' + (err?.toString?.() ?? 'Error al validar cliente'));
+      const req$ = this.saleId ? this.api.updateSale(this.saleId, payload) : this.api.createSale(payload);
+      req$.subscribe({
+        next: () => {
+          this.toast.mostrarMensaje(this.saleId ? '✅ Venta actualizada correctamente' : '✅ Venta registrada correctamente');
+          this.router.navigate(['/view/ventas']);
+        },
+        error: () => this.toast.mostrarMensaje(this.saleId ? '❌ Error al actualizar la venta' : '❌ Error al registrar la venta')
+      });
+    } catch (e: any) {
+      this.toast.mostrarMensaje('❌ ' + (e?.toString?.() ?? 'Error al validar cliente'));
     } finally {
       this.isSaving = false;
     }
   }
 
-
-  /* ==================== UTILIDADES ==================== */
   toggleGeneric(): void {
     this.isGeneric = !this.isGeneric;
-    if (this.isGeneric) {
-      this.customerName = 'Cliente Genérico';
-      this.customerDni = GENERIC_DNI;
-      this.currentCustomer = null;
-    } else {
-      this.customerName = '';
-      this.customerDni = '';
-      this.currentCustomer = null;
-    }
+    this.isGeneric ? this.setGenericCustomer() : this.clearCustomer();
   }
 
-  ensureCustomer(): Promise<any> {
+  onDniChange(): void {
+    const dni = (this.customerDni || '').trim();
+    if (!dni || dni.length < 8 || this.isGeneric) { this.isExistingClient = false; return; }
+
+    this.api.getClientesByDNI(dni).subscribe({
+      next: (c: any | null) => {
+        if (c?.idClient) {
+          this.isExistingClient = true;
+          this.applyLoadedClient(c);
+        } else {
+          this.isExistingClient = false; // no existe -> listo para crear
+        }
+      },
+      error: () => { this.isExistingClient = false; } // evita 404 en consola
+    });
+  }
+
+  ensureCustomer(): Promise<{ idClient: number; name: string; dni: string }> {
     return new Promise((resolve, reject) => {
-      const dni = (this.customerDni || '').trim();
-      const name = (this.customerName || '').trim();
+      if (this.isGeneric && this.currentCustomer?.idClient) return resolve(this.currentCustomer);
 
-      if (this.isGeneric) {
-        this.api.getClientesByDNI(GENERIC_DNI).subscribe({
-          next: (c: any) => {
-            const out = { idClient: c.idClient, name: c.name, dni: c.dni };
-            this.currentCustomer = out; resolve(out);
-          },
-          error: () => reject(`No existe cliente genérico (DNI ${GENERIC_DNI}).`)
-        });
-        return;
-      }
+      const dni = (this.isGeneric ? GENERIC_DNI : (this.customerDni || '').trim());
+      const name = (this.isGeneric ? 'Cliente Genérico' : (this.customerName || '').trim());
+      const birthdate = this.customerBirthdate || '2000-01-01';
 
-      this.api.getClientesByDNI(dni).subscribe({
-        next: (found: any) => {
-          if (found?.idClient) {
-            const out = { idClient: found.idClient, name: found.name, dni: found.dni };
-            this.currentCustomer = out; resolve(out);
-          } else {
-            if (!dni || !name) return reject('Complete nombre y DNI.');
-            this.api.createClientes({ name, dni, birthdate: '2000-01-01' }).subscribe({
-              next: () => {
-                this.api.getClientesByDNI(dni).subscribe((nuevo: any) => {
-                  const out = { idClient: nuevo.idClient, name: nuevo.name, dni: nuevo.dni };
-                  this.currentCustomer = out; resolve(out);
-                });
-              },
-              error: () => reject('No se pudo crear el cliente.')
-            });
-          }
+      if (!dni || !name) return reject('⚠️ Complete nombre y DNI del cliente.');
+
+      this.api.ensureCliente({ name, dni, birthdate }).subscribe({
+        next: (c: any) => {
+          if (c?.idClient) {
+            this.currentCustomer = { idClient: c.idClient, name: c.name, dni: c.dni };
+            resolve(this.currentCustomer);
+          } else reject('❌ Respuesta inválida del servidor al asegurar cliente.');
         },
-        error: () => reject('Error al validar DNI.')
+        error: () => reject('❌ No se pudo asegurar/obtener el cliente.')
       });
     });
   }
 
+  private setGenericCustomer(): void {
+    this.isGeneric = true;
+    this.isExistingClient = true;
+    this.customerName = 'Cliente Genérico';
+    this.customerDni = GENERIC_DNI;
+    this.customerBirthdate = '2000-01-01';
+    this.currentCustomer = null; // se fijará en ensureCustomer
+  }
+
+  private clearCustomer(): void {
+    this.isExistingClient = false;
+    this.customerName = '';
+    this.customerDni = '';
+    this.customerBirthdate = '2000-01-01';
+    this.currentCustomer = null;
+  }
+
+  private applyLoadedClient(c: any): void {
+    if (!c) return this.setGenericCustomer();
+    const isGeneric = String(c?.dni) === GENERIC_DNI;
+    this.isGeneric = isGeneric;
+    this.isExistingClient = true;
+    this.currentCustomer = { idClient: toNum(c.idClient), name: String(c.name ?? ''), dni: String(c.dni ?? '') };
+    this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name;
+    this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni;
+    this.customerBirthdate = c?.birthdate ?? '2000-01-01';
+  }
+
+  // ======================================================
+  // carrito (compacto)
+  // ======================================================
+  addToCart(): void {
+    if (!this.selectedProductId || this.selectedQty <= 0) return;
+    const prod = this.products.find(p => p.idProduct === this.selectedProductId);
+    if (!prod) return;
+
+    const pct = this.getDiscountPct(prod.idProduct);
+    const existing = this.cart.find(i => i.idProduct === prod.idProduct);
+
+    if (existing) {
+      existing.quantity += this.selectedQty;
+      existing.discountPct = pct;
+      existing.subtotal = subTotal(existing.unitPrice, existing.quantity, pct);
+    } else {
+      this.cart.push({
+        idProduct: prod.idProduct,
+        name: prod.name,
+        unitPrice: prod.price,
+        quantity: this.selectedQty,
+        discountPct: pct,
+        subtotal: subTotal(prod.price, this.selectedQty, pct)
+      });
+    }
+
+    this.selectedProductId = null;
+    this.selectedQty = 1;
+  }
+
+  updateQty(item: CartItem, qty: number): void {
+    item.quantity = Math.max(1, Math.floor(toNum(qty) || 1));
+    const pct = this.getDiscountPct(item.idProduct);
+    item.discountPct = pct;
+    item.subtotal = subTotal(item.unitPrice, item.quantity, pct);
+  }
+
+  removeItem(item: CartItem): void { this.cart = this.cart.filter(i => i !== item); }
+  clearCart(): void { this.cart = []; }
+
+  soloNumeros(e: KeyboardEvent): void {
+    const ok = /^\d$/.test(e.key) || ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+    if (!ok) e.preventDefault();
+  }
+
+  // ======================================================
+  // descuentos / fechas / mapeos (helpers compactos)
+  // ======================================================
   private limaDayName(date: Date): DayWeek {
-    const name = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' })
-      .format(date);
-    const cap = name.charAt(0).toUpperCase() + name.slice(1); // 'lunes' -> 'Lunes'
-    return (cap as DayWeek);
+    const name = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
+    return (name.charAt(0).toUpperCase() + name.slice(1)) as DayWeek;
   }
 
   private getDiscountPct(productId: number): number {
     const today = this.limaDayName(this.saleRefDate);
     const active = this.discounts.filter(d => !d.disabled && d.idProduct === productId);
-    const daySpecific = active.filter(d => d.typeDay !== 'General' && d.typeDay === today);
-    const general = active.filter(d => d.typeDay === 'General');
-
-    const pickFrom = daySpecific.length ? daySpecific : general;
-    if (!pickFrom.length) return 0;
-
-    return Math.max(...pickFrom.map(d => d.percentage || 0));
-  }
-
-  private calcSubtotal(unitPrice: number, qty: number, pct: number): number {
-    const base = (unitPrice || 0) * Math.max(1, qty || 1);
-    return Math.round(base * (1 - (pct / 100)) * 100) / 100;
+    const pick = active.filter(d => d.typeDay !== 'General' && d.typeDay === today);
+    const bag = pick.length ? pick : active.filter(d => d.typeDay === 'General');
+    return bag.length ? Math.max(...bag.map(d => d.percentage || 0)) : 0;
   }
 
   private buildLocalDate(orderDate: string, orderTime?: string): Date {
@@ -316,46 +321,105 @@ export class RegistrarVentaComponent implements OnInit {
     return new Date(y, (m - 1), d, hh, mm, ss, ms);
   }
 
-  addToCart(): void {
-    if (!this.selectedProductId || this.selectedQty <= 0) return;
-    const prod = this.products.find(p => p.idProduct === this.selectedProductId);
-    if (!prod) return;
+  private mapProduct = (raw: any): Product => ({
+    idProduct: toNum(raw?.idProduct ?? raw?.id_producto ?? raw?.id),
+    name: String(raw?.name ?? raw?.nombre ?? ''),
+    price: toNum(raw?.price ?? raw?.precio ?? 0)
+  });
 
-    const pct = this.getDiscountPct(prod.idProduct);
-    const existing = this.cart.find(i => i.idProduct === prod.idProduct);
+  private mapDiscount = (d: any): Discount => ({
+    idProduct: toNum(d?.idProduct ?? d?.id_producto),
+    percentage: toNum(d?.percentage ?? d?.porcentaje ?? 0),
+    typeDay: String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek,
+    disabled: !!d?.disabled
+  });
 
-    if (existing) {
-      existing.quantity += this.selectedQty;
-      existing.discountPct = pct; // mostrar el % vigente
-      existing.subtotal = this.calcSubtotal(existing.unitPrice, existing.quantity, pct);
-    } else {
-      this.cart.push({
-        idProduct: prod.idProduct,
-        name: prod.name,
-        unitPrice: prod.price,
-        quantity: this.selectedQty,
-        discountPct: pct,
-        subtotal: this.calcSubtotal(prod.price, this.selectedQty, pct)
-      });
+  private mapDetailToCart(d: any): CartItem {
+    const idProduct = toNum(d?.idProduct ?? d?.id_producto);
+    const prod = this.products.find(p => p.idProduct === idProduct);
+    const qty = toNum(d?.quantity ?? d?.cantidad ?? 1);
+    const unit = prod?.price ?? (toNum(d?.subtotal) / Math.max(1, qty));
+    const pct = this.getDiscountPct(idProduct);
+    return {
+      idProduct,
+      name: prod?.name ?? `#${idProduct}`,
+      unitPrice: unit,
+      quantity: qty,
+      discountPct: pct,
+      subtotal: subTotal(unit, qty, pct)
+    };
+  }
+
+  onDniInput(term: string): void {
+    const q = (term || '').trim();
+    this.customerDni = q;
+
+    if (q.length < 1) {
+      this.dniSuggestions = [];
+      return;
     }
 
-    this.selectedProductId = null;
-    this.selectedQty = 1;
+    if (this.dniSuggestTimer) clearTimeout(this.dniSuggestTimer);
+    this.dniSuggestTimer = setTimeout(() => this.fetchDniSuggestions(q), 200);
   }
 
-  updateQty(item: any, qty: number): void {
-    const q = Math.max(1, Math.floor(Number(qty) || 1));
-    item.quantity = q;
-    const pct = this.getDiscountPct(item.idProduct);
-    item.discountPct = pct;
-    item.subtotal = this.calcSubtotal(item.unitPrice, item.quantity, pct);
+  /** Cuando el usuario escoge una opción del autocomplete */
+  onDniSelected(dni: string): void {
+    this.customerDni = dni;
+    // dispara la lógica que ya tienes (carga nombre, birthdate, flags, etc.)
+    this.onDniChange();
   }
 
-  removeItem(item: any): void {
-    this.cart = this.cart.filter(i => i !== item);
-  }
+  private fetchDniSuggestions(prefix: string): void {
+    const doFilter = () => {
+      const p = prefix.toLowerCase();
+      this.dniSuggestions = this.allClientsCache
+        .filter(c => c.dni?.toLowerCase().startsWith(p))
+        .slice(0, 10); // limita la lista
+    };
 
-  clearCart(): void {
-    this.cart = [];
+    if (this.allClientsLoaded) {
+      doFilter();
+      return;
+    }
+
+    const list$ =
+      (this.api as any).getAllClientes?.() ||
+      (this.api as any).getClientes?.(); // fallback si tu método se llama distinto
+
+    if (!list$) {
+      this.allClientsLoaded = true;
+      this.allClientsCache = [];
+      this.dniSuggestions = [];
+      return;
+    }
+
+    list$.subscribe({
+      next: (arr: any[]) => {
+        const list = Array.isArray(arr) ? arr : [];
+        this.allClientsCache = list.map(c => ({
+          idClient: c?.idClient ?? c?.id_cliente,
+          name: String(c?.name ?? c?.nombre ?? ''),
+          dni: String(c?.dni ?? ''),
+          birthdate: c?.birthdate ?? c?.fecha_nacimiento
+        })).filter(c => !!c.dni);
+        this.allClientsLoaded = true;
+        doFilter();
+      },
+      error: () => {
+        this.allClientsLoaded = true;
+        this.allClientsCache = [];
+        this.dniSuggestions = [];
+      }
+    });
   }
 }
+
+/* ==================== helpers puros (reusables) ==================== */
+function toNum(v: any, def = 0): number { const n = Number(v); return Number.isFinite(n) ? n : def; }
+function arr<T = any>(v: any): T[] { return Array.isArray(v) ? v : (v ? [v] : []); }
+function subTotal(unit: number, qty: number, pct: number): number {
+  const base = (unit || 0) * Math.max(1, qty || 1);
+  return Math.round(base * (1 - (toNum(pct) / 100)) * 100) / 100;
+}
+

@@ -33,27 +33,28 @@ mat-form-field {
     width: 100%;
   }
 
-  // ===== TABLAS =====
   table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
     overflow: hidden;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 
     th {
       background: $primary-color;
       color: #fff;
-      padding: 12px 10px;
-
       text-align: center;
+
+      padding: 18px 10px; // antes 12px
+      letter-spacing: 0.3px;
     }
 
     td {
       padding: 12px 10px;
       text-align: center;
       border-bottom: 1px solid #ddd;
+      vertical-align: middle;
     }
 
     .fila-sin-datos {
@@ -69,7 +70,6 @@ mat-form-field {
     }
   }
 
-  // ===== TABLA CLIENTE =====
   .cliente-tabla {
     width: 100%;
     background: #fff;
@@ -80,8 +80,8 @@ mat-form-field {
       background: $secondary-color;
       color: #fff;
       text-align: center;
-      padding: 12px;
-      font-size: 1rem;
+      padding: 20px 12px;
+      font-size: 0.9rem;
     }
 
     td {
@@ -101,16 +101,17 @@ mat-form-field {
     }
   }
 
-  // ===== TABLA PRODUCTOS =====
   .ventas-tabla {
     width: 100%;
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
 
-    th.cabecera-principal-2 {
+    .cabecera-principal-2 th {
       background: $primary-color;
       color: #fff;
+      padding: 20px 10px;
+      font-size: 0.9rem;
     }
 
     button {
@@ -130,7 +131,6 @@ mat-form-field {
     }
   }
 
-  // ===== IMAGEN =====
   .imagen-contenedor {
     display: flex;
     justify-content: center;
@@ -149,7 +149,6 @@ mat-form-field {
     }
   }
 
-  // ===== BOTONES =====
   .contenedor-boton {
     display: flex;
     flex-direction: column;
@@ -181,7 +180,6 @@ mat-form-field {
     }
   }
 
-  // ===== RESPONSIVE =====
   @media (max-width: 900px) {
     .ventas-grid {
       grid-template-columns: 1fr;
@@ -205,10 +203,6 @@ mat-form-field {
   .mat-mdc-text-field-wrapper {
     border-radius: 8px;
     background: #fff;
-  }
-
-  input {
-    font-size: 14px;
   }
 }
 
