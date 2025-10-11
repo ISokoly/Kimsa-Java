@@ -14,9 +14,8 @@ $bg-color: #f9f9f9;
   h1.titulo {
     color: $primary-color;
     border-bottom: 2px dashed $primary-color;
-    -bottom: 8px;
+    padding-bottom: 8px;
     text-align: center;
-    margin-top: 0;
   }
 
   mat-form-field {
@@ -91,6 +90,47 @@ $bg-color: #f9f9f9;
   color: #666;
 }
 
+.filtros-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: -20px;
+
+  .filtro-item {
+    min-width: 220px;
+  }
+
+  .flex-grow {
+    flex: 1 1 320px;
+  }
+}
+
+.chips-row {
+  margin-bottom: 8px;
+
+  mat-chip {
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+}
+
+.boton-limpiar {
+  margin-bottom: 15px;
+  margin-top: -20px;
+
+  button[mat-raised-button] {
+    align-self: flex-end;
+    height: 48px;
+    color: white;
+    font-weight: bold;
+    background: color.scale($primary-color, $lightness: 25%);
+    &:hover {
+    background: color.scale($primary-color, $lightness: 15%);
+    }
+  }
+}
+
 mat-paginator {
   margin-top: 8px;
   border-radius: 8px;
@@ -99,8 +139,8 @@ mat-paginator {
 }
 
 .opciones-botones {
-  display: flex; // usa flex normal en vez de inline-flex
-  justify-content: center; // centra horizontalmente
+  display: flex; 
+  justify-content: center;
   gap: 8px;
 
   button {

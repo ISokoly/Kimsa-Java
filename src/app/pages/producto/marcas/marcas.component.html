@@ -43,7 +43,7 @@
           <button class="icon-button edit-btn" (click)="editMarca(marca)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button class="icon-button x-btn" (click)="deleteMarca(marca.idBrand)">
+          <button class="icon-button x-btn" (click)="deleteMarca(marca.idBrand)" [disabled]="marca.idBrand == null">
             <mat-icon>cancel</mat-icon>
           </button>
         </span>

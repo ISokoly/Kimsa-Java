@@ -1,12 +1,53 @@
 <div class="ventas-container">
   <h1 class="titulo">Ventas</h1>
 
-  <mat-form-field appearance="fill">
-    <mat-label>Seleccionar Fecha</mat-label>
-    <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" (dateChange)="filterByDate()" />
-    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-    <mat-datepicker #picker></mat-datepicker>
-  </mat-form-field>
+  <div class="filtros-row">
+    <!-- Fecha -->
+    <mat-form-field appearance="fill" class="filtro-item">
+      <mat-label>Seleccionar Fecha</mat-label>
+      <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" (dateChange)="loadSales()" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <!-- Estado -->
+    <mat-form-field appearance="fill" class="filtro-item">
+      <mat-label>Estado</mat-label>
+      <mat-select [(ngModel)]="statusFilter" (selectionChange)="onStatusChange()">
+        <mat-option value="All">Todos</mat-option>
+        <mat-option value="Pending">Pending</mat-option>
+        <mat-option value="Confirmed">Confirmed</mat-option>
+        <mat-option value="Canceled">Canceled</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Productos (multi con coma + autocomplete) -->
+    <mat-form-field appearance="fill" class="filtro-item flex-grow">
+      <mat-label>Filtrar por producto(s)</mat-label>
+      <input matInput [matAutocomplete]="prodAuto" [ngModel]="productQuery"
+        (ngModelChange)="onProductFilterInput($event)" placeholder="Escribe y separa con coma (,) para agregar" />
+      <mat-autocomplete #prodAuto="matAutocomplete" (optionSelected)="onProductSuggestionSelected($event.option.value)">
+        @for (p of productSuggestions; track p) {
+        <mat-option [value]="p">{{ p }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <div class="boton-limpiar">
+          <button mat-raised-button color="primary" (click)="clearAllFilters()">Limpiar</button>
+
+    </div>
+  </div>
+
+  <div class="chips-row">
+    <mat-chip-listbox>
+      <mat-chip *ngFor="let name of selectedProductNames" (removed)="removeSelectedProduct(name)" removable>
+        {{ name }}
+        <button matChipRemove aria-label="Remover">×</button>
+      </mat-chip>
+    </mat-chip-listbox>
+  </div>
+
 
   <div class="ventas-grid">
     <div>
@@ -65,8 +106,7 @@
                 <mat-icon>edit</mat-icon>
               </button>
 
-              <button class="pay-btn" (click)="paySale(row)"
-                [disabled]="row.status === 'Canceled' || row.total == 0">
+              <button class="pay-btn" (click)="paySale(row)" [disabled]="row.status === 'Canceled' || row.total == 0">
                 <mat-icon>attach_money</mat-icon>
               </button>
             </div>

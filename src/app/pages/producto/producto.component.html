@@ -4,16 +4,29 @@
     <div class="filtros">
       <div style="display: flex; gap: 10px; align-items: center;">
         <mat-form-field appearance="fill" style="flex: 1;">
-          <mat-label>Buscar producto</mat-label>
-          <input matInput [(ngModel)]="filtro"
-            [placeholder]="tipoFiltro === 'nombre' ? 'Ingrese nombre...' : 'Ingrese marca...'" />
+          <mat-label>
+            {{ !tipoFiltro ? 'Seleccione tipo de búsqueda' : (tipoFiltro === 'nombre' ? 'Buscar producto' : 'Buscar
+            marca') }}
+          </mat-label>
+
+          <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="filtro"
+            (ngModelChange)="onFiltroTyping($event)"
+            [placeholder]="!tipoFiltro ? 'Primero elige: Producto o Marca' : (tipoFiltro === 'nombre' ? 'Ingrese nombre...' : 'Ingrese marca...')"
+            autocomplete="off" />
+
+          <mat-autocomplete #autoBusq="matAutocomplete" (optionSelected)="onFiltroSugSelected($event.option.value)">
+            @for (s of filtroSugs; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-autocomplete>
         </mat-form-field>
 
+        <!-- SELECT de tipo (producto/marca) -->
         <mat-form-field appearance="fill" style="width: 30%;">
           <mat-label>Buscar por</mat-label>
-          <mat-select [(ngModel)]="tipoFiltro">
-            <mat-option value="nombre">Nombre</mat-option>
-            <mat-option value="marca">Marca</mat-option>
+          <mat-select [(ngModel)]="tipoFiltro" (selectionChange)="onTipoFiltroChange()">
+            <mat-option [value]="'nombre'">Nombre</mat-option>
+            <mat-option [value]="'marca'">Marca</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -41,7 +54,9 @@
 
         <div class="actions">
           <button class="form-btn-verde" (click)="editProducto(p)" [disabled]="isLoading">Editar</button>
-          <button class="form-btn-rojo" (click)="deshabilitar(p.idProduct)" [disabled]="isLoading">Deshabilitar</button>
+          <button class="form-btn-rojo" (click)="deshabilitar(p)" [disabled]="isLoading">
+            Deshabilitar
+          </button>
         </div>
       </div>
       }
@@ -74,8 +89,8 @@
     }
     @if (mostrarCaracteristicasProducto) {
     @if (selectedProducto) {
-    <app-caracteristicas-producto [productoSeleccionado]="selectedProducto?.idProduct"
-      [categoriaSeleccionada]="selectedProducto?.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
+    <app-caracteristicas-producto [productoSeleccionado]="selectedProducto.idProduct"
+      [categoriaSeleccionada]="selectedProducto.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
     </app-caracteristicas-producto>
     }}
   </div>

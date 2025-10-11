@@ -10,6 +10,8 @@ import { MatListModule } from "@angular/material/list";
 import { CommonModule } from '@angular/common';
 import { HoverScrollDirective } from "../../../core/services/hover-scroll.directive";
 
+type BrandLite = { idBrand?: number; name: string; category: number | null };
+
 @Component({
   selector: 'app-marcas',
   standalone: true,
@@ -34,9 +36,9 @@ export class MarcasComponent implements OnInit {
   @Input() soloFormulario: boolean = false;
   @Output() marcaDeleted = new EventEmitter<number>();
 
-  marcas: any[] = [];
-  formMarca = { name: '', category: 0 as number | null };
-  selectedMarca: any = null;
+  marcas: BrandLite[] = [];
+  formMarca: BrandLite = { name: '', category: null };
+  selectedMarca: BrandLite | null = null;
 
   mostrarFormularioAgregarMarca = false;
 
@@ -55,24 +57,25 @@ export class MarcasComponent implements OnInit {
   /* ==================== CARGA DE DATOS ==================== */
   loadMarcas(): void {
     this.apiService.getMarcas().subscribe((data: any[]) => {
-      if (this.currentCategoryId !== null && this.currentCategoryId !== undefined) {
-        this.marcas = data.filter(m => m.category === this.currentCategoryId);
-      } else {
-        this.marcas = data;
-      }
+      const todas: BrandLite[] = (data || []).map(m => ({
+        idBrand: Number(m?.idBrand ?? m?.id ?? 0),
+        name: String(m?.name ?? ''),
+        category: Number(m?.category ?? m?.idCategory ?? 0)
+      }));
+      this.marcas = (this.currentCategoryId != null)
+        ? todas.filter(m => m.category === this.currentCategoryId)
+        : todas;
     });
   }
 
   /* ==================== CREAR / ACTUALIZAR ==================== */
   createMarca(): void {
-    if (!this.formMarca.name.trim()) {
-      this.toastService.mostrarMensaje('❌ El nombre de la marca es obligatorio.');
+    if (!this.formMarca.name.trim() || this.formMarca.category == null) {
+      this.toastService.mostrarMensaje('❌ Nombre y categoría son obligatorios.');
       return;
     }
-
-    this.formMarca.category = this.currentCategoryId;
-
-    this.apiService.createMarca(this.formMarca).subscribe(() => {
+    const payload = { name: this.formMarca.name.trim(), category: this.currentCategoryId };
+    this.apiService.createMarca(payload).subscribe(() => {
       this.toastService.mostrarMensaje('✅ Marca creada correctamente');
       this.loadMarcas();
       this.cancelEditMarca();
@@ -80,28 +83,26 @@ export class MarcasComponent implements OnInit {
   }
 
   updateMarca(): void {
-    if (!this.formMarca.name.trim()) {
-      this.toastService.mostrarMensaje('❌ El nombre de la marca es obligatorio.');
+    if (!this.selectedMarca?.idBrand) return;
+    if (!this.formMarca.name.trim() || this.formMarca.category == null) {
+      this.toastService.mostrarMensaje('❌ Nombre y categoría son obligatorios.');
       return;
     }
-
-    if (!this.selectedMarca) return;
-
-    this.formMarca.category = this.currentCategoryId;
-
-    this.apiService.updateMarca(this.selectedMarca.idBrand, this.formMarca).subscribe(() => {
+    const payload = { name: this.formMarca.name.trim(), category: this.currentCategoryId };
+    this.apiService.updateMarca(this.selectedMarca.idBrand, payload).subscribe(() => {
       this.toastService.mostrarMensaje('✅ Marca actualizada correctamente');
       this.loadMarcas();
       this.cancelEditMarca();
     });
   }
 
+
   /* ==================== FORMULARIO ==================== */
-  abrirFormularioAgregarMarca(marca: any = null): void {
-    this.selectedMarca = marca;
+  abrirFormularioAgregarMarca(marca: BrandLite | null = null): void {
+    this.selectedMarca = marca ?? null;
     this.formMarca = marca
-      ? { ...marca }
-      : { name: '', category: this.currentCategoryId };
+      ? { name: marca.name, category: this.currentCategoryId ?? marca.category ?? null }
+      : { name: '', category: this.currentCategoryId ?? null };
     this.mostrarFormularioAgregarMarca = true;
   }
 
@@ -114,13 +115,9 @@ export class MarcasComponent implements OnInit {
 
   cancelEditMarca(): void {
     this.selectedMarca = null;
-    this.formMarca = { name: '', category: this.currentCategoryId };
+    this.formMarca = { name: '', category: this.currentCategoryId ?? null };
     this.mostrarFormularioAgregarMarca = false;
-
-    if (this.soloFormulario) {
-      this.closed.emit();
-    }
-
+    if (this.soloFormulario) this.closed.emit();
     this.loadMarcas();
   }
 
@@ -130,7 +127,11 @@ export class MarcasComponent implements OnInit {
     this.abrirFormularioAgregarMarca(marca);
   }
 
-  deleteMarca(idBrand: number): void {
+  deleteMarca(idBrand: number | undefined): void {
+    if (idBrand == null) {
+      this.toastService.mostrarMensaje('❌ Marca inválida (sin id).');
+      return;
+    }
     this.apiService.deleteMarca(idBrand).subscribe(() => {
       this.toastService.mostrarMensaje('✅ Marca eliminada correctamente');
       this.loadMarcas();

@@ -27,6 +27,8 @@ type Discount = { idProduct: number; percentage: number; typeDay: DayWeek; disab
   styleUrls: ['./registrar-venta.component.scss']
 })
 export class RegistrarVentaComponent implements OnInit {
+
+  /* ==================== DATOS ==================== */
   saleId: number | null = null;
   isSaving = false;
   isGeneric = true;
@@ -54,19 +56,17 @@ export class RegistrarVentaComponent implements OnInit {
   private allClientsLoaded = false;
   private dniSuggestTimer?: any;
 
-  // ---- getters
   get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
 
+  /* ==================== CONSTRUCTOR ==================== */
   constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router) { }
 
-  // ======================================================
-  // ciclo de vida
-  // ======================================================
+  /* ==================== CICLO DE VIDA ==================== */
   ngOnInit(): void {
     this.route.paramMap.subscribe(p => {
       this.saleId = p.get('id') ? +p.get('id')! : null;
       this.init();
-      this.onDniChange(); // primer check si viene pre-llenado
+      this.onDniChange();
     });
   }
 
@@ -79,21 +79,16 @@ export class RegistrarVentaComponent implements OnInit {
       this.isGeneric = false;
       this.loadExistingSale(this.saleId);
     } else {
-      // venta nueva
       this.isGeneric = true;
       this.setGenericCustomer();
       this.saleRefDate = new Date();
     }
   }
 
-  // ======================================================
-  // navegación
-  // ======================================================
+  /* ==================== NAVEGACIÓN ==================== */
   goBack(): void { this.router.navigate(['/view/ventas']); }
 
-  // ======================================================
-  // carga de datos (compacta)
-  // ======================================================
+  /* ==================== CARGA DE DATOS ==================== */
   loadTables(): void {
     this.api.getMesas().subscribe({
       next: (res: any[]) => this.tables = res || [],
@@ -132,7 +127,6 @@ export class RegistrarVentaComponent implements OnInit {
           this.setGenericCustomer();
         }
 
-        // detalles -> carrito
         this.api.getOrderDetailsByOrderId(id).subscribe({
           next: (details: any[]) => this.cart = arr(details).map(this.mapDetailToCart, this),
           error: () => this.cart = []
@@ -142,16 +136,14 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
-  // ======================================================
-  // crear / actualizar (payload unificado)
-  // ======================================================
+  /* ==================== CREAR / ACTUALIZAR ==================== */
   async saveSale(): Promise<void> {
     if (!this.selectedTableId) return this.toast.mostrarMensaje('⚠️ Seleccione una mesa');
     if (!this.cart.length) return this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
 
     this.isSaving = true;
     try {
-      const customer = await this.ensureCustomer();  // usa /ensure del backend
+      const customer = await this.ensureCustomer();
       const user = this.api.getUsuarioActual?.();
       const idUser = toNum(user?.idUser ?? user?.id_usuario ?? 1);
 
@@ -177,6 +169,7 @@ export class RegistrarVentaComponent implements OnInit {
     }
   }
 
+  /* ==================== UTILIDADES ==================== */
   toggleGeneric(): void {
     this.isGeneric = !this.isGeneric;
     this.isGeneric ? this.setGenericCustomer() : this.clearCustomer();
@@ -192,10 +185,10 @@ export class RegistrarVentaComponent implements OnInit {
           this.isExistingClient = true;
           this.applyLoadedClient(c);
         } else {
-          this.isExistingClient = false; // no existe -> listo para crear
+          this.isExistingClient = false;
         }
       },
-      error: () => { this.isExistingClient = false; } // evita 404 en consola
+      error: () => { this.isExistingClient = false; }
     });
   }
 
@@ -227,7 +220,7 @@ export class RegistrarVentaComponent implements OnInit {
     this.customerName = 'Cliente Genérico';
     this.customerDni = GENERIC_DNI;
     this.customerBirthdate = '2000-01-01';
-    this.currentCustomer = null; // se fijará en ensureCustomer
+    this.currentCustomer = null;
   }
 
   private clearCustomer(): void {
@@ -249,9 +242,6 @@ export class RegistrarVentaComponent implements OnInit {
     this.customerBirthdate = c?.birthdate ?? '2000-01-01';
   }
 
-  // ======================================================
-  // carrito (compacto)
-  // ======================================================
   addToCart(): void {
     if (!this.selectedProductId || this.selectedQty <= 0) return;
     const prod = this.products.find(p => p.idProduct === this.selectedProductId);
@@ -294,9 +284,7 @@ export class RegistrarVentaComponent implements OnInit {
     if (!ok) e.preventDefault();
   }
 
-  // ======================================================
-  // descuentos / fechas / mapeos (helpers compactos)
-  // ======================================================
+
   private limaDayName(date: Date): DayWeek {
     const name = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
     return (name.charAt(0).toUpperCase() + name.slice(1)) as DayWeek;
@@ -363,10 +351,8 @@ export class RegistrarVentaComponent implements OnInit {
     this.dniSuggestTimer = setTimeout(() => this.fetchDniSuggestions(q), 200);
   }
 
-  /** Cuando el usuario escoge una opción del autocomplete */
   onDniSelected(dni: string): void {
     this.customerDni = dni;
-    // dispara la lógica que ya tienes (carga nombre, birthdate, flags, etc.)
     this.onDniChange();
   }
 
@@ -375,7 +361,7 @@ export class RegistrarVentaComponent implements OnInit {
       const p = prefix.toLowerCase();
       this.dniSuggestions = this.allClientsCache
         .filter(c => c.dni?.toLowerCase().startsWith(p))
-        .slice(0, 10); // limita la lista
+        .slice(0, 10);
     };
 
     if (this.allClientsLoaded) {
@@ -385,7 +371,7 @@ export class RegistrarVentaComponent implements OnInit {
 
     const list$ =
       (this.api as any).getAllClientes?.() ||
-      (this.api as any).getClientes?.(); // fallback si tu método se llama distinto
+      (this.api as any).getClientes?.();
 
     if (!list$) {
       this.allClientsLoaded = true;
@@ -415,11 +401,10 @@ export class RegistrarVentaComponent implements OnInit {
   }
 }
 
-/* ==================== helpers puros (reusables) ==================== */
+/* ==================== HELPERS ==================== */
 function toNum(v: any, def = 0): number { const n = Number(v); return Number.isFinite(n) ? n : def; }
 function arr<T = any>(v: any): T[] { return Array.isArray(v) ? v : (v ? [v] : []); }
 function subTotal(unit: number, qty: number, pct: number): number {
   const base = (unit || 0) * Math.max(1, qty || 1);
   return Math.round(base * (1 - (toNum(pct) / 100)) * 100) / 100;
 }
-
