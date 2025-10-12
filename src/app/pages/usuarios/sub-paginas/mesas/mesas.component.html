@@ -2,39 +2,42 @@
     <div class="tabla-scroll">
         <h1>Mesas de la Pizzería</h1>
 
-            <div class="utilidades">
-                <mat-form-field appearance="outline">
-                    <mat-label>Cantidad total de mesas</mat-label>
-                    <input matInput type="number" [(ngModel)]="cantidadMesas" [min]="mesasActivas">
-                </mat-form-field>
-                <button mat-flat-button color="primary" (click)="actualizarCantidad()">
-                    Actualizar
-                </button>
-            </div>
-            <div class="info">
-                Actualmente hay {{ mesasActivas }} mesas habilitadas
-            </div>
+        <div class="utilidades">
+            <mat-form-field appearance="outline">
+                <mat-label>Cantidad total de mesas</mat-label>
+                <input matInput type="number" [(ngModel)]="cantidadMesas" [min]="mesasActivas" (blur)="clampCantidad()"
+                    aria-label="Cantidad total de mesas" />
+            </mat-form-field>
+
+            <button mat-flat-button class="btn-azul-changes" (click)="actualizarCantidad()"
+                [disabled]="cantidadMesas === cantidadActual || isUpdatingCantidad">
+                {{ isUpdatingCantidad ? 'Actualizando...' : 'Actualizar' }}
+            </button>
+        </div>
+
+        <div class="info">
+            Actualmente hay {{ mesasActivas }} mesas habilitadas
+        </div>
 
         <br /><br />
         <h3>Listado de mesas</h3>
 
         @if (mesas.length > 0) {
         <div class="grid-mesas">
-            @for (mesa of mesas; track $index) {
+            @for (mesa of mesas; track trackMesa($index, mesa)) {
             <mat-card class="mesa-card">
-
                 @if (mesa.active) {
-                <div class="badge-ocupada">
-                    Ocupada
-                </div>
+                <div class="badge-ocupada">Ocupada</div>
                 }
+
                 <div class="mesa-numero">
                     <strong>Mesa {{ mesa.number }}</strong>
                 </div>
 
                 <div class="mesa-check">
-                    <mat-checkbox [(ngModel)]="mesa.disabled">
-                        Deshabilitada?
+                    <mat-checkbox [(ngModel)]="mesa.disabled" (ngModelChange)="onMesaToggle(mesa)"
+                        aria-label="Deshabilitar mesa {{ mesa.number }}">
+                        ¿Deshabilitada?
                     </mat-checkbox>
                 </div>
             </mat-card>
@@ -43,8 +46,9 @@
         }
 
         <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-            <button class="btn-azul" style="width: 200px; height: 50px;" (click)="guardarCambios()">
-                Guardar Cambios
+            <button class="btn-azul btn-azul-changes" style="width: 200px; height: 50px;" (click)="guardarCambios()"
+                [disabled]="!mesasDirty || isSavingEstados">
+                {{ isSavingEstados ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
         </div>
     </div>

@@ -18,7 +18,7 @@
                                 @for (mesa of tables; track mesa.idTable) {
                                 <mat-option [value]="mesa.idTable">
                                     {{ mesa.number === 'delivery' ? 'Delivery' : ('Mesa ' + mesa.number) }}
-                                    @if (mesa.activo === 1) { - (ocupada) }
+                                    @if (mesa.active) { - (ocupada) }
                                 </mat-option>
                                 }
                             </mat-select>
@@ -47,11 +47,8 @@
                             <mat-label>DNI</mat-label>
 
                             <input matInput [(ngModel)]="customerDni" placeholder="DNI"
-                                (input)="onDniInput($any($event.target).value)"
-                            (ngModelChange)="onDniChange()"
-                            [matAutocomplete]="dniAuto"
-                            maxlength="8"
-                            (keypress)="soloNumeros($event)" />
+                                (input)="onDniInput($any($event.target).value)" (ngModelChange)="onDniChange()"
+                                [matAutocomplete]="dniAuto" maxlength="8" (keypress)="soloNumeros($event)" />
 
                             <mat-autocomplete #dniAuto="matAutocomplete"
                                 (optionSelected)="onDniSelected($event.option.value)">
@@ -166,7 +163,6 @@
             </table>
         </div>
 
-        <!-- Acciones -->
         <div>
             <div class="imagen-contenedor">
                 <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
@@ -177,8 +173,13 @@
                     [disabled]="isSaving">
                     {{ saleId ? 'Actualizar venta' : 'Registrar venta' }}
                 </button>
-
-                <button mat-raised-button color="accent" class="boton-cancelar" (click)="goBack()">
+                @if (saleId) {
+                <button mat-raised-button color="warn" class="boton-cancelar" (click)="cancelSale()"
+                    [disabled]="isSaving">
+                    Cancelar venta
+                </button>
+                }
+                <button mat-raised-button color="accent" class="boton-volver" (click)="goBack()">
                     Volver
                 </button>
             </div>

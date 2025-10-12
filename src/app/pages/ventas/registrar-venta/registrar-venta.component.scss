@@ -157,6 +157,17 @@ mat-form-field {
 
     .boton-agregar {
       width: 220px;
+      background-color: $primary-color;
+      color: #fff;
+      font-weight: bold;
+      transition: 0.3s ease-in-out;
+
+      &:hover {
+        background-color: color.scale($primary-color, $lightness: -30%);
+      }
+    }
+    .boton-volver {
+      width: 220px;
       background-color: $secondary-color;
       color: #fff;
       font-weight: bold;
@@ -166,7 +177,6 @@ mat-form-field {
         background-color: color.scale($secondary-color, $lightness: -30%);
       }
     }
-
     .boton-cancelar {
       width: 220px;
       background-color: $danger-color;

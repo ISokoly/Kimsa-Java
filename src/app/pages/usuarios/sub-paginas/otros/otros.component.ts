@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatGridListModule } from '@angular/material/grid-list';
@@ -9,6 +9,9 @@ import { MatTableModule } from '@angular/material/table';
 
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
+import { ConfirmDialogComponent } from '../../../../view/confirm-dialog/confirm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-otros',
@@ -27,19 +30,19 @@ import { ToastService } from '../../../../core/services/toast.service';
 })
 export class OtrosComponent implements OnInit {
 
-  /* ==================== PROPIEDADES ==================== */
   usuario: any;
   listaUsuarios: any[] = [];
   listaFiltrada: any[] = [];
 
-  mostrarFormulario = false;
-  mostrarFormularioCrear = false;
-  mostrarFormularioContrasena = false;
-
+  // filtros
   filtroTexto: string = '';
   filtroRol: string = '';
   filtroEstado: string = '';
   filtroPor: 'username' | 'dni' = 'username';
+
+  displayedColumns: string[] = [
+    'username', 'name', 'dni', 'rol', 'numberPhone', 'direction', 'estado', 'acciones'
+  ];
 
   Empleado = {
     username: '',
@@ -56,34 +59,32 @@ export class OtrosComponent implements OnInit {
     nuevaPassword: ''
   };
 
-  displayedColumns: string[] = [
-    'username',
-    'name',
-    'dni',
-    'rol',
-    'numberPhone',
-    'direction',
-    'estado',
-    'acciones'
-  ];
-
   userSeleccionado: any = null;
 
-  constructor(private apiService: ApiService, private toastService: ToastService) { }
+  // overlay
+  @ViewChild('formEditarTpl') formEditarTpl!: TemplateRef<any>;
+  @ViewChild('formCrearTpl') formCrearTpl!: TemplateRef<any>;
+  @ViewChild('formPasswordTpl') formPasswordTpl!: TemplateRef<any>;
+  private overlay = inject(OverlayPortalService);
+  private editRef?: OverlayHandle;
+  private createRef?: OverlayHandle;
+  private passRef?: OverlayHandle;
+
+  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog) { }
 
   ngOnInit(): void {
     this.refrescarListados();
     this.listaFiltrada = [...this.listaUsuarios];
   }
 
-  /* ==================== CARGA DE DATOS ==================== */
+  /* ====== Datos ====== */
   private refrescarListados(): void {
     this.obtenerUsuario();
     this.apiService.getUsuarios().subscribe(data => {
-      this.listaUsuarios = data;
-      this.listaFiltrada = this.listaUsuarios.filter(
-        u => u.idUser !== this.apiService.getUsuarioActual().idUser
-      );
+      this.listaUsuarios = data || [];
+      const actual = this.apiService.getUsuarioActual();
+      this.listaFiltrada = this.listaUsuarios.filter(u => u.idUser !== actual?.idUser);
+      this.aplicarFiltro(); // recalcular con filtros vigentes
     });
   }
 
@@ -96,67 +97,60 @@ export class OtrosComponent implements OnInit {
     this.usuario = usuario;
   }
 
-  /* ==================== FORMULARIO ==================== */
+  /* ====== Formularios (overlay) ====== */
   abrirFormulario(usuario: any): void {
     this.userSeleccionado = { ...usuario };
-    this.Empleado = { ...usuario, password: '' }; // 👈 no modificas el original
-    this.mostrarFormulario = true;
-  }
-
-  cerrarFormulario(): void {
-    if (this.mostrarFormulario === true) {
-      this.mostrarFormulario = false;
-    } else if (this.mostrarFormularioCrear === true) {
-      this.mostrarFormularioCrear = false;
-    }
-    this.Empleado = {
-      username: '',
-      name: '',
-      lastName: '',
-      dni: '',
-      direction: '',
-      numberPhone: '',
-      password: '',
-      rol: '',
-      nuevaPassword: '',
-      passwordActual: '',
-      confirmarPassword: '',
-      disabled: false
-    };
-    this.userSeleccionado = null;
+    this.Empleado = { ...usuario, password: '' };
+    this.editRef?.close();
+    this.editRef = this.overlay.open(this.formEditarTpl);
   }
 
   crearUsuario(): void {
     this.userSeleccionado = null;
     this.Empleado = {
-      username: '',
-      name: '',
-      lastName: '',
-      dni: '',
-      direction: '',
-      numberPhone: '',
-      password: '',
-      rol: '',
-      disabled: false,
-      confirmarPassword: '',
-      passwordActual: '',
-      nuevaPassword: ''
+      username: '', name: '', lastName: '', dni: '', direction: '',
+      numberPhone: '', password: '', rol: '', disabled: false,
+      confirmarPassword: '', passwordActual: '', nuevaPassword: ''
     };
-    this.mostrarFormularioCrear = true;
+    this.createRef?.close();
+    this.createRef = this.overlay.open(this.formCrearTpl);
   }
 
   abrirFormularioContrasena(usuario: any): void {
     this.userSeleccionado = usuario;
-    this.mostrarFormularioContrasena = true;
+    this.Empleado.nuevaPassword = '';
+    this.Empleado.confirmarPassword = '';
+    this.passRef?.close();
+    this.passRef = this.overlay.open(this.formPasswordTpl);
   }
 
-  /* ==================== CREAR / ACTUALIZAR ==================== */
+  cerrarFormulario(): void {
+    this.editRef?.close(); this.editRef = undefined;
+    this.createRef?.close(); this.createRef = undefined;
+    this.resetEmpleado();
+  }
+
+  cerrarFormularioContrasena(): void {
+    this.passRef?.close(); this.passRef = undefined;
+    this.Empleado.nuevaPassword = '';
+    this.Empleado.confirmarPassword = '';
+  }
+
+  private resetEmpleado(): void {
+    this.Empleado = {
+      username: '', name: '', lastName: '', dni: '',
+      direction: '', numberPhone: '', password: '', rol: '',
+      disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
+    };
+    this.userSeleccionado = null;
+  }
+
+  /* ====== Crear / Actualizar ====== */
   guardarEmpleado(): void {
     if (!this.userSeleccionado) {
       this.toastService.mostrarMensaje('❌ Solo se puede actualizar usuarios existentes');
       return;
     }
-
     const id = this.userSeleccionado.idUser;
     this.apiService.updateUsuario(id, this.Empleado).subscribe(
       () => {
@@ -169,23 +163,21 @@ export class OtrosComponent implements OnInit {
   }
 
   guardarNuevoEmpleado(): void {
-    if (!this.Empleado.username || !this.Empleado.name || !this.Empleado.lastName ||
-      !this.Empleado.dni || !this.Empleado.password || !this.Empleado.rol) {
+    const e = this.Empleado;
+    if (!e.username || !e.name || !e.lastName || !e.dni || !e.password || !e.rol) {
       this.toastService.mostrarMensaje('❌ Todos los campos son obligatorios');
       return;
     }
-
-    if (this.Empleado.dni.length !== 8) {
+    if (String(e.dni).length !== 8) {
       this.toastService.mostrarMensaje('❌ El DNI debe tener 8 dígitos');
       return;
     }
-
-    if (this.Empleado.numberPhone && this.Empleado.numberPhone.length !== 9) {
+    if (e.numberPhone && String(e.numberPhone).length !== 9) {
       this.toastService.mostrarMensaje('❌ El teléfono debe tener 9 dígitos');
       return;
     }
 
-    this.apiService.createUsuario(this.Empleado).subscribe({
+    this.apiService.createUsuario(e).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario creado correctamente');
         this.cerrarFormulario();
@@ -203,12 +195,10 @@ export class OtrosComponent implements OnInit {
       this.toastService.mostrarMensaje('❌ Debe seleccionar un usuario primero');
       return;
     }
-
     if (!this.Empleado.nuevaPassword || !this.Empleado.confirmarPassword) {
       this.toastService.mostrarMensaje('❌ Debe ingresar y confirmar la contraseña');
       return;
     }
-
     if (this.Empleado.nuevaPassword !== this.Empleado.confirmarPassword) {
       this.toastService.mostrarMensaje('❌ Las contraseñas no coinciden');
       return;
@@ -220,62 +210,97 @@ export class OtrosComponent implements OnInit {
     this.apiService.cambiarPasswordByAdmin(id, payload).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Contraseña actualizada correctamente');
-        this.mostrarFormularioContrasena = false;
-        this.Empleado.nuevaPassword = '';
-        this.Empleado.confirmarPassword = '';
+        this.cerrarFormularioContrasena();
       },
       error: () => this.toastService.mostrarMensaje('❌ Error al actualizar la contraseña')
     });
   }
 
-  /* ==================== HABILITAR / DESHABILITAR ==================== */
+  /* ====== Habilitar / Deshabilitar ====== */
   deshabilitarUsuario(id: number): void {
-    if (confirm('¿Seguro que deseas deshabilitar este usuario?')) {
-      this.apiService.updateUsuario(id, { disabled: true }).subscribe(
-        () => {
+    const usuario = this.listaUsuarios.find(u => u.idUser === id);
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      maxWidth: '95vw',
+      panelClass: 'custom-confirm-dialog',
+      disableClose: true,
+      data: {
+        title: 'Deshabilitar usuario',
+        message: `¿Seguro que deseas deshabilitar a "${usuario ? usuario.name + ' ' + usuario.lastName : 'este usuario'}"?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(ok => {
+      if (!ok) return;
+      const body = usuario ? {
+        username: usuario.username,
+        name: usuario.name,
+        lastName: usuario.lastName,
+        dni: usuario.dni,
+        direction: usuario.direction,
+        numberPhone: usuario.numberPhone,
+        rol: usuario.rol,
+        disabled: true
+      } : { disabled: true };
+
+      this.apiService.updateUsuario(id, body).subscribe({
+        next: () => {
           this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
           this.refrescarListados();
         },
-        () => this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario')
-      );
-    }
+        error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario')
+      });
+    });
   }
 
   habilitarUsuario(id: number): void {
-    this.apiService.updateUsuario(id, { disabled: false }).subscribe(
-      () => {
+    const usuario = this.listaUsuarios.find(u => u.idUser === id);
+    const body = usuario ? {
+      username: usuario.username,
+      name: usuario.name,
+      lastName: usuario.lastName,
+      dni: usuario.dni,
+      direction: usuario.direction,
+      numberPhone: usuario.numberPhone,
+      rol: usuario.rol,
+      disabled: false
+    } : { disabled: false };
+
+    this.apiService.updateUsuario(id, body).subscribe({
+      next: () => {
         this.toastService.mostrarMensaje('✅ Usuario habilitado correctamente');
         this.refrescarListados();
       },
-      () => this.toastService.mostrarMensaje('❌ Error al habilitar usuario')
-    );
+      error: () => this.toastService.mostrarMensaje('❌ Error al habilitar usuario')
+    });
   }
 
-  /* ==================== FILTROS ==================== */
+  /* ====== Filtros ====== */
   aplicarFiltro() {
-    this.listaFiltrada = this.listaUsuarios.filter(usuario => {
-      if (usuario.idUser === this.apiService.getUsuarioActual()?.idUser) {
-        return false;
-      }
+    const actualId = this.apiService.getUsuarioActual()?.idUser;
+    const texto = (this.filtroTexto || '').toString().toLowerCase().trim();
 
-      const campo = this.filtroPor;
-      const coincideTexto = this.filtroTexto
-        ? usuario[campo]?.toLowerCase().includes(this.filtroTexto.toLowerCase())
-        : true;
-      const coincideRol = this.filtroRol ? usuario.rol === this.filtroRol : true;
+    this.listaFiltrada = this.listaUsuarios.filter(u => {
+      if (u.idUser === actualId) return false;
+
+      const fuente = this.filtroPor === 'dni'
+        ? String(u.dni ?? '').toLowerCase()
+        : String(u.username ?? '').toLowerCase();
+
+      const coincideTexto = texto ? fuente.includes(texto) : true;
+      const coincideRol = this.filtroRol ? u.rol === this.filtroRol : true;
       const coincideEstado = this.filtroEstado
-        ? (this.filtroEstado === 'habilitado' ? !usuario.disabled : usuario.disabled)
+        ? (this.filtroEstado === 'habilitado' ? !u.disabled : u.disabled)
         : true;
 
       return coincideTexto && coincideRol && coincideEstado;
     });
   }
 
-  /* ==================== UTILIDADES ==================== */
+  /* ====== Util ====== */
   soloNumeros(event: KeyboardEvent): void {
     const charCode = event.which ? event.which : event.keyCode;
-    if (charCode < 48 || charCode > 57) {
-      event.preventDefault();
-    }
+    if (charCode < 48 || charCode > 57) event.preventDefault();
   }
 }

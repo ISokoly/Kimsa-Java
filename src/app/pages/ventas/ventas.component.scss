@@ -125,8 +125,9 @@ $bg-color: #f9f9f9;
     color: white;
     font-weight: bold;
     background: color.scale($primary-color, $lightness: 25%);
+
     &:hover {
-    background: color.scale($primary-color, $lightness: 15%);
+      background: color.scale($primary-color, $lightness: 15%);
     }
   }
 }
@@ -138,56 +139,55 @@ mat-paginator {
   box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
 }
 
-.opciones-botones {
-  display: flex; 
-  justify-content: center;
-  gap: 8px;
 
-  button {
-    padding: 8px 12px;
+button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+  margin: 5px;
 
-    border: none;
+  &.edit-btn {
     border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: 0.3s ease-in-out;
+    background: $primary-color;
+    color: #fff;
+    transition: background 0.2s ease;
 
-    &.edit-btn {
-      border-radius: 8px;
-      background: $primary-color;
-      color: #fff;
-      transition: background 0.2s ease;
-
-      &:disabled {
-        opacity: 0.45;
-        background: #c7c7c7;
-        color: #fff;
-        cursor: not-allowed;
-      }
-
-      &:hover:not(:disabled) {
-        background: color.scale($primary-color, $lightness: -30%);
-      }
+    &:disabled {
+      opacity: 0.45;
+      background: color.scale($primary-color, $lightness: 60%);
+      cursor: not-allowed;
     }
 
-    &.pay-btn {
-      border-radius: 8px;
-      background: $pay-color;
-      color: #fff;
-      transition: background 0.2s ease;
-
-      &:disabled {
-        opacity: 0.45;
-        background: #c7c7c7;
-        color: #fff;
-        cursor: not-allowed;
-      }
-
-      &:hover:not(:disabled) {
-        background: color.scale($pay-color, $lightness: -30%);
-      }
+    &:hover:not(:disabled) {
+      background: color.scale($primary-color, $lightness: -30%);
     }
   }
+
+  &.pay-btn {
+    border-radius: 8px;
+    background: $pay-color;
+    color: #fff;
+    transition: background 0.2s ease;
+
+    &:disabled {
+      opacity: 0.45;
+      background: color.scale($pay-color, $lightness: 60%);
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      background: color.scale($pay-color, $lightness: -30%);
+    }
+  }
+}
+
+.opciones-botones {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
 .imagen-contenedor {
@@ -233,7 +233,17 @@ button:disabled {
   cursor: not-allowed !important;
 }
 
-.mdc-button,
-.mat-mdc-raised-button {
-  border-radius: 10px;
+.paginador {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0;
+
+  .paginas {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
 }

@@ -1,14 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -25,7 +22,7 @@ interface OrderDetail {
   quantity: number;
   subtotal: number;
 }
-type OrderStatus = 'Pending' | 'Confirmed' | 'Canceled';
+type OrderStatus = 'Pending' | 'Confirmed' | 'Cancelled';
 interface Order {
   idOrder: number;
   status: OrderStatus;
@@ -41,16 +38,13 @@ interface ProductLite { idProduct: number; name: string; }
   selector: 'app-ventas',
   standalone: true,
   imports: [
-    CommonModule,            // 👈 necesario para *ngFor en chips
+    CommonModule,
     FormsModule,
     MatTableModule,
     MatButtonModule,
-    MatPaginatorModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
     MatSelectModule,
     MatAutocompleteModule,
     MatChipsModule
@@ -61,35 +55,37 @@ interface ProductLite { idProduct: number; name: string; }
 export class VentasComponent implements OnInit {
 
   /* === Estado UI === */
-  selectedDate: Date = new Date();
-  displayedColumns: string[] = ['number', 'producto', 'estado', 'ganancia', 'opciones'];
+  selectedDateStr = '';
+  displayedColumns: string[] = ['number', 'producto', 'hora', 'estado', 'ganancia', 'opciones'];
 
-  dataSource = new MatTableDataSource<Order>([]);
   sales: Order[] = [];
   products: ProductLite[] = [];
 
-  // Filtros
   statusFilter: 'All' | OrderStatus = 'All';
 
   productQuery = '';
-  selectedProductNames: string[] = [];   // 👈 por nombre
-  productSuggestions: string[] = [];     // 👈 sugerencias por nombre
+  selectedProductNames: string[] = [];
+  productSuggestions: string[] = [];
 
-  private filteredSales: Order[] = [];
+  filteredSales: Order[] = [];
+  visibleSales: Order[] = [];
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  pageSize = 10;
+  pageIndex = 0;
 
-  constructor(private api: ApiService, private router: Router) { }
+  private productNameById: Record<number, string> = {};
 
-  /* === Ciclo de vida === */
+  constructor(private api: ApiService, private router: Router) {}
+
   ngOnInit(): void {
+    this.selectedDateStr = this.todayInLimaISO();
     this.loadProducts();
     this.loadSales();
   }
 
   /* === Carga de datos === */
   loadSales(): void {
-    const targetIso = this.isoInLima(this.selectedDate);
+    const targetIso = this.selectedDateStr;
 
     this.api.getSales().subscribe({
       next: (raw: any[]) => {
@@ -97,16 +93,16 @@ export class VentasComponent implements OnInit {
           idOrder: Number(v.idOrder ?? v.id),
           status: String(v.status ?? 'Pending') as OrderStatus,
           total: Number(v.total ?? 0),
-          orderDate: String(v.orderDate ?? v.fecha_pedido ?? new Date().toISOString().slice(0, 10)),
+          orderDate: String(v.orderDate ?? v.fecha_pedido ?? this.selectedDateStr),
           orderTime: String(v.orderTime ?? v.hora_pedido ?? '00:00:00'),
           details: []
         }));
 
         this.sales = base
           .filter(v => v.orderDate === targetIso)
-          .sort((a, b) => this.localMillis(b.orderDate, b.orderTime) - this.localMillis(a.orderDate, a.orderTime)); // recientes
+          .sort((a, b) => this.localMillis(b.orderDate, b.orderTime) - this.localMillis(a.orderDate, a.orderTime));
 
-        // Detalles + pagos, y re-aplicar filtros cuando llegan
+        // Cargar detalles y pagos por venta
         this.sales.forEach(sale => {
           this.api.getOrderDetailsByOrderId(sale.idOrder).subscribe({
             next: (details: any[]) => {
@@ -117,7 +113,7 @@ export class VentasComponent implements OnInit {
                 quantity: Number(d.quantity ?? d.cantidad ?? 0),
                 subtotal: Number(d.subtotal ?? 0)
               }));
-              this.applyFilters();
+              this.applyFilters(); // 👈 actualiza visibleSales
             },
             error: () => { sale.details = []; this.applyFilters(); }
           });
@@ -128,8 +124,8 @@ export class VentasComponent implements OnInit {
           });
         });
 
-        if (this.paginator) this.dataSource.paginator = this.paginator;
-        if (this.paginator) this.paginator.firstPage();
+        // Primer filtrado/paginado
+        this.pageIndex = 0;
         this.applyFilters();
       },
       error: () => { this.sales = []; this.applyFilters(); }
@@ -140,27 +136,43 @@ export class VentasComponent implements OnInit {
     this.api.getProductos().subscribe({
       next: (resp: any[]) => {
         const arr = Array.isArray(resp) ? resp : (resp ? [resp] : []);
-        this.products = arr.map(raw => ({
-          idProduct: Number(raw?.idProduct ?? raw?.id ?? raw?.idProduct),
-          name: String(raw?.name ?? raw?.nombre ?? '')
-        }));
+        const enabled: ProductLite[] = [];
+        this.productNameById = {};
+
+        arr.forEach(raw => {
+          const id = Number(raw?.idProduct ?? raw?.id ?? raw?.idProduct);
+          const name = String(raw?.name ?? raw?.nombre ?? '');
+          const disabled = !!raw?.disabled;
+
+          if (id) this.productNameById[id] = name;
+          if (!disabled && id && name) enabled.push({ idProduct: id, name });
+        });
+
+        this.products = enabled;
         this.recomputeSuggestions();
       },
-      error: () => { this.products = []; this.recomputeSuggestions(); }
+      error: () => {
+        this.products = [];
+        this.productNameById = {};
+        this.recomputeSuggestions();
+      }
     });
   }
 
   /* === Filtros & paginación === */
   onStatusChange(): void {
-    if (this.paginator) this.paginator.firstPage();
+    this.pageIndex = 0;
     this.applyFilters();
   }
 
-  // Acepta string/any y evita "val.includes is not a function"
+  onDateChange(): void {
+    this.selectedDateStr = (this.selectedDateStr || '').slice(0, 10);
+    this.pageIndex = 0;
+    this.loadSales();
+  }
+
   onProductFilterInput(val: any): void {
     const value = (val ?? '').toString();
-
-    // Soporte de coma: agrega términos completos y deja el último en curso
     if (value.includes(',')) {
       const parts = value.split(',').map((s: string) => s.trim()).filter(Boolean);
       for (let i = 0; i < parts.length - 1; i++) this.addProductByTerm(parts[i]);
@@ -178,6 +190,7 @@ export class VentasComponent implements OnInit {
   removeSelectedProduct(name: string): void {
     this.selectedProductNames = this.selectedProductNames.filter(n => n.toLowerCase() !== name.toLowerCase());
     this.recomputeSuggestions();
+    this.pageIndex = 0;
     this.applyFilters();
   }
 
@@ -186,13 +199,26 @@ export class VentasComponent implements OnInit {
     this.productQuery = '';
     this.selectedProductNames = [];
     this.recomputeSuggestions();
-    if (this.paginator) this.paginator.firstPage();
+    this.pageIndex = 0;
     this.applyFilters();
   }
 
-  onPage(e: any): void {
-    this.sliceToPage(e.pageIndex, e.pageSize);
+  get totalPages(): number {
+    const total = this.filteredSales.length;
+    return Math.max(1, Math.ceil(total / this.pageSize));
   }
+
+  get pagesArray(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
+
+  goToPage(i: number): void {
+    if (i < 0 || i >= this.totalPages) return;
+    this.pageIndex = i;
+    this.sliceToPage(); // 👈 actualizar visibleSales
+  }
+  nextPage(): void { this.goToPage(this.pageIndex + 1); }
+  prevPage(): void { this.goToPage(this.pageIndex - 1); }
 
   private applyFilters(): void {
     let arr = this.sales;
@@ -208,33 +234,28 @@ export class VentasComponent implements OnInit {
 
     this.filteredSales = arr;
 
-    const pageIndex = this.paginator?.pageIndex ?? 0;
-    const pageSize = this.paginator?.pageSize ?? 10;
-    this.sliceToPage(pageIndex, pageSize);
-    if (this.paginator) this.paginator.length = this.filteredSales.length;
+    // Si al filtrar la página actual queda fuera de rango, ajusta
+    if (this.pageIndex >= this.totalPages) this.pageIndex = Math.max(0, this.totalPages - 1);
+    this.sliceToPage();
+  }
+
+  private sliceToPage(): void {
+    const start = this.pageIndex * this.pageSize;
+    this.visibleSales = this.filteredSales.slice(start, start + this.pageSize);
   }
 
   private saleHasAllSelectedProducts(sale: Order, selectedLowerNames: string[]): boolean {
     if (!sale.details || sale.details.length === 0) return false;
 
-    // Set de nombres (lowercase) de los productos en esta venta
     const saleNames = new Set(
       sale.details
         .map(d => this.getProductName(d.idProduct)?.toLowerCase().trim())
         .filter(Boolean) as string[]
     );
 
-    // Verifica que todos los seleccionados estén presentes
     return selectedLowerNames.every(name => saleNames.has(name));
   }
 
-  private sliceToPage(pageIndex: number, pageSize: number): void {
-    const start = pageIndex * pageSize;
-    const end = start + pageSize;
-    this.dataSource.data = this.filteredSales.slice(start, end);
-  }
-
-  // Sugerencias por nombre (excluye ya seleccionados)
   private recomputeSuggestions(): void {
     const q = this.productQuery.trim().toLowerCase();
     const taken = new Set(this.selectedProductNames.map(n => n.toLowerCase()));
@@ -254,6 +275,7 @@ export class VentasComponent implements OnInit {
       this.selectedProductNames.push(clean);
       this.productQuery = '';
       this.recomputeSuggestions();
+      this.pageIndex = 0;
       this.applyFilters();
     }
   }
@@ -262,7 +284,6 @@ export class VentasComponent implements OnInit {
     const t = term.trim();
     if (!t) return;
 
-    // Coincidencia exacta o parcial por nombre
     const names = this.products.map(p => p.name).filter(Boolean);
     const exact = names.find(n => n.toLowerCase() === t.toLowerCase());
     const partial = exact ?? names.find(n => n.toLowerCase().includes(t.toLowerCase()));
@@ -271,19 +292,25 @@ export class VentasComponent implements OnInit {
 
   /* === Helpers UI === */
   getLimitedDetails(sale: Order): string {
-    if (!sale.details?.length || sale.status === 'Canceled') return '';
+    if (!sale.details?.length || sale.status === 'Cancelled') return '';
     let txt = sale.details.map(d => `${this.getProductName(d.idProduct)} x${d.quantity}`).join(', ');
     return txt.length > 40 ? (txt.slice(0, 40) + '...') : txt;
   }
 
   getProductName(id: number): string {
-    return this.products.find(p => p.idProduct === id)?.name ?? '';
+    return this.productNameById[id] ?? '';
   }
 
-  private isoInLima(d: Date): string {
+  getHoraMinutos(time: string): string {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    return `${h}:${m}`;
+  }
+
+  private todayInLimaISO(): string {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(d);
+    }).format(new Date());
   }
 
   private localMillis(date: string, time?: string): number {

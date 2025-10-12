@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,6 +10,9 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
+import { OverlayHandle, OverlayPortalService } from '../../core/services/overlay-portal.service';
+import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-usuarios',
@@ -20,8 +23,8 @@ import { MatListModule } from "@angular/material/list";
     MatGridListModule,
     MatButtonModule,
     MatCardModule,
-    MatListModule
-],
+    MatListModule,
+  ],
   templateUrl: './usuarios.component.html',
   styleUrls: ['./usuarios.component.scss']
 })
@@ -31,7 +34,6 @@ export class UsuariosComponent implements OnInit {
   usuario: any;
   empleados: any[] = [];
   administradores: any[] = [];
-  mostrarFormulario = false;
   mostrarFormularioContrasena = false;
 
   Empleado = {
@@ -42,12 +44,15 @@ export class UsuariosComponent implements OnInit {
   userSeleccionado: any = null;
   isLoading = false;
 
+  @ViewChild('formUsuarioTpl') formUsuarioTpl!: TemplateRef<any>;
+  @ViewChild('formPasswordTpl') formPasswordTpl!: TemplateRef<any>;
+
+  private overlay = inject(OverlayPortalService);
+
+  private userFormRef?: OverlayHandle;
+  private passFormRef?: OverlayHandle;
   /* ==================== CONSTRUCTOR ==================== */
-  constructor(
-    private apiService: ApiService,
-    private router: Router,
-    private toastService: ToastService
-  ) { }
+  constructor(private apiService: ApiService, private router: Router, private toastService: ToastService, private dialog: MatDialog) { }
 
   /* ==================== CICLO DE VIDA ==================== */
   ngOnInit(): void {
@@ -78,13 +83,26 @@ export class UsuariosComponent implements OnInit {
   abrirFormulario(usuario: any): void {
     this.userSeleccionado = { ...usuario };
     this.Empleado = { ...usuario, password: '' };
-    this.mostrarFormulario = true;
+    this.userFormRef = this.overlay.open(this.formUsuarioTpl);
   }
 
   cerrarFormulario(): void {
-    this.mostrarFormulario = false;
+    this.userFormRef?.close();      // 👈 cierra SOLO el de usuario
+    this.userFormRef = undefined;
     this.userSeleccionado = null;
     this.resetEmpleado();
+  }
+
+  abrirCambiarContrasena(): void {
+    this.passFormRef = this.overlay.open(this.formPasswordTpl);
+  }
+
+  cerrarCambiarContrasena(): void {
+    this.passFormRef?.close();
+    this.passFormRef = undefined;
+    this.mostrarFormularioContrasena = false;
+    this.Empleado.passwordActual = '';
+    this.Empleado.nuevaPassword = '';
   }
 
   private resetEmpleado(): void {
@@ -140,41 +158,45 @@ export class UsuariosComponent implements OnInit {
   /* ==================== DESHABILITAR USUARIO ==================== */
   deshabilitarUsuario(id: number | undefined): void {
     if (!id) {
-      console.error("ID inválido al intentar deshabilitar:", id);
+      console.error('ID inválido al intentar deshabilitar:', id);
       return;
     }
 
-    if (!confirm('¿Seguro que deseas deshabilitar este usuario?')) return;
-
-    const usuarioActual = this.apiService.getUsuarioActual();
-    if (!usuarioActual) {
-      console.error("No hay usuario actual en sesión para deshabilitar");
-      return;
-    }
-
-    const usuarioActualizado = { ...usuarioActual, disabled: true };
-    this.isLoading = true;
-
-    this.apiService.updateUsuario(id, usuarioActualizado).subscribe({
-      next: () => {
-        const idActual = usuarioActual?.idUser ?? usuarioActual?.id;
-
-        if (idActual === id) {
-          this.toastService.mostrarMensaje('✅ Tu cuenta fue deshabilitada. Cerrando sesión...');
-          setTimeout(() => this.logout(), 3000);
-        } else {
-          this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
-          this.refrescarDatos();
-          this.isLoading = false;
-        }
-      },
-      error: () => {
-        this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario');
-        this.isLoading = false;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      maxWidth: '95vw',
+      panelClass: 'custom-confirm-dialog',
+      disableClose: true,
+      data: {
+        title: 'Deshabilitar usuario',
+        message: '¿Seguro que deseas deshabilitar tu usuario?'
       }
     });
-  }
 
+    dialogRef.afterClosed().subscribe(ok => {
+      if (!ok) return;
+      const usuarioActual = this.apiService.getUsuarioActual();
+      const idActual = usuarioActual?.idUser ?? usuarioActual?.id;
+      this.isLoading = true;
+
+      this.apiService.updateUsuario(id, { disabled: true }).subscribe({
+        next: () => {
+          if (idActual === id) {
+            this.toastService.mostrarMensaje('✅ Tu cuenta fue deshabilitada. Cerrando sesión...');
+            setTimeout(() => this.logout(), 1500);
+          } else {
+            this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
+            this.refrescarDatos();
+            this.isLoading = false;
+          }
+        },
+        error: () => {
+          this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario');
+          this.isLoading = false;
+        }
+      });
+    });
+  }
   /* ==================== CONTRASEÑA ==================== */
   guardarNuevaContrasena(): void {
     if (!this.userSeleccionado) {

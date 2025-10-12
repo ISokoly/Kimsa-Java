@@ -4,46 +4,66 @@
 
 @include mat.app-background();
 
-html{
+html {
   color-scheme: light;
-  @include mat.theme((
-    color: (
-      primary: theme-colors.$primary-palette,
-      tertiary: theme-colors.$tertiary-palette,
-    ),
-    typography: Roboto,
-    density: 0
-  ));
-  
+  @include mat.theme((color: (primary: theme-colors.$primary-palette,
+        tertiary: theme-colors.$tertiary-palette,
+      ),
+      typography: Roboto,
+      density: 0));
+
 }
 
-textarea{
-  margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif;
+textarea {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-.dark{
+.dark {
   color-scheme: dark;
 }
 
-html, body { height: 100%; }
-body { 
-  margin: 0; 
-  font-family: Roboto, "Helvetica Neue", sans-serif; 
- 
-};
+html,
+body {
+  height: 100%;
+}
 
-.mat-drawer-inner-container{
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+
+}
+
+.mat-drawer-inner-container {
   overflow: hidden !important;
 }
 
 :root {
-  @include mat.list-overrides((
-    active-indicator-shape:none,
-  ));
+  @include mat.list-overrides((active-indicator-shape:none,
+    ));
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.cdk-overlay-container,
+.cdk-global-overlay-wrapper {
+  z-index: 12000 !important;
+}

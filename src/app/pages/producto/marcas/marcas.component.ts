@@ -8,7 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from "@angular/material/list";
 import { CommonModule } from '@angular/common';
-import { HoverScrollDirective } from "../../../core/services/hover-scroll.directive";
+import { HoverScrollDirective } from "../../../core/extras/hover-scroll.directive";
 
 type BrandLite = { idBrand?: number; name: string; category: number | null };
 
@@ -29,23 +29,22 @@ type BrandLite = { idBrand?: number; name: string; category: number | null };
   styleUrls: ['./marcas.component.scss']
 })
 export class MarcasComponent implements OnInit {
-  /* ==================== PROPIEDADES ==================== */
-
   @Output() closed = new EventEmitter<void>();
   @Input() currentCategoryId: number | null = null;
-  @Input() soloFormulario: boolean = false;
+  @Input() soloFormulario = false;
   @Output() marcaDeleted = new EventEmitter<number>();
 
   marcas: BrandLite[] = [];
   formMarca: BrandLite = { name: '', category: null };
   selectedMarca: BrandLite | null = null;
 
+  // esto sólo decide qué panel mostrar dentro del MISMO overlay del padre
   mostrarFormularioAgregarMarca = false;
 
   constructor(
     private apiService: ApiService,
     private toastService: ToastService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.loadMarcas();
@@ -54,7 +53,6 @@ export class MarcasComponent implements OnInit {
     }
   }
 
-  /* ==================== CARGA DE DATOS ==================== */
   loadMarcas(): void {
     this.apiService.getMarcas().subscribe((data: any[]) => {
       const todas: BrandLite[] = (data || []).map(m => ({
@@ -68,7 +66,6 @@ export class MarcasComponent implements OnInit {
     });
   }
 
-  /* ==================== CREAR / ACTUALIZAR ==================== */
   createMarca(): void {
     if (!this.formMarca.name.trim() || this.formMarca.category == null) {
       this.toastService.mostrarMensaje('❌ Nombre y categoría son obligatorios.');
@@ -96,8 +93,6 @@ export class MarcasComponent implements OnInit {
     });
   }
 
-
-  /* ==================== FORMULARIO ==================== */
   abrirFormularioAgregarMarca(marca: BrandLite | null = null): void {
     this.selectedMarca = marca ?? null;
     this.formMarca = marca
@@ -106,10 +101,9 @@ export class MarcasComponent implements OnInit {
     this.mostrarFormularioAgregarMarca = true;
   }
 
-  /* ==================== FORMULARIO ==================== */
   cerrarFormularioMarca(): void {
     this.mostrarFormularioAgregarMarca = false;
-    this.closed.emit();
+    this.closed.emit(); // el PADRE cierra el overlay
     this.loadMarcas();
   }
 
@@ -117,11 +111,10 @@ export class MarcasComponent implements OnInit {
     this.selectedMarca = null;
     this.formMarca = { name: '', category: this.currentCategoryId ?? null };
     this.mostrarFormularioAgregarMarca = false;
-    if (this.soloFormulario) this.closed.emit();
+    if (this.soloFormulario) this.closed.emit(); // si es “sólo form”, el padre cierra overlay
     this.loadMarcas();
   }
 
-  /* ==================== UTILIDADES ==================== */
   editMarca(marca: any): void {
     if (!marca || !marca.idBrand) return;
     this.abrirFormularioAgregarMarca(marca);

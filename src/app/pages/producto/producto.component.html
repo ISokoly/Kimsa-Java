@@ -5,8 +5,9 @@
       <div style="display: flex; gap: 10px; align-items: center;">
         <mat-form-field appearance="fill" style="flex: 1;">
           <mat-label>
-            {{ !tipoFiltro ? 'Seleccione tipo de búsqueda' : (tipoFiltro === 'nombre' ? 'Buscar producto' : 'Buscar
-            marca') }}
+            {{ !tipoFiltro ? 'Seleccione tipo de búsqueda' :
+            (tipoFiltro === 'nombre' ? 'Buscar producto' : 'Buscarmarca')
+            }}
           </mat-label>
 
           <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="filtro"
@@ -21,12 +22,20 @@
           </mat-autocomplete>
         </mat-form-field>
 
-        <!-- SELECT de tipo (producto/marca) -->
         <mat-form-field appearance="fill" style="width: 30%;">
           <mat-label>Buscar por</mat-label>
           <mat-select [(ngModel)]="tipoFiltro" (selectionChange)="onTipoFiltroChange()">
             <mat-option [value]="'nombre'">Nombre</mat-option>
             <mat-option [value]="'marca'">Marca</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" style="width: 25%;">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="estadoFiltro" (selectionChange)="onEstadoFiltroChange()">
+            <mat-option value="habilitados">Habilitados</mat-option>
+            <mat-option value="deshabilitados">Deshabilitados</mat-option>
+            <mat-option value="todos">Todos</mat-option>
           </mat-select>
         </mat-form-field>
       </div>
@@ -54,9 +63,15 @@
 
         <div class="actions">
           <button class="form-btn-verde" (click)="editProducto(p)" [disabled]="isLoading">Editar</button>
+          @if (!p.disabled) {
           <button class="form-btn-rojo" (click)="deshabilitar(p)" [disabled]="isLoading">
             Deshabilitar
           </button>
+          } @else {
+          <button class="form-btn-azul" (click)="habilitar(p)" [disabled]="isLoading">
+            Habilitar
+          </button>
+          }
         </div>
       </div>
       }
@@ -68,35 +83,39 @@
     </div>
 
     @if (marcas && marcas.length > 0) {
-    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+      <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
       <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioMarca()"
         [disabled]="isLoading">
         Organizar Marcas
       </button>
-    </div>
-    }
-    @if (mostrarFormularioMarca) {
-    <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="false"
-      (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(categoriaId!)" (marcaDeleted)="onMarcaDeleted($event)">
-    </app-marcas>
-    }
+    </div>}
 
-    @if (mostrarFormularioCrearMarca) {
-    <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true"
-      (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(categoriaId!)"
-      (marcaDeleted)="onMarcaDeleted($event)">
-    </app-marcas>
-    }
-    @if (mostrarCaracteristicasProducto) {
-    @if (selectedProducto) {
-    <app-caracteristicas-producto [productoSeleccionado]="selectedProducto.idProduct"
-      [categoriaSeleccionada]="selectedProducto.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
-    </app-caracteristicas-producto>
-    }}
+    <ng-template #formOrganizarMarcasTpl>
+      <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="false"
+        (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(categoriaId!)"
+        (marcaDeleted)="onMarcaDeleted($event)">
+      </app-marcas>
+    </ng-template>
+
+    <ng-template #formCrearMarcaTpl>
+      <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true"
+        (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(categoriaId!)"
+        (marcaDeleted)="onMarcaDeleted($event)">
+      </app-marcas>
+    </ng-template>
+
+    <ng-template #formCaractTpl>
+      <div style="max-width: min(96vw, 900px); width: 820px;">
+        @if (selectedProducto) {
+        <app-caracteristicas-producto [productoSeleccionado]="selectedProducto.idProduct"
+          [categoriaSeleccionada]="selectedProducto.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
+        </app-caracteristicas-producto>
+        }
+      </div>
+    </ng-template>
   </div>
 </div>
-@if(mostrarFormulario) {
-<div class="overlay">
+<ng-template #formProductoTpl>
   <div class="form-modal">
     <h2 class="form-title">
       @if (!selectedProducto) { Añadir Producto } @else { Editar Producto }
@@ -115,23 +134,15 @@
             [disabled]="isLoading" />
         </mat-form-field>
 
-        <!-- ================== Botón para abrir características de producto ================== -->
-
         @if (mostrarMasOpciones) {
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Marca</mat-label>
           <mat-select [(ngModel)]="formData.brand" name="brand">
             @for(marca of marcas; track $index) {
-            <mat-option [value]="marca.idBrand">
-              {{ marca.name }}
-            </mat-option>
+            <mat-option [value]="marca.idBrand">{{ marca.name }}</mat-option>
             }
-            <mat-option [value]="null">
-              ➖ Sin marca
-            </mat-option>
-            <mat-option (click)="abrirFormularioCrearMarca()">
-              ➕ Crear nueva marca
-            </mat-option>
+            <mat-option [value]="null">➖ Sin marca</mat-option>
+            <mat-option (click)="abrirFormularioCrearMarca()">➕ Crear nueva marca</mat-option>
           </mat-select>
         </mat-form-field>
         }
@@ -149,6 +160,7 @@
             {{ mostrarMasOpciones ? 'Menos opciones' : 'Más opciones' }}
           </label>
         </div>
+
         <div class="full-width">
           <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="isLoading">
             Seleccionar Imagen
@@ -171,5 +183,4 @@
       </div>
     </form>
   </div>
-</div>
-}
+</ng-template>

@@ -75,8 +75,7 @@
             <td mat-cell *matCellDef="let usuario">
               @if(!usuario.disabled) {
               <span class="habilitado">Habilitado</span>
-              }
-              @else {
+              } @else {
               <span class="deshabilitado">Deshabilitado</span>
               }
             </td>
@@ -90,8 +89,7 @@
               <button class="btn-rojo" (click)="deshabilitarUsuario(usuario.idUser)">
                 Deshabilitar
               </button>
-              }
-              @else {
+              } @else {
               <button class="btn-azul" (click)="habilitarUsuario(usuario.idUser)">
                 Habilitar
               </button>
@@ -103,6 +101,7 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
       </div>
+
       <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
         <button class="btn-azul" style="width: 200px; height: 50px;" (click)="crearUsuario()">
           Añadir Nuevo Usuario
@@ -112,8 +111,10 @@
   </div>
 </div>
 
-@if(mostrarFormulario){
-<div class="overlay">
+<!-- ====== OVERLAYS ====== -->
+
+<!-- EDITAR -->
+<ng-template #formEditarTpl>
   <div class="form-modal">
     <h2 class="form-title">Editar Usuario</h2>
 
@@ -134,8 +135,8 @@
 
         <div class="full-width">
           <div class="editar-contrasena">
-            <label (click)="mostrarFormularioContrasena = true">
-              El usuario olvido su contraseña?
+            <label (click)="abrirFormularioContrasena(userSeleccionado)">
+              El usuario olvidó su contraseña?
             </label>
           </div>
         </div>
@@ -147,36 +148,10 @@
       </div>
     </div>
   </div>
-</div>
-}
+</ng-template>
 
-@if(mostrarFormularioContrasena){
-<div class="overlay">
-  <div class="form-modal">
-    <h2 class="form-title">Cambiar Contraseña</h2>
-    <div class="form-container">
-      <div class="form-grid">
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Nueva contraseña</mat-label>
-          <input matInput type="password" [(ngModel)]="Empleado.nuevaPassword">
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Confirmar nueva contraseña</mat-label>
-          <input matInput type="password" [(ngModel)]="Empleado.confirmarPassword">
-        </mat-form-field>
-      </div>
-
-      <div class="botones">
-        <button class="form-btn-verde" (click)="guardarNuevaContrasena()">Guardar</button>
-        <button class="form-btn-gris" (click)="mostrarFormularioContrasena = false">Cancelar</button>
-      </div>
-    </div>
-  </div>
-</div>
-}
-@if(mostrarFormularioCrear){
-<div class="overlay">
+<!-- CREAR -->
+<ng-template #formCrearTpl>
   <div class="form-modal">
     <h2 class="form-title">Crear Usuario</h2>
     <div class="form-container">
@@ -229,11 +204,36 @@
             autocomplete="off">
         </mat-form-field>
       </div>
+
       <div class="botones">
         <button class="form-btn-verde" (click)="guardarNuevoEmpleado()">Guardar</button>
         <button class="form-btn-gris" (click)="cerrarFormulario()">Cancelar</button>
       </div>
     </div>
   </div>
-</div>
-}
+</ng-template>
+
+<!-- CAMBIAR CONTRASEÑA -->
+<ng-template #formPasswordTpl>
+  <div class="form-modal">
+    <h2 class="form-title">Cambiar Contraseña</h2>
+    <div class="form-container">
+      <div class="form-grid">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Nueva contraseña</mat-label>
+          <input matInput type="password" [(ngModel)]="Empleado.nuevaPassword">
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Confirmar nueva contraseña</mat-label>
+          <input matInput type="password" [(ngModel)]="Empleado.confirmarPassword">
+        </mat-form-field>
+      </div>
+
+      <div class="botones">
+        <button class="form-btn-verde" (click)="guardarNuevaContrasena()">Guardar</button>
+        <button class="form-btn-gris" (click)="cerrarFormularioContrasena()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</ng-template>

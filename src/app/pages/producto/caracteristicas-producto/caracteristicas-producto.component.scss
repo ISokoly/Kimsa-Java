@@ -27,15 +27,15 @@ h2 {
 
 .form-modal,
 .form-modal-create {
-  position: fixed;
-  top: 52.5%;
-  left: 56.5%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%);
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
+  animation: fadeIn .25s ease-in-out;
 }
 
 .form-modal-create {

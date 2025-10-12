@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { MatInputModule } from '@angular/material/input';
@@ -6,24 +6,21 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatSelectModule } from "@angular/material/select";
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { MarcasComponent } from "./marcas/marcas.component";
 import { CaracteristicasProductoComponent } from "./caracteristicas-producto/caracteristicas-producto.component";
-import { firstValueFrom } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
+import { OverlayHandle, OverlayPortalService } from '../../core/services/overlay-portal.service';
 
-/* ===== Tipos compactos ===== */
 interface Brand { idBrand: number; name: string; category?: number; }
 interface Product {
-  idProduct: number;
-  name: string;
-  price: number;
-  idCategory: number;
-  idBrand?: number | null;
-  brand?: { idBrand: number; name: string } | null;
-  idImage?: number | null;
-  disabled: boolean;
+  idProduct: number; name: string; price: number; idCategory: number;
+  idBrand?: number | null; brand?: { idBrand: number; name: string } | null;
+  idImage?: number | null; disabled: boolean;
 }
 interface Category { idCategory: number; name: string; }
 interface ImageResp { idImage?: number; id?: number; url: string; }
@@ -41,55 +38,53 @@ interface ImageResp { idImage?: number; id?: number; url: string; }
   styleUrls: ['./producto.component.scss']
 })
 export class ProductoComponent implements OnInit {
-
-  /* ===== Estado ===== */
   productos: Product[] = [];
   marcas: Brand[] = [];
   marcaMap: Record<number, string> = {};
   imagenesCache: Record<number, string> = {};
 
   formData = {
-    name: '',
-    price: 0,
-    category: null as number | null,
-    brand: null as number | null,
-    disabled: false,
-    idImage: null as number | null
+    name: '', price: 0, category: null as number | null,
+    brand: null as number | null, disabled: false, idImage: null as number | null
   };
 
   selectedProducto: Product | null = null;
-
   imagePreview: string | null = null;
   selectedFile: File | null = null;
   nombreArchivo: string | null = null;
 
+  // UI (solo para lógica interna; la visibilidad la controla el overlay)
   mostrarFormulario = false;
   mostrarFormularioMarca = false;
   mostrarFormularioCrearMarca = false;
   mostrarCaracteristicasProducto = false;
   mostrarMasOpciones = false;
 
-  // 🔎 Filtro: primero se elige tipo, luego se escribe
   tipoFiltro: '' | 'nombre' | 'marca' = '';
   filtro = '';
+  estadoFiltro: 'habilitados' | 'deshabilitados' | 'todos' = 'habilitados';
   filtroSugs: string[] = [];
-
   isLoading = false;
 
   categoriaId: number | null = null;
   categoriaNombre = '';
-
-  // Para características (si las usas en el modal de producto)
   features: any[] = [];
   productFeatures: any[] = [];
 
-  constructor(
-    private api: ApiService,
-    private toast: ToastService,
-    private route: ActivatedRoute
-  ) { }
+  @ViewChild('formProductoTpl') formProductoTpl!: TemplateRef<any>;
+  @ViewChild('formOrganizarMarcasTpl') formOrganizarMarcasTpl!: TemplateRef<any>;
+  @ViewChild('formCrearMarcaTpl') formCrearMarcaTpl!: TemplateRef<any>;
+  @ViewChild('formCaractTpl') formCaractTpl!: TemplateRef<any>;
 
-  /* ==================== Lifecycle ==================== */
+  private overlay = inject(OverlayPortalService);
+
+  private productFormRef?: OverlayHandle;
+  private organizarMarcasRef?: OverlayHandle;
+  private crearMarcaRef?: OverlayHandle;
+  private caractRef?: OverlayHandle;
+
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog) { }
+
   ngOnInit(): void {
     this.route.paramMap.subscribe(async params => {
       const nombreCategoria = params.get('nombreCategoria');
@@ -101,10 +96,9 @@ export class ProductoComponent implements OnInit {
 
   get estaEditando(): boolean { return !!this.selectedProducto; }
 
-  /* ==================== Carga de datos ==================== */
   private mapProductos(raw: any[], idCategory: number): Product[] {
     return (raw || [])
-      .filter((p: any) => !p.disabled && (p.idCategory ?? p.category?.idCategory) === idCategory)
+      .filter((p: any) => (p.idCategory ?? p.category?.idCategory) === idCategory)
       .map((p: any) => {
         const idBrand = p.idBrand ?? p.brand?.idBrand ?? null;
         return {
@@ -120,25 +114,15 @@ export class ProductoComponent implements OnInit {
       });
   }
 
-  private async ensureImagen(
-    file: File | null,
-    nombre: string,
-    categoriaId: number,
-    currentIdImage: number | null
-  ): Promise<number | null> {
+  private async ensureImagen(file: File | null, nombre: string, categoriaId: number, currentIdImage: number | null): Promise<number | null> {
     if (!file) return currentIdImage;
-
     if (currentIdImage) {
-      const res = await firstValueFrom(
-        this.api.updateImagen(currentIdImage, file, nombre, 'producto', String(categoriaId))
-      ) as ImageResp;
+      const res = await firstValueFrom(this.api.updateImagen(currentIdImage, file, nombre, 'producto', String(categoriaId))) as ImageResp;
       const imgId = res.idImage ?? res.id ?? currentIdImage;
       this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
       return imgId;
     } else {
-      const res = await firstValueFrom(
-        this.api.uploadImage(file, nombre, 'producto', String(categoriaId))
-      ) as ImageResp;
+      const res = await firstValueFrom(this.api.uploadImage(file, nombre, 'producto', String(categoriaId))) as ImageResp;
       const imgId = res.idImage ?? res.id ?? null;
       if (imgId) this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
       return imgId;
@@ -166,7 +150,6 @@ export class ProductoComponent implements OnInit {
     try {
       const categoria = await firstValueFrom(this.api.getCategoriaByNombre(nombre)) as Category;
       this.categoriaId = categoria.idCategory;
-
       await this.loadMarcasPorCategoria(this.categoriaId);
       await this.loadProductosPorCategoria(this.categoriaId);
     } catch {
@@ -177,11 +160,7 @@ export class ProductoComponent implements OnInit {
   async loadProductosPorCategoria(idCategory: number): Promise<void> {
     const data = await firstValueFrom(this.api.getProductos());
     this.productos = this.mapProductos(data, idCategory);
-
-    // precarga URLs de imágenes
-    await Promise.all(
-      this.productos.filter(p => !!p.idImage).map(p => this.loadImagen(p.idImage!))
-    );
+    await Promise.all(this.productos.filter(p => !!p.idImage).map(p => this.loadImagen(p.idImage!)));
   }
 
   async loadMarcasPorCategoria(idCategory: number): Promise<void> {
@@ -196,26 +175,32 @@ export class ProductoComponent implements OnInit {
       error: () => this.features = []
     });
   }
-  /* ==================== Filtro y sugerencias ==================== */
-  filtrarProductos(): Product[] {
-    const q = this.filtro.trim().toLowerCase();
-    if (!q || !this.tipoFiltro) return this.productos;
 
-    return this.productos.filter(p => {
+  private productosPorEstado(): Product[] {
+    if (this.estadoFiltro === 'habilitados') return this.productos.filter(p => !p.disabled);
+    if (this.estadoFiltro === 'deshabilitados') return this.productos.filter(p => p.disabled);
+    return this.productos;
+  }
+
+  filtrarProductos(): Product[] {
+    const base = this.productosPorEstado();
+    const q = this.filtro.trim().toLowerCase();
+    if (!q || !this.tipoFiltro) return base;
+    return base.filter(p => {
       const nombre = p.name?.toLowerCase() || '';
       const marca = p.brand?.name?.toLowerCase() || '';
       return this.tipoFiltro === 'nombre' ? nombre.includes(q) : marca.includes(q);
     });
   }
 
+  onEstadoFiltroChange(): void { this.onFiltroTyping(this.filtro); }
+
   onFiltroTyping(val: any): void {
     const q = (val ?? '').toString().trim().toLowerCase();
     this.filtro = val ?? '';
-
     if (!this.tipoFiltro || !q) { this.filtroSugs = []; return; }
-
     if (this.tipoFiltro === 'nombre') {
-      const pool = this.productos.map(p => p.name).filter(Boolean) as string[];
+      const pool = this.productosPorEstado().map(p => p.name).filter(Boolean) as string[];
       this.filtroSugs = Array.from(new Set(pool.filter(n => n.toLowerCase().includes(q)))).slice(0, 12);
     } else {
       const pool = this.marcas.map(m => m.name).filter(Boolean) as string[];
@@ -223,17 +208,9 @@ export class ProductoComponent implements OnInit {
     }
   }
 
-  onFiltroSugSelected(nombre: string): void {
-    this.filtro = nombre;
-    this.filtroSugs = [];
-  }
+  onFiltroSugSelected(nombre: string): void { this.filtro = nombre; this.filtroSugs = []; }
+  onTipoFiltroChange(): void { this.filtro = ''; this.filtroSugs = []; }
 
-  onTipoFiltroChange(): void {
-    this.filtro = '';
-    this.filtroSugs = [];
-  }
-
-  /* ==================== Imágenes ==================== */
   async loadImagen(idImage: number): Promise<void> {
     try {
       const res = await firstValueFrom(this.api.getImagenById(idImage)) as ImageResp;
@@ -250,7 +227,7 @@ export class ProductoComponent implements OnInit {
 
   onFileSelected(event: any): void {
     const file: File | undefined = event?.target?.files?.[0];
-    const MAX_BYTES = 1 * 1024 * 1024; // 1MB
+    const MAX_BYTES = 1 * 1024 * 1024;
     if (!file) return this.resetImageSelection();
     if (file.size > MAX_BYTES) {
       this.toast.mostrarMensaje('❌ La imagen no puede ser mayor a 1 MB.');
@@ -258,7 +235,6 @@ export class ProductoComponent implements OnInit {
     }
     this.selectedFile = file;
     this.nombreArchivo = file.name;
-
     const r = new FileReader();
     r.onload = (e: any) => this.imagePreview = e.target.result;
     r.readAsDataURL(file);
@@ -270,14 +246,10 @@ export class ProductoComponent implements OnInit {
     this.nombreArchivo = null;
   }
 
-  onImageError(ev: Event): void {
-    (ev.target as HTMLImageElement).src = '/img/no-image.png';
-  }
+  onImageError(ev: Event): void { (ev.target as HTMLImageElement).src = '/img/no-image.png'; }
 
-  /* ==================== Crear / Actualizar ==================== */
   async crearProducto(): Promise<void> {
     if (!this.requireCamposBasicos() || !this.categoriaId) return;
-
     this.isLoading = true;
     try {
       const idImage = await this.ensureImagen(this.selectedFile, this.formData.name.trim(), this.categoriaId, null);
@@ -287,14 +259,11 @@ export class ProductoComponent implements OnInit {
       await this.loadProductosPorCategoria(this.categoriaId);
     } catch {
       this.toast.mostrarMensaje('❌ Error al crear producto');
-    } finally {
-      this.isLoading = false;
-    }
+    } finally { this.isLoading = false; }
   }
 
   async actualizarProducto(): Promise<void> {
     if (!this.requireCamposBasicos() || !this.categoriaId || !this.selectedProducto) return;
-
     this.isLoading = true;
     try {
       const currentIdImg = this.selectedProducto.idImage ?? null;
@@ -305,16 +274,12 @@ export class ProductoComponent implements OnInit {
       await this.loadProductosPorCategoria(this.categoriaId);
     } catch {
       this.toast.mostrarMensaje('❌ Error al actualizar producto');
-    } finally {
-      this.isLoading = false;
-    }
+    } finally { this.isLoading = false; }
   }
 
-  guardarProducto(): void {
-    this.estaEditando ? this.actualizarProducto() : this.crearProducto();
-  }
+  guardarProducto(): void { this.estaEditando ? this.actualizarProducto() : this.crearProducto(); }
 
-  /* ==================== Formulario (UI) ==================== */
+  // ======= OVERLAY DEL FORM DE PRODUCTO =======
   abrirFormulario(producto: Product | null = null): void {
     this.selectedProducto = producto;
     this.formData = {
@@ -325,17 +290,24 @@ export class ProductoComponent implements OnInit {
       idImage: producto?.idImage ?? null,
       disabled: false
     };
+
+    if (this.categoriaId && (!this.marcas || this.marcas.length === 0)) {
+      this.loadMarcasPorCategoria(this.categoriaId);
+    }
     this.resetImageSelection();
     this.mostrarFormulario = true;
     this.mostrarMasOpciones = this.formData.brand != null;
-    document.body.style.overflow = 'hidden';
+    this.productFormRef = this.overlay.open(this.formProductoTpl);
   }
 
   cerrarFormulario(): void {
     this.resetForm();
     this.mostrarFormulario = false;
     this.mostrarMasOpciones = false;
-    document.body.style.overflow = 'auto';
+    if (this.productFormRef) {
+      this.productFormRef?.close()
+      this.productFormRef = undefined;
+    }
   }
 
   resetForm(): void {
@@ -346,49 +318,67 @@ export class ProductoComponent implements OnInit {
 
   editProducto(producto: Product): void { this.abrirFormulario(producto); }
 
-  /* ===== Marcas (modal) ===== */
   abrirFormularioMarca(): void {
     this.mostrarFormularioMarca = true;
     if (this.categoriaId) this.loadMarcasPorCategoria(this.categoriaId);
+    this.organizarMarcasRef = this.overlay.open(this.formOrganizarMarcasTpl);
   }
-  abrirFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = true; }
-  abrirFormularioMarcaDesdeSelect(): void { this.mostrarFormularioMarca = true; }
-  cerrarFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = false; }
-  cerrarFormularioMarca(): void { this.mostrarFormularioMarca = false; }
+  abrirFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl) }
+  abrirFormularioMarcaDesdeSelect(): void { this.mostrarFormularioMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl) }
+  cerrarFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = false; this.crearMarcaRef?.close(); this.crearMarcaRef = undefined; }
+  cerrarFormularioMarca(): void { this.mostrarFormularioMarca = false; this.organizarMarcasRef?.close(); this.organizarMarcasRef = undefined; }
 
-  /* ===== Características (modal) ===== */
   abrirFormularioCrearCaracteristicaProducto(): void {
+    if (!this.selectedProducto) return;
     this.mostrarCaracteristicasProducto = true;
     this.loadFeatures();
+    this.caractRef = this.overlay.open(this.formCaractTpl);
   }
-  cerrarFormularioCaracteristicaProducto(): void { this.mostrarCaracteristicasProducto = false; }
+  cerrarFormularioCaracteristicaProducto(): void { this.mostrarCaracteristicasProducto = false; this.caractRef?.close(); this.caractRef = undefined; }
 
-  /* ==================== Utilidades ==================== */
   deshabilitar(p: Product): void {
-    if (!confirm('¿Seguro que deseas deshabilitar este producto?')) return;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true,
+      data: { title: 'Deshabilitar producto', message: `¿Seguro que deseas deshabilitar el producto "${p.name}"?` }
+    });
+    dialogRef.afterClosed().subscribe(ok => {
+      if (!ok) return;
+      const payload = {
+        name: p.name, price: p.price,
+        category: { idCategory: p.idCategory ?? this.categoriaId },
+        brand: p.idBrand ? { idBrand: p.idBrand } : null,
+        idImage: p.idImage ?? null,
+        disabled: true
+      };
+      this.api.updateProducto(p.idProduct, payload).subscribe({
+        next: async () => {
+          this.toast.mostrarMensaje('✅ Producto deshabilitado correctamente');
+          if (this.categoriaId) await this.loadProductosPorCategoria(this.categoriaId);
+        },
+        error: () => this.toast.mostrarMensaje('❌ Error al deshabilitar producto')
+      });
+    });
+  }
+  habilitar(p: Product): void {
+    if (!this.categoriaId) return;
 
     const payload = {
       name: p.name,
       price: p.price,
-      // usa la del producto si existe; si no, la del estado actual del componente
       category: { idCategory: p.idCategory ?? this.categoriaId },
-      brand: p.idBrand ? { idBrand: p.idBrand } : null,
+      brand: (p.idBrand ?? p.brand?.idBrand) ? { idBrand: (p.idBrand ?? p.brand!.idBrand) } : null,
       idImage: p.idImage ?? null,
-      disabled: true
+      disabled: false
     };
 
     this.api.updateProducto(p.idProduct, payload).subscribe({
       next: async () => {
-        this.toast.mostrarMensaje('✅ Producto deshabilitado correctamente');
-        if (this.categoriaId) await this.loadProductosPorCategoria(this.categoriaId);
+        this.toast.mostrarMensaje('✅ Producto habilitado correctamente');
+        await this.loadProductosPorCategoria(this.categoriaId!);
       },
-      error: (e) => {
-        console.error(e);
-        this.toast.mostrarMensaje('❌ Error al deshabilitar producto');
-      }
+      error: () => this.toast.mostrarMensaje('❌ Error al habilitar producto')
     });
   }
-
 
   onMarcaDeleted(idBrand: number): void {
     if (this.categoriaId) {

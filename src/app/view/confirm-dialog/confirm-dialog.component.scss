@@ -1,0 +1,67 @@
+@use "sass:color";
+
+$danger-color: #e74c3c;
+$bg-color: #f9f9f9;
+
+.confirm-dialog {
+  max-width: 420px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  padding: 20px 24px;
+  background-color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 120ms ease-in;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .icon-warn { color: $danger-color; font-size: 36px; }
+  .title { margin: 0; font-size: 18px; font-weight: 700; color: #1d2630; }
+}
+
+.body {
+  background: $bg-color;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #333;
+  font-size: 15px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &.btn-cancelar {
+    background-color: #e9eef3; color: #1d2630;
+    &:hover { background-color: #dfe6ed; }
+  }
+
+  &.btn-aceptar {
+    background-color: $danger-color; color: #fff;
+    &:hover { background-color: color.scale($danger-color, $lightness: -12%); transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}

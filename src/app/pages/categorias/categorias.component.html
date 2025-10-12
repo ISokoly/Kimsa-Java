@@ -105,8 +105,7 @@
 </div>
 }
 
-@if(mostrarFormularioProducto) {
-<div class="overlay">
+<ng-template #formCategoriaTpl>
   <div class="form-modal">
     <h2 class="form-title">Añadir Producto</h2>
     <form class="form-container">
@@ -163,5 +162,4 @@
       </div>
     </form>
   </div>
-</div>
-}
+</ng-template>

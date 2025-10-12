@@ -1,0 +1,17 @@
+<div class="confirm-dialog">
+  <div class="header">
+    <span class="icon-warn" aria-hidden="true">
+      <mat-icon color="warn">warning</mat-icon>
+    </span>
+    <h2 class="title">{{ data.title || 'Confirmar acción' }}</h2>
+  </div>
+
+  <div class="body">
+    <p>{{ data.message || '¿Está seguro de continuar?' }}</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-cancelar" (click)="cancelar()">Cancelar</button>
+    <button class="btn btn-aceptar" (click)="aceptar()">Aceptar</button>
+  </div>
+</div>

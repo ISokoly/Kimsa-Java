@@ -25,24 +25,46 @@
     margin-right: 8px;
 }
 
+.mensaje-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 99999;
+}
+
+.mensaje-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+    color: #fff;
+    animation: aparecerDesaparecer 5s forwards;
+}
+
+.mensaje-texto {
+    flex: 1;
+    margin-right: 8px;
+}
+
 .mensaje-btn {
-    background-color: transparent;
+    background: transparent;
     border: none;
-    color: white;
+    color: inherit;
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     cursor: pointer;
-    font-size: 14px;
-    padding: 0;
-    transition: background-color 0.2s ease;
 }
 
 .mensaje-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, .2);
 }
 
 .mensaje-exito {
@@ -77,4 +99,28 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+}
+
+/* Overlay host global */
+.app-overlay-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .6);
+}
+
+.app-overlay-panel {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: auto;
+}
+
+.app-overlay-panel>* {
+    pointer-events: auto;
+}
+
+/* Para bloquear scroll del body cuando hay overlay (el servicio añade esta clase) */
+.lock-scroll {
+    overflow: hidden;
 }

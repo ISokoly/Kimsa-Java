@@ -1,42 +1,41 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { MensajeToast, ToastService } from './core/services/toast.service';
 import { CommonModule } from '@angular/common';
+
+import { MensajeToast, ToastService } from './core/services/toast.service';
+import { OverlayPortalService } from './core/services/overlay-portal.service';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 @Component({
   selector: 'app-root',
-  imports: [
-    RouterOutlet,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSidenavModule,
-    CommonModule
-  ],
+  standalone: true,
+  imports: [RouterOutlet, MatToolbarModule, MatButtonModule, MatIconModule, MatSidenavModule, CommonModule,     MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule, MatAutocompleteModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
+  overlay = inject(OverlayPortalService);
+
+  private toastService = inject(ToastService);
   mensajes: MensajeToast[] = [];
 
-  constructor(private toastService: ToastService) {
-  }
+  trackByMensajeId = (_: number, m: MensajeToast) => m.id;
+  trackByOverlay = (_: number, e: { id: number }) => e.id;
 
   ngOnInit() {
-    this.toastService.mensajes$.subscribe(mensajes => {
-      this.mensajes = mensajes;
-    });
+    this.toastService.mensajes$.subscribe(m => (this.mensajes = m));
   }
 
-  trackByMensajeId(index: number, mensaje: MensajeToast) {
-    return mensaje.id;
-  }
-
-  cerrarMensaje(mensaje: MensajeToast) {
-    this.toastService.eliminarMensaje(mensaje.id);
+  cerrarMensaje(m: MensajeToast) {
+    this.toastService.eliminarMensaje(m.id);
   }
 }

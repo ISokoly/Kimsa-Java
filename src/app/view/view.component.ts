@@ -7,7 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MenuComponent } from '../components/menu/menu.component';
 import { ApiService } from '../core/services/api.service';
 import { CommonModule } from '@angular/common';
-import { MensajeToast, ToastService } from '../core/services/toast.service';
+import { ToastService } from '../core/services/toast.service';
 
 
 @Component({
@@ -33,11 +33,16 @@ export class ViewComponent {
   sidenavWidth = computed(() => this.collapsed() ? '65px' : '250px');
   isUsuariosPage: boolean = false;
   static estaSeleccionado: boolean;
+  isReady = false;
 
   constructor(private router: Router, private apiService: ApiService, private toastService: ToastService) {
     this.router.events.subscribe(() => {
       this.isUsuariosPage = this.router.url.startsWith('/view/usuarios');
     });
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => this.isReady = true);
   }
 
   ngOnInit() {

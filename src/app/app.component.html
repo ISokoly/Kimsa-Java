@@ -1,13 +1,26 @@
 <router-outlet></router-outlet>
+
+@if (overlay.hasAny()) {
+<div class="app-overlay">
+
+  @for (entry of overlay.entries(); track entry.id; let i = $index) {
+  <div class="app-overlay-scrim" [style.zIndex]="1000 + i*2"></div>
+  <div class="app-overlay-panel" [style.zIndex]="1001 + i*2">
+    <ng-container *ngTemplateOutlet="entry.tpl"></ng-container>
+  </div>
+  }
+</div>
+}
+
 <div class="mensaje-container">
-    @for (mensaje of mensajes; track mensaje.id) {
-    <div class="mensaje-card" [ngClass]="{
+  @for (mensaje of mensajes; track mensaje.id) {
+  <div class="mensaje-card" [ngClass]="{
       'mensaje-exito': mensaje.texto.startsWith('✅'),
       'mensaje-error': mensaje.texto.startsWith('❌'),
       'mensaje-alert': mensaje.texto.startsWith('⚠️')
     }">
-        <span class="mensaje-texto">{{ mensaje.texto }}</span>
-        <button class="mensaje-btn" (click)="cerrarMensaje(mensaje)">✖</button>
-    </div>
-    }
+    <span class="mensaje-texto">{{ mensaje.texto }}</span>
+    <button class="mensaje-btn" (click)="cerrarMensaje(mensaje)">✖</button>
+  </div>
+  }
 </div>

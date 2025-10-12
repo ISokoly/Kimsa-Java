@@ -21,42 +21,6 @@ h2 {
     background-color: $bg-color;
 }
 
-.grid-clientes {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
-}
-
-.client-card {
-    background: #fff;
-    border: 1px solid #ccc;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-
-    &:hover {
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .client-info {
-        p {
-            font-size: 14px;
-            color: #333;
-
-            strong {
-                color: $primary-color;
-            }
-        }
-    }
-
-    button {
-        margin-top: 10px;
-    }
-}
-
 @media (max-width: 1000px) {
     .client-card {
         flex: 1 1 calc(50% - 12px);
@@ -97,28 +61,18 @@ button {
     }
 }
 
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 998;
-}
-
-.modal,
 .form-modal {
-    position: fixed;
-    top: 52.5%;
-    left: 56.5%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
     transform: translate(-50%, -50%);
     background: #fff;
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     width: 400px;
-    animation: fadeIn 0.3s ease-in-out;
+    max-width: min(92vw, 480px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
+    animation: fadeIn .25s ease-in-out;
 }
 
 .form-title {
@@ -194,4 +148,56 @@ button {
 .tabla-scroll {
     width: 100%;
     overflow-x: auto;
+    margin-top: 1.5rem;
+
+    table {
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    th {
+        background: $primary-color;
+        color: #fff;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    td {
+        text-align: center;
+        padding: 10px;
+        color: #333;
+    }
+
+    .opciones-botones {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    tr[mat-row] {
+        &:nth-child(even) td {
+            background: #fafafa;
+        }
+
+        &:hover td {
+            background: color.scale($primary-color, $lightness: 90%);
+        }
+    }
+}
+
+.paginador {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+
+    .paginas {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
 }
