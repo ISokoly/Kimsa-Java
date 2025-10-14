@@ -1,85 +1,110 @@
-  @if (soloFormulario || mostrarFormularioAgregarProductFeature) {
-  <div class="form-modal-create">
-    <h2 class="form-title">
-      {{ selectedProductFeature ? 'Editar Característica del Producto' : 'Crear Característica del Producto' }}
-    </h2>
+<!-- ============ FORMULARIO (crear/editar) ============ -->
+@if (soloFormulario || mostrarFormularioAgregarProductFeature) {
+<div class="form-modal-create">
+  <h2 class="form-title">
+    {{ selectedProductFeature ? 'Editar Característica del Producto' : 'Crear Característica del Producto' }}
+  </h2>
 
-    <form class="form-container">
+  <form class="form-container">
+    <div class="row-inline">
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Característica base</mat-label>
-        <mat-select [(ngModel)]="formProductFeature.feature" name="feature" required (openedChange)="onSelectOpened($event)">
+        <mat-select [(ngModel)]="formProductFeature.feature" name="feature" required
+          (openedChange)="onSelectOpened($event)">
           <mat-option [value]="null" disabled>Seleccione una característica</mat-option>
 
           @for (feature of features; track feature.idFeature) {
           <mat-option [value]="feature.idFeature">{{ feature.featureName }}</mat-option>
           }
-          <mat-option (click)="abrirCrearFeature()" class="crear-feature-option">
+
+          <mat-option class="crear-feature-option" (click)="abrirCrearFeatureSolo(); $event.stopPropagation();">
             ➕ Crear nueva característica
           </mat-option>
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Valor de la característica</mat-label>
-        <input matInput [(ngModel)]="formProductFeature.featureValue" name="valor"
-          placeholder="Ejemplo: Vidrio, Plástico..." required autocomplete="off" />
-      </mat-form-field>
-
-      <div class="botones">
-        <button type="button" class="form-btn-verde"
-          (click)="selectedProductFeature ? updateProductFeature() : createProductFeature()">
-          {{ selectedProductFeature ? 'Actualizar' : 'Crear' }}
-        </button>
-
-        <button type="button" (click)="cancelEditProductFeature()" class="form-btn-gris">
-          Cancelar
+      <div class="config">
+        <button type="button" class="gear-btn" aria-label="Configurar características base"
+          (click)="abrirConfigurarFeature()">
+          <mat-icon>settings</mat-icon>
         </button>
       </div>
-    </form>
-  </div>
-  }
 
-  <!-- ================== LISTA DE FEATURES PRODUCT EXISTENTES ================== -->
-  @if (!soloFormulario && !mostrarFormularioAgregarProductFeature) {
-  <div class="form-modal" [ngStyle]="{'width': getModalWidth()}">
-    <h2 class="form-title">Características del Producto</h2>
-
-    <div class="lista-product-features" [ngStyle]="{'grid-template-columns': 'repeat(' + getGridColumns() + ', 1fr)'}"
-      [class.grid-list]="productFeatures.length > 3">
-      @for (pf of productFeatures; track $index) {
-      <div class="product-feature-item">
-        <div class="product-feature-wrapper">
-          <span class="product-feature-name">{{ pf.feature?.featureName }}</span>
-          <span class="product-feature-value">- {{ pf.featureValue }}</span>
-        </div>
-
-        <span class="actions">
-          <button class="icon-button edit-btn" (click)="editProductFeature(pf)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button class="icon-button x-btn" (click)="deleteProductFeature(pf.idProductFeature)">
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </span>
-      </div>
-      }
     </div>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Valor de la característica</mat-label>
+      <input matInput [(ngModel)]="formProductFeature.featureValue" name="valor"
+        placeholder="Ejemplo: Vidrio, Plástico..." required autocomplete="off"
+        (keyup.enter)="selectedProductFeature ? updateProductFeature() : createProductFeature()"
+        (keyup.escape)="cancelEditProductFeature()" />
+    </mat-form-field>
 
     <div class="botones">
-      <button type="button" class="form-btn-verde" (click)="abrirFormularioAgregarProductFeature()">
-        Agregar Característica
+      <button mat-raised-button color="primary" class="form-btn-verde"
+        (click)="selectedProductFeature ? updateProductFeature() : createProductFeature()">
+        {{ selectedProductFeature ? 'Actualizar' : 'Crear' }}
       </button>
-      <button type="button" class="form-btn-gris" (click)="cerrarFormularioProductFeature()">
-        Cerrar
+
+      <button mat-raised-button type="button" (click)="cancelEditProductFeature()" class="form-btn-gris">
+        Cancelar
       </button>
     </div>
-  </div>
-  }
+  </form>
+</div>
+}
 
-  <!-- ================== MODAL PARA CREAR NUEVA FEATURE ================== -->
-  @if (mostrarCrearFeature) {
-  <div class="modal-overlay">
-    <app-caracteristicas (closed)="onFeatureCreated()">
-    </app-caracteristicas>
+<!-- ============ LISTA (con overlay y modal) ============ -->
+@if (!soloFormulario && !mostrarFormularioAgregarProductFeature) {
+<div class="form-modal" [ngStyle]="{'width': getModalWidth()}">
+  <h2 class="form-title">Características del Producto</h2>
+
+  <div class="lista-product-features" [ngStyle]="{'grid-template-columns': 'repeat(' + getGridColumns() + ', 1fr)'}"
+    [class.grid-list]="productFeatures.length > 3">
+
+    @for (pf of productFeatures; track $index) {
+    <div class="product-feature-item">
+      <div class="product-feature-wrapper">
+        <span class="product-feature-name">{{ pf.feature?.featureName }}</span>
+        <span class="product-feature-value">- {{ pf.featureValue }}</span>
+      </div>
+
+      <span class="actions">
+        <button class="icon-button edit-btn" (click)="editProductFeature(pf)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button class="icon-button x-btn" (click)="deleteProductFeature(pf.idProductFeature)">
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </span>
+    </div>
+    }
+
+    @if (productFeatures.length === 0) {
+    <div class="empty">
+      <mat-icon>info</mat-icon>
+      <span>No hay características cargadas para este producto.</span>
+    </div>
+    }
   </div>
-  }
+
+  <div class="botones">
+    <button type="button" class="form-btn-verde" (click)="abrirFormularioAgregarProductFeature()">
+      Agregar Característica
+    </button>
+    <button type="button" class="form-btn-gris" (click)="cerrarFormularioProductFeature()">
+      Cerrar
+    </button>
+  </div>
+</div>
+}
+
+<ng-template #formCrearCaractTpl>
+  <app-caracteristicas [soloFormulario]="true" (closed)="cerrarCrearFeatureSolo()">
+  </app-caracteristicas>
+</ng-template>
+
+<ng-template #formOrgCaractTpl>
+  <app-caracteristicas [soloFormulario]="false" (closed)="cerrarConfigurarFeature()">
+  </app-caracteristicas>
+</ng-template>

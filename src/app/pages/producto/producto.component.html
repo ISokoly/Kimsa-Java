@@ -1,22 +1,36 @@
 <div class="tabla-scroll">
   <div class="products-container">
     <h1>Productos - {{categoriaNombre}}</h1>
+
     <div class="filtros">
       <div style="display: flex; gap: 10px; align-items: center;">
         <mat-form-field appearance="fill" style="flex: 1;">
           <mat-label>
-            {{ !tipoFiltro ? 'Seleccione tipo de búsqueda' :
-            (tipoFiltro === 'nombre' ? 'Buscar producto' : 'Buscarmarca')
+            {{
+            !tipoFiltro
+            ? 'Seleccione tipo de búsqueda'
+            : (tipoFiltro === 'nombre'
+            ? 'Buscar producto'
+            : (tipoFiltro === 'marca'
+            ? 'Buscar marca'
+            : 'Buscar característica (Ej: Tamaño: Grande)'))
             }}
           </mat-label>
 
-          <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="filtro"
-            (ngModelChange)="onFiltroTyping($event)"
-            [placeholder]="!tipoFiltro ? 'Primero elige: Producto o Marca' : (tipoFiltro === 'nombre' ? 'Ingrese nombre...' : 'Ingrese marca...')"
-            autocomplete="off" />
+          <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="mainQuery"
+            (ngModelChange)="onMainTyping($event)" [placeholder]="
+              !tipoFiltro
+                ? 'Primero elige: Producto, Marca o Característica'
+                : (tipoFiltro === 'nombre'
+                      ? 'Ingrese nombre...'
+                      : (tipoFiltro === 'marca'
+                            ? 'Ingrese marca...'
+                            : 'Ej: Tamaño: Grande, Material: Madera'))
+            " autocomplete="off" />
 
-          <mat-autocomplete #autoBusq="matAutocomplete" (optionSelected)="onFiltroSugSelected($event.option.value)">
-            @for (s of filtroSugs; track s) {
+          <mat-autocomplete #autoBusq="matAutocomplete" (optionSelected)="onMainAutoSelected($event.option.value)"
+            [displayWith]="getDisplayWith()" autoActiveFirstOption="false">
+            @for (s of mainSuggestions; track s) {
             <mat-option [value]="s">{{ s }}</mat-option>
             }
           </mat-autocomplete>
@@ -27,6 +41,7 @@
           <mat-select [(ngModel)]="tipoFiltro" (selectionChange)="onTipoFiltroChange()">
             <mat-option [value]="'nombre'">Nombre</mat-option>
             <mat-option [value]="'marca'">Marca</mat-option>
+            <mat-option [value]="'caracteristica'">Característica</mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -38,7 +53,28 @@
             <mat-option value="todos">Todos</mat-option>
           </mat-select>
         </mat-form-field>
+        @if (tipoFiltro === 'caracteristica') {
+        <div class="boton-limpiar">
+          <button mat-raised-button color="primary" (click)="clearFeatureFilters()">
+            Limpiar características
+          </button>
+        </div>
+        }
       </div>
+
+      @if (tipoFiltro === 'caracteristica') {
+      <div class="chips-row" style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+        <mat-chip-listbox class="flex-grow">
+          @for (tag of selectedFeatureTags; track $index) {
+          <mat-chip (removed)="removeSelectedFeatureTag(tag)" removable>
+            {{ tag }}
+            <button matChipRemove aria-label="Remover">×</button>
+          </mat-chip>
+          }
+
+        </mat-chip-listbox>
+      </div>
+      }
     </div>
 
     <div class="products-grid">
@@ -83,7 +119,7 @@
     </div>
 
     @if (marcas && marcas.length > 0) {
-      <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
+    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
       <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioMarca()"
         [disabled]="isLoading">
         Organizar Marcas
@@ -104,7 +140,7 @@
       </app-marcas>
     </ng-template>
 
-    <ng-template #formCaractTpl>
+    <ng-template #formProdCaractTpl>
       <div style="max-width: min(96vw, 900px); width: 820px;">
         @if (selectedProducto) {
         <app-caracteristicas-producto [productoSeleccionado]="selectedProducto.idProduct"
@@ -115,6 +151,7 @@
     </ng-template>
   </div>
 </div>
+
 <ng-template #formProductoTpl>
   <div class="form-modal">
     <h2 class="form-title">

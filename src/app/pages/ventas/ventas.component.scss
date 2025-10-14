@@ -157,7 +157,6 @@ button {
 
     &:disabled {
       opacity: 0.45;
-      background: color.scale($primary-color, $lightness: 60%);
       cursor: not-allowed;
     }
 
@@ -180,6 +179,20 @@ button {
 
     &:hover:not(:disabled) {
       background: color.scale($pay-color, $lightness: -30%);
+    }
+
+    &.confirmed {
+      background: $secondary-color;
+      color: #fff;
+
+      &:hover:not(:disabled) {
+        background: color.scale($secondary-color, $lightness: -30%);
+      }
+    }
+
+    &.cancelled {
+      background: $danger-color;
+      color: #fff;
     }
   }
 }

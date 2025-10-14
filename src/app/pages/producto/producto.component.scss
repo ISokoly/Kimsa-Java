@@ -244,19 +244,6 @@ button {
   }
 }
 
-// Animaciones
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -55%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
-
 .tabla-scroll {
   width: 100%;
   overflow-x: auto;
@@ -283,16 +270,6 @@ button {
   width: 50px;
   height: 50px;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 button:disabled {
@@ -349,5 +326,53 @@ app-marcas {
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+.chips-row {
+  margin-bottom: 8px;
+
+  mat-chip {
+    margin-top: -10px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+}
+
+.boton-limpiar {
+  margin-bottom: 15px;
+
+  button[mat-raised-button] {
+    align-self: flex-end;
+    height: 48px;
+    color: white;
+    font-weight: bold;
+    background: color.scale($primary-color, $lightness: 25%);
+
+    &:hover {
+      background: color.scale($primary-color, $lightness: 15%);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -55%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
   }
 }

@@ -1,9 +1,16 @@
 import { Component, OnInit } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+
 import { ApiService } from '../../../core/services/api.service';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ToastService } from '../../../core/services/toast.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTableModule } from '@angular/material/table';
 
 type Detalle = {
   idDetail?: number;
@@ -11,17 +18,12 @@ type Detalle = {
   idProduct?: number;
   quantity?: number;
   subtotal?: number;
-  // compat con back antiguo:
-  id_detalle?: number;
-  id_pedido?: number;
-  id_producto?: number;
-  cantidad?: number;
 };
 
 @Component({
   selector: 'app-pagos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatButtonModule, DecimalPipe, MatTableModule],
   templateUrl: './pagos.component.html',
   styleUrls: ['./pagos.component.scss']
 })
@@ -40,26 +42,22 @@ export class PagosComponent implements OnInit {
   productos: any[] = [];
 
   nuevoPago = {
-    id_pedido: null as number | null,
-    monto: 0,
-    tipo_pago: null as string | null,
-    fecha_pago: '' // 'YYYY-MM-DDTHH:mm'
+    idOrder: null as number | null,
+    amount: 0,
+    paymentType: null as string | null,
+    paymentDate: ''
   };
 
-  constructor(
-    private api: ApiService,
-    private route: ActivatedRoute,
-    private toast: ToastService
-  ) {}
+  constructor(private api: ApiService, private route: ActivatedRoute, private toast: ToastService) { }
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
     const id = +idParam;
 
-    this.cargarProductos();         // para mapear nombres
-    this.cargarPagosHechos(id);     // setea yaPagado / nuevoPago si existe
-    this.cargarPedidoExistente(id); // info de la venta + detalles
+    this.cargarProductos();
+    this.cargarPagosHechos(id);
+    this.cargarPedidoExistente(id);
   }
 
   /* ==================== Carga ==================== */
@@ -75,10 +73,10 @@ export class PagosComponent implements OnInit {
 
         if (!this.yaPagado) {
           this.nuevoPago = {
-            id_pedido: this.pedidoActual.idOrder ?? null,
-            monto: this.pedidoActual.total ?? 0,
-            tipo_pago: null,
-            fecha_pago: this.nowAsDatetimeLocal()
+            idOrder: this.pedidoActual.idOrder ?? null,
+            amount: this.pedidoActual.total ?? 0,
+            paymentType: null,
+            paymentDate: this.nowAsDatetimeLocal()
           };
         }
 
@@ -96,22 +94,22 @@ export class PagosComponent implements OnInit {
         if (list.length > 0) {
           const p = list[0];
 
-          const rawType = p?.paymentType ?? p?.tipo_pago;
+          const rawType = p?.paymentType ?? p?.paymentType;
           const tipoPago =
             rawType === 'Cash' ? 'Efectivo' :
-            rawType === 'Card' ? 'Tarjeta' :
-            rawType === 'Transfer' ? 'Transferencia' :
-            String(rawType ?? 'Efectivo');
+              rawType === 'Card' ? 'Tarjeta' :
+                rawType === 'Transfer' ? 'Transferencia' :
+                  String(rawType ?? 'Efectivo');
 
-          const amount = Number(p?.amount ?? p?.monto ?? 0);
-          const when = p?.paymentDate ?? p?.fecha_pago;
+          const amount = Number(p?.amount ?? p?.amount ?? 0);
+          const when = p?.paymentDate ?? p?.paymentDate;
 
           this.yaPagado = true;
           this.nuevoPago = {
-            id_pedido: Number(p?.idOrder ?? p?.id_pedido ?? idOrder),
-            monto: amount,
-            tipo_pago: tipoPago,
-            fecha_pago: this.toDatetimeLocal(when || new Date())
+            idOrder: Number(p?.idOrder ?? p?.idOrder ?? idOrder),
+            amount: amount,
+            paymentType: tipoPago,
+            paymentDate: this.toDatetimeLocal(when || new Date())
           };
         } else {
           this.yaPagado = false;
@@ -140,48 +138,46 @@ export class PagosComponent implements OnInit {
   }
 
   /* ==================== Guardar pago ==================== */
-registrarPago(): void {
-  // Validar campos mínimos antes de enviar
-  if (!this.pedidoActual.idOrder || !this.nuevoPago.tipo_pago || !this.nuevoPago.fecha_pago) {
-    this.toast.mostrarMensaje('⚠️ Complete tipo y fecha de pago.');
-    return;
-  }
-
-  const paymentType =
-    this.nuevoPago.tipo_pago === 'Efectivo' ? 'Cash' :
-    this.nuevoPago.tipo_pago === 'Tarjeta' ? 'Card' :
-    this.nuevoPago.tipo_pago === 'Transferencia' ? 'Transfer' : 'Cash';
-
-  const payload = {
-    idOrder: this.pedidoActual.idOrder,
-    amount: Number(this.pedidoActual.total ?? 0),
-    paymentType,
-    paymentDate: this.nuevoPago.fecha_pago ? new Date(this.nuevoPago.fecha_pago) : new Date()
-  };
-
-  this.api.createPayment(payload).subscribe({
-    next: () => {
-      this.toast.mostrarMensaje('✅ Pago registrado correctamente');
-      const updatePayload = { status: 'Confirmed' };
-      this.api.updateSale(this.pedidoActual.idOrder!, updatePayload).subscribe({
-        next: () => {
-          this.toast.mostrarMensaje('🟢 Pedido confirmado');
-          this.cargarPagosHechos(this.pedidoActual.idOrder!);
-          this.cargarPedidoExistente(this.pedidoActual.idOrder!);
-        },
-        error: (err) => {
-          console.error(err);
-          this.toast.mostrarMensaje('⚠️ Pago guardado, pero no se pudo confirmar el pedido.');
-        }
-      });
-    },
-    error: (error) => {
-      this.toast.mostrarMensaje('❌ Error al registrar el pago');
-      console.error(error);
+  registrarPago(): void {
+    // Validar campos mínimos antes de enviar
+    if (!this.pedidoActual.idOrder || !this.nuevoPago.paymentType || !this.nuevoPago.paymentDate) {
+      this.toast.mostrarMensaje('⚠️ Complete tipo y fecha de pago.');
+      return;
     }
-  });
-}
 
+    const paymentType =
+      this.nuevoPago.paymentType === 'Efectivo' ? 'Cash' :
+        this.nuevoPago.paymentType === 'Tarjeta' ? 'Card' :
+          this.nuevoPago.paymentType === 'Transferencia' ? 'Transfer' : 'Cash';
+
+    const payload = {
+      idOrder: this.pedidoActual.idOrder,
+      amount: Number(this.pedidoActual.total ?? 0),
+      paymentType,
+      paymentDate: this.nuevoPago.paymentDate ? new Date(this.nuevoPago.paymentDate) : new Date()
+    };
+
+    this.api.createPayment(payload).subscribe({
+      next: () => {
+        this.toast.mostrarMensaje('✅ Pago registrado correctamente');
+        const updatePayload = { status: 'Confirmed' };
+        this.api.updateSale(this.pedidoActual.idOrder!, updatePayload).subscribe({
+          next: () => {
+            this.cargarPagosHechos(this.pedidoActual.idOrder!);
+            this.cargarPedidoExistente(this.pedidoActual.idOrder!);
+          },
+          error: (err) => {
+            console.error(err);
+            this.toast.mostrarMensaje('⚠️ Pago guardado, pero no se pudo confirmar el pedido.');
+          }
+        });
+      },
+      error: (error) => {
+        this.toast.mostrarMensaje('❌ Error al registrar el pago');
+        console.error(error);
+      }
+    });
+  }
 
   /* ==================== Helpers ==================== */
   obtenerNombreProducto(idProducto?: number | null): string {
@@ -203,5 +199,10 @@ registrarPago(): void {
     const tzOffset = d.getTimezoneOffset();
     const local = new Date(d.getTime() - tzOffset * 60000);
     return local.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+  }
+
+  formatNumber(value: number | null | undefined, decimals: number = 2): string {
+    if (value == null || isNaN(value)) return '0.00';
+    return value.toFixed(decimals);
   }
 }

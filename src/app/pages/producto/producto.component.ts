@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatSelectModule } from "@angular/material/select";
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
@@ -31,7 +32,7 @@ interface ImageResp { idImage?: number; id?: number; url: string; }
   imports: [
     FormsModule, RouterModule,
     MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule,
-    MatAutocompleteModule,
+    MatAutocompleteModule, MatChipsModule,
     MarcasComponent, CaracteristicasProductoComponent
   ],
   templateUrl: './producto.component.html',
@@ -53,18 +54,34 @@ export class ProductoComponent implements OnInit {
   selectedFile: File | null = null;
   nombreArchivo: string | null = null;
 
-  // UI (solo para lógica interna; la visibilidad la controla el overlay)
   mostrarFormulario = false;
   mostrarFormularioMarca = false;
   mostrarFormularioCrearMarca = false;
   mostrarCaracteristicasProducto = false;
   mostrarMasOpciones = false;
 
-  tipoFiltro: '' | 'nombre' | 'marca' = '';
+  tipoFiltro: '' | 'nombre' | 'marca' | 'caracteristica' = '';
   filtro = '';
   estadoFiltro: 'habilitados' | 'deshabilitados' | 'todos' = 'habilitados';
   filtroSugs: string[] = [];
   isLoading = false;
+
+  featureQuery = '';
+  featureSuggestions: string[] = [];
+  selectedFeatureTags: string[] = []; // chips
+  displayEmpty = (_: any): string => '';
+  productFeatureTags: Record<number, string[]> = {};
+
+  get mainQuery(): string {
+    return this.tipoFiltro === 'caracteristica' ? this.featureQuery : this.filtro;
+  }
+  set mainQuery(v: string) {
+    if (this.tipoFiltro === 'caracteristica') this.featureQuery = v ?? '';
+    else this.filtro = v ?? '';
+  }
+  get mainSuggestions(): string[] {
+    return this.tipoFiltro === 'caracteristica' ? this.featureSuggestions : this.filtroSugs;
+  }
 
   categoriaId: number | null = null;
   categoriaNombre = '';
@@ -74,14 +91,14 @@ export class ProductoComponent implements OnInit {
   @ViewChild('formProductoTpl') formProductoTpl!: TemplateRef<any>;
   @ViewChild('formOrganizarMarcasTpl') formOrganizarMarcasTpl!: TemplateRef<any>;
   @ViewChild('formCrearMarcaTpl') formCrearMarcaTpl!: TemplateRef<any>;
-  @ViewChild('formCaractTpl') formCaractTpl!: TemplateRef<any>;
+  @ViewChild('formProdCaractTpl') formProdCaractTpl!: TemplateRef<any>;
 
   private overlay = inject(OverlayPortalService);
 
   private productFormRef?: OverlayHandle;
   private organizarMarcasRef?: OverlayHandle;
   private crearMarcaRef?: OverlayHandle;
-  private caractRef?: OverlayHandle;
+  private prodCaractRef?: OverlayHandle;
 
   constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog) { }
 
@@ -161,6 +178,9 @@ export class ProductoComponent implements OnInit {
     const data = await firstValueFrom(this.api.getProductos());
     this.productos = this.mapProductos(data, idCategory);
     await Promise.all(this.productos.filter(p => !!p.idImage).map(p => this.loadImagen(p.idImage!)));
+
+    // construir mapa de tags de características
+    await this.buildFeatureTagsForProducts();
   }
 
   async loadMarcasPorCategoria(idCategory: number): Promise<void> {
@@ -182,19 +202,42 @@ export class ProductoComponent implements OnInit {
     return this.productos;
   }
 
+  // ======= Filtro principal (nombre/marca + características) =======
   filtrarProductos(): Product[] {
-    const base = this.productosPorEstado();
+    let base = this.productosPorEstado();
+
     const q = this.filtro.trim().toLowerCase();
-    if (!q || !this.tipoFiltro) return base;
-    return base.filter(p => {
-      const nombre = p.name?.toLowerCase() || '';
-      const marca = p.brand?.name?.toLowerCase() || '';
-      return this.tipoFiltro === 'nombre' ? nombre.includes(q) : marca.includes(q);
-    });
+    if (q && this.tipoFiltro && this.tipoFiltro !== 'caracteristica') {
+      base = base.filter(p => {
+        const nombre = p.name?.toLowerCase() || '';
+        const marca = p.brand?.name?.toLowerCase() || '';
+        return this.tipoFiltro === 'nombre' ? nombre.includes(q) : marca.includes(q);
+      });
+    }
+
+    if (this.tipoFiltro === 'caracteristica' && this.selectedFeatureTags.length > 0) {
+      const selected = this.selectedFeatureTags.map(t => t.toLowerCase().trim());
+      base = base.filter(p => {
+        const tags = (this.productFeatureTags[p.idProduct] || []).map(t => t.toLowerCase());
+        if (tags.length === 0) return false;
+        return selected.every(sel => tags.includes(sel));
+      });
+    }
+
+    return base;
   }
 
   onEstadoFiltroChange(): void { this.onFiltroTyping(this.filtro); }
 
+  onMainTyping(val: any): void {
+    if (this.tipoFiltro === 'caracteristica') {
+      this.onFeatureInput(val);
+    } else {
+      this.onFiltroTyping(val);
+    }
+  }
+
+  // ======= Sugerencias por nombre/marca =======
   onFiltroTyping(val: any): void {
     const q = (val ?? '').toString().trim().toLowerCase();
     this.filtro = val ?? '';
@@ -208,8 +251,97 @@ export class ProductoComponent implements OnInit {
     }
   }
 
+  // ======= Selección en autocomplete según tipo =======
+  onMainAutoSelected(value: string): void {
+    if (this.tipoFiltro === 'caracteristica') {
+      this.onFeatureSuggestionSelected(value);
+    } else {
+      this.onFiltroSugSelected(value);
+    }
+  }
+
   onFiltroSugSelected(nombre: string): void { this.filtro = nombre; this.filtroSugs = []; }
-  onTipoFiltroChange(): void { this.filtro = ''; this.filtroSugs = []; }
+  onTipoFiltroChange(): void {
+    // limpia búsquedas al cambiar el tipo
+    this.filtro = '';
+    this.filtroSugs = [];
+
+    if (this.tipoFiltro === 'caracteristica') {
+      this.featureQuery = '';
+      this.recomputeFeatureSuggestions();
+    } else {
+      this.selectedFeatureTags = [];
+      this.featureQuery = '';
+      this.featureSuggestions = [];
+    }
+  }
+
+  // ======= Características: input/sugerencias/chips =======
+  onFeatureInput(val: any): void {
+    this.featureQuery = (val ?? '').toString();
+    this.recomputeFeatureSuggestions();
+  }
+
+  onFeatureSuggestionSelected(tag: string): void {
+    const t = (tag || '').trim();
+    if (!t) return;
+    const exists = this.selectedFeatureTags.some(x => x.toLowerCase() === t.toLowerCase());
+    if (!exists) this.selectedFeatureTags.push(t);
+    this.featureQuery = '';
+    this.recomputeFeatureSuggestions();
+  }
+
+  removeSelectedFeatureTag(tag: string): void {
+    this.selectedFeatureTags = this.selectedFeatureTags.filter(x => x.toLowerCase() !== tag.toLowerCase());
+    this.recomputeFeatureSuggestions();
+  }
+
+  clearFeatureFilters(): void {
+    this.featureQuery = '';
+    this.selectedFeatureTags = [];
+    this.recomputeFeatureSuggestions();
+  }
+
+  private recomputeFeatureSuggestions(): void {
+    const q = this.featureQuery.trim().toLowerCase();
+    const taken = new Set(this.selectedFeatureTags.map(t => t.toLowerCase()));
+
+    const poolAll: string[] = [];
+    for (const p of this.productosPorEstado()) {
+      const tags = this.productFeatureTags[p.idProduct] || [];
+      poolAll.push(...tags);
+    }
+
+    const uniq = Array.from(new Set(poolAll));
+    this.featureSuggestions = uniq
+      .filter(t => !!t)
+      .filter(t => !taken.has(t.toLowerCase()))
+      .filter(t => !q || t.toLowerCase().includes(q))
+      .slice(0, 15);
+  }
+
+  private async buildFeatureTagsForProducts(): Promise<void> {
+    this.productFeatureTags = {};
+    await Promise.all(
+      this.productos.map(async (p) => {
+        try {
+          const list = await firstValueFrom(this.api.getProductFeaturesByProduct(p.idProduct)) as any[];
+          const tags = (list || []).map((pf) => this.makeTag(pf)).filter(Boolean);
+          this.productFeatureTags[p.idProduct] = Array.from(new Set(tags));
+        } catch {
+          this.productFeatureTags[p.idProduct] = [];
+        }
+      })
+    );
+    this.recomputeFeatureSuggestions();
+  }
+
+  private makeTag(pf: any): string {
+    const base = String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim();
+    const val = String(pf?.featureValue ?? '').trim();
+    if (!base) return '';
+    return val ? `${base}: ${val}` : base;
+  }
 
   async loadImagen(idImage: number): Promise<void> {
     try {
@@ -332,9 +464,14 @@ export class ProductoComponent implements OnInit {
     if (!this.selectedProducto) return;
     this.mostrarCaracteristicasProducto = true;
     this.loadFeatures();
-    this.caractRef = this.overlay.open(this.formCaractTpl);
+    this.prodCaractRef = this.overlay.open(this.formProdCaractTpl);
   }
-  cerrarFormularioCaracteristicaProducto(): void { this.mostrarCaracteristicasProducto = false; this.caractRef?.close(); this.caractRef = undefined; }
+  cerrarFormularioCaracteristicaProducto(): void {
+    this.mostrarCaracteristicasProducto = false;
+    this.prodCaractRef?.close(); this.prodCaractRef = undefined;
+    // refrescar tags de características tras gestionar
+    this.buildFeatureTagsForProducts();
+  }
 
   deshabilitar(p: Product): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -359,6 +496,7 @@ export class ProductoComponent implements OnInit {
       });
     });
   }
+
   habilitar(p: Product): void {
     if (!this.categoriaId) return;
 
@@ -389,5 +527,9 @@ export class ProductoComponent implements OnInit {
       this.formData.brand = null;
       this.mostrarMasOpciones = false;
     }
+  }
+
+  getDisplayWith(): ((value: any) => string) | null {
+    return this.tipoFiltro === 'caracteristica' ? this.displayEmpty : null;
   }
 }

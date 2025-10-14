@@ -91,3 +91,17 @@ button[mat-button] {
     transform: scale(1.1);
   }
 }
+
+.no-anim mat-toolbar,
+.no-anim mat-sidenav,
+.no-anim mat-sidenav-content {
+  transition: none !important;
+}
+
+.anim mat-sidenav {
+  transition: width 0.3s ease-in-out !important;
+}
+
+.anim mat-sidenav-content {
+  transition: margin-left 0.3s ease-in-out !important;
+}

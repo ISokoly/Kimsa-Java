@@ -1,20 +1,9 @@
 @use "sass:color";
 
 $primary-color: #0b6e4f;
-$secondary-color: #007acc;
 $danger-color: #e74c3c;
 $bg-color: #f9f9f9;
 
-// ==================== TITULOS ====================
-h1,
-h2 {
-  color: $primary-color;
-  border-bottom: 2px dashed $primary-color;
-  padding-bottom: 8px;
-  text-align: center;
-}
-
-// ==================== MODALES ====================
 .form-modal,
 .form-modal-create {
   position: absolute;
@@ -26,52 +15,51 @@ h2 {
   padding: 20px;
   width: 400px;
   max-width: min(92vw, 480px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
   animation: fadeIn .25s ease-in-out;
 }
 
+.form-modal-create {
+  max-width: min(92vw, 480px);
+}
+
 .form-title {
+  color: $primary-color;
+  border-bottom: 2px dashed $primary-color;
   text-align: center;
   font-size: 22px;
   font-weight: bold;
-  color: $primary-color;
   margin: 20px;
   margin-bottom: 30px;
 }
 
-// ==================== FORMULARIO ====================
 .form-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 0 20px;
 }
 
-.mat-mdc-form-field {
+.w-full {
   width: 100%;
 }
 
-.botones {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+.editor-inline {
+  margin: 12px 0;
 }
 
-// ==================== LISTA DE FEATURES ====================
-.lista-features {
-  display: flex;
-  flex-direction: column;
+.lista-product-features {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 
   &.grid-list {
-    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 }
 
-.feature-item {
+.product-feature-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -79,33 +67,26 @@ h2 {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-sizing: border-box;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform .2s, box-shadow .2s;
 
   &:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     transform: scale(1.02);
   }
 
-  .feature-name-wrapper {
-    width: 100%;
-    flex: 1;
-    overflow: hidden;
+  .product-feature-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
-    .feature-name {
-      display: inline-block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-weight: 600;
-      color: $primary-color;
+    .product-feature-name {
+      font-weight: 500;
     }
   }
 
   .actions {
     display: flex;
     gap: 6px;
-    flex-shrink: 0;
   }
 
   .icon-button {
@@ -114,7 +95,7 @@ h2 {
     border-radius: 8px;
     font-size: 14px;
     cursor: pointer;
-    transition: 0.3s ease-in-out;
+    transition: .3s;
   }
 
   .x-btn {
@@ -136,14 +117,13 @@ h2 {
   }
 }
 
-// ==================== BOTONES PRINCIPALES ====================
 button {
   padding: 10px 15px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-  transition: 0.3s ease-in-out;
+  transition: .3s;
 }
 
 .form-btn-verde {
@@ -166,7 +146,32 @@ button {
   }
 }
 
-// ==================== ANIMACION ====================
+.botones {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px dashed #ddd;
+  border-radius: 12px;
+  background: $bg-color;
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

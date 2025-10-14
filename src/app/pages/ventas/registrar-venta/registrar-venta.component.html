@@ -9,11 +9,20 @@
                 </tr>
 
                 <tr>
+                    <td><strong>Delivery</strong></td>
+                    <td>
+                        <mat-checkbox [(ngModel)]="isDelivery" (change)="onToggleDelivery()">
+                            Pedido por delivery
+                        </mat-checkbox>
+                    </td>
+                </tr>
+
+                <tr>
                     <td><strong>Mesa</strong></td>
                     <td>
                         <mat-form-field appearance="outline" style="width:90%;">
                             <mat-label>Selecciona una mesa</mat-label>
-                            <mat-select [(ngModel)]="selectedTableId">
+                            <mat-select [(ngModel)]="selectedTableId" [disabled]="isDelivery">
                                 <mat-option [value]="null" disabled>Seleccione</mat-option>
                                 @for (mesa of tables; track mesa.idTable) {
                                 <mat-option [value]="mesa.idTable">

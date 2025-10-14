@@ -5,149 +5,132 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { HoverScrollDirective } from "../../../core/extras/hover-scroll.directive";
+
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+
+type Feature = { idFeature: number; featureName: string };
 
 @Component({
   selector: 'app-caracteristicas',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    HoverScrollDirective
-  ],
+  imports: [CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
   templateUrl: './caracteristicas.component.html',
-  styleUrl: './caracteristicas.component.scss'
+  styleUrls: ['./caracteristicas.component.scss']
 })
 export class CaracteristicasComponent implements OnInit {
 
+  @Input() soloFormulario = false;
+  @Input() featureIdToEdit: number | null = null;
   @Output() closed = new EventEmitter<void>();
-  @Input() soloFormulario: boolean = false;
   @Output() featureDeleted = new EventEmitter<number>();
 
-  features: any[] = [];
-  formFeature = { featureName: '' };
-  selectedFeature: any = null;
+  features: Feature[] = [];
+  searchTerm = '';
 
-  mostrarFormularioAgregarFeature = false;
+  editingId: number | null = null;
+  nameInput = '';
 
-  constructor(private apiService: ApiService, private toastService: ToastService) { }
+  showEditor = false;
+
+  constructor(private api: ApiService, private toast: ToastService) {}
 
   ngOnInit(): void {
-    this.loadFeatures();
+    this.load();
   }
 
-  /* ==================== CARGA ==================== */
-  loadFeatures(): void {
-    this.apiService.getFeatures().subscribe((data: any[]) => {
-      this.features = data || [];
-    });
-  }
-
-  /* ==================== CREAR / ACTUALIZAR ==================== */
-  createFeature(): void {
-    if (!this.formFeature.featureName.trim()) {
-      this.toastService.mostrarMensaje('❌ El nombre de la característica es obligatorio.');
-      return;
-    }
-
-    const payload = {
-      featureName: this.formFeature.featureName.trim()
-    };
-
-    this.apiService.createFeature(payload).subscribe({
-      next: () => {
-        this.toastService.mostrarMensaje('✅ Característica creada correctamente');
-        this.loadFeatures();
-        this.cancelEditFeature();
+  /* ================= CARGA ================= */
+  load(): void {
+    this.api.getFeatures().subscribe({
+      next: (data: any[]) => {
+        this.features = (data || []).map(f => ({
+          idFeature: f.idFeature,
+          featureName: String(f.featureName || '')
+        }));
+        if (this.featureIdToEdit != null) {
+          const f = this.features.find(x => x.idFeature === this.featureIdToEdit);
+          if (f) this.startEdit(f);
+        }
       },
       error: () => {
-        this.toastService.mostrarMensaje('❌ Error al crear la característica.');
+        this.features = [];
+        this.toast.mostrarMensaje('❌ Error al cargar características');
       }
     });
   }
 
-  updateFeature(): void {
-    if (!this.formFeature.featureName.trim()) {
-      this.toastService.mostrarMensaje('❌ El nombre de la característica es obligatorio.');
-      return;
-    }
-
-    if (!this.selectedFeature || !this.selectedFeature.idFeature) {
-      this.toastService.mostrarMensaje('⚠️ No hay característica seleccionada para actualizar.');
-      return;
-    }
-
-    const payload = {
-      featureName: this.formFeature.featureName.trim()
-    };
-
-    this.apiService.updateFeature(this.selectedFeature.idFeature, payload).subscribe({
-      next: () => {
-        this.toastService.mostrarMensaje('✅ Característica actualizada correctamente');
-        this.loadFeatures();
-        this.cancelEditFeature();
-      },
-      error: () => {
-        this.toastService.mostrarMensaje('❌ Error al actualizar la característica.');
-      }
-    });
+  /* =============== LISTA FILTRADA =============== */
+  get filtered(): Feature[] {
+    const q = this.searchTerm.trim().toLowerCase();
+    if (!q) return this.features;
+    return this.features.filter(f => f.featureName?.toLowerCase().includes(q));
   }
 
-  /* ==================== FORMULARIO ==================== */
-  abrirFormularioAgregarFeature(feature: any = null): void {
-    this.selectedFeature = feature;
-    this.formFeature = feature
-      ? { ...feature }
-      : { featureName: '' };
-
-    this.mostrarFormularioAgregarFeature = true;
+  /* ================== EDITOR ================== */
+  startCreate(): void {
+    this.editingId = null;
+    this.nameInput = '';
+    this.showEditor = true;
   }
 
-  cerrarFormularioFeature(): void {
-    this.mostrarFormularioAgregarFeature = false;
-    this.closed.emit();
-    this.loadFeatures();
+  startEdit(f: Feature): void {
+    this.editingId = f.idFeature;
+    this.nameInput = f.featureName;
+    this.showEditor = true;
   }
 
-  cancelEditFeature(): void {
-    this.selectedFeature = null;
-    this.formFeature = { featureName: '' };
-    this.mostrarFormularioAgregarFeature = false;
-
+  cancel(): void {
+    this.editingId = null;
+    this.nameInput = '';
     if (this.soloFormulario) {
       this.closed.emit();
+    } else {
+      this.showEditor = false;
     }
-
-    this.loadFeatures();
   }
 
-  /* ==================== UTILIDADES ==================== */
-  editFeature(feature: any): void {
-    if (!feature || !feature.idFeature) return;
-    this.abrirFormularioAgregarFeature(feature);
+  save(): void {
+    const name = (this.nameInput || '').trim();
+    if (!name) { this.toast.mostrarMensaje('⚠️ Escribe un nombre.'); return; }
+
+    const exists = this.features.some(
+      f => f.featureName.toLowerCase() === name.toLowerCase() && f.idFeature !== this.editingId
+    );
+    if (exists) { this.toast.mostrarMensaje('⚠️ Ya existe una característica con ese nombre.'); return; }
+
+    if (this.editingId !== null) {
+      this.api.updateFeature(this.editingId, { featureName: name }).subscribe({
+        next: () => {
+          this.toast.mostrarMensaje('✅ Característica actualizada');
+          this.load();
+          this.soloFormulario ? this.closed.emit() : this.showEditor = false;
+        },
+        error: () => this.toast.mostrarMensaje('❌ No se pudo actualizar')
+      });
+    } else {
+      this.api.createFeature({ featureName: name }).subscribe({
+        next: () => {
+          this.toast.mostrarMensaje('✅ Característica creada');
+          this.load();
+          this.soloFormulario ? this.closed.emit() : this.showEditor = false;
+        },
+        error: () => this.toast.mostrarMensaje('❌ No se pudo crear')
+      });
+    }
   }
 
-  deleteFeature(idFeature: number): void {
-    this.apiService.deleteFeature(idFeature).subscribe(() => {
-      this.toastService.mostrarMensaje('✅ Característica eliminada correctamente');
-      this.loadFeatures();
-      this.featureDeleted.emit(idFeature);
+  remove(id: number): void {
+    this.api.deleteFeature(id).subscribe({
+      next: () => {
+        this.toast.mostrarMensaje('✅ Característica eliminada');
+        this.features = this.features.filter(f => f.idFeature !== id);
+        this.featureDeleted.emit(id);
+      },
+      error: () => this.toast.mostrarMensaje('❌ No se pudo eliminar')
     });
   }
 
-  getGridColumns(): number {
-    if (this.features.length <= 3) return 1;
-    return Math.ceil(Math.sqrt(this.features.length));
-  }
-
-  getModalWidth(): string {
-    const extra = Math.floor(this.features.length / 4) * 200;
-    return (400 + extra) + 'px';
+  close(): void {
+    this.closed.emit();
   }
 }

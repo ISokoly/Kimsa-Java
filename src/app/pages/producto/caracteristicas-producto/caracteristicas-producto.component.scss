@@ -5,24 +5,15 @@ $secondary-color: #007acc;
 $danger-color: #e74c3c;
 $bg-color: #f9f9f9;
 
-// ==================== TITULOS ====================
-h1,
-h2 {
-  color: $primary-color;
-  border-bottom: 2px dashed $primary-color;
-  padding-bottom: 8px;
-  text-align: center;
-}
-
-// ==================== MODAL ====================
 .overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
   z-index: 1010;
-  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
 }
 
 .form-modal,
@@ -34,31 +25,34 @@ h2 {
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
+  width: 400px;
+  max-width: min(92vw, 480px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
   animation: fadeIn .25s ease-in-out;
 }
 
+
 .form-modal-create {
-  width: 400px;
+  max-width: min(92vw, 480px);
 }
 
 .form-title {
+  color: $primary-color;
+  border-bottom: 2px dashed $primary-color;
   text-align: center;
   font-size: 22px;
   font-weight: bold;
-  color: $primary-color;
   margin: 20px;
   margin-bottom: 30px;
 }
 
-// ==================== FORMULARIO ====================
 .form-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.mat-mdc-form-field {
+.w-full {
   width: 100%;
 }
 
@@ -68,18 +62,15 @@ h2 {
   margin-top: 20px;
 }
 
-// ==================== LISTA DE FEATURE PRODUCT ====================
 .lista-product-features {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 
   &.grid-list {
-    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-bottom: 30px;
   }
 }
 
@@ -91,8 +82,7 @@ h2 {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-sizing: border-box;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform .2s, box-shadow .2s;
 
   &:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
@@ -126,7 +116,7 @@ h2 {
     border-radius: 8px;
     font-size: 14px;
     cursor: pointer;
-    transition: 0.3s ease-in-out;
+    transition: .3s;
   }
 
   .x-btn {
@@ -148,14 +138,13 @@ h2 {
   }
 }
 
-// ==================== BOTONES PRINCIPALES ====================
 button {
   padding: 10px 15px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-  transition: 0.3s ease-in-out;
+  transition: .3s;
 }
 
 .form-btn-verde {
@@ -178,7 +167,57 @@ button {
   }
 }
 
-// ==================== ANIMACION ====================
+.empty {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px dashed #ddd;
+  border-radius: 12px;
+  background: $bg-color;
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 20px;
+    height: 20px;
+    width: 20px;
+  }
+}
+
+.row-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .w-full {
+    flex: 1;
+  }
+
+  .gear-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    margin: 5px;
+    color: white;
+    background: color.scale($secondary-color, $lightness: 30%);
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: color.scale($secondary-color, $lightness: 70%);
+    }
+  }
+}
+
+.config {
+  margin-top: -20px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -188,5 +227,15 @@ button {
   to {
     opacity: 1;
     transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
   }
 }

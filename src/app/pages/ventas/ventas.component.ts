@@ -72,10 +72,11 @@ export class VentasComponent implements OnInit {
 
   pageSize = 10;
   pageIndex = 0;
+  displayEmpty = (_: any): string => '';
 
   private productNameById: Record<number, string> = {};
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private api: ApiService, private router: Router) { }
 
   ngOnInit(): void {
     this.selectedDateStr = this.todayInLimaISO();
@@ -172,23 +173,19 @@ export class VentasComponent implements OnInit {
   }
 
   onProductFilterInput(val: any): void {
-    const value = (val ?? '').toString();
-    if (value.includes(',')) {
-      const parts = value.split(',').map((s: string) => s.trim()).filter(Boolean);
-      for (let i = 0; i < parts.length - 1; i++) this.addProductByTerm(parts[i]);
-      this.productQuery = parts[parts.length - 1] || '';
-    } else {
-      this.productQuery = value;
-    }
+    this.productQuery = (val ?? '').toString();   // sin comas ni split
     this.recomputeSuggestions();
   }
 
   onProductSuggestionSelected(name: string): void {
     this.addProductName(name);
+    this.productQuery = '';       // limpia el input
+    this.recomputeSuggestions();
   }
 
   removeSelectedProduct(name: string): void {
-    this.selectedProductNames = this.selectedProductNames.filter(n => n.toLowerCase() !== name.toLowerCase());
+    this.selectedProductNames = this.selectedProductNames
+      .filter(n => n.toLowerCase() !== name.toLowerCase());
     this.recomputeSuggestions();
     this.pageIndex = 0;
     this.applyFilters();
@@ -196,7 +193,7 @@ export class VentasComponent implements OnInit {
 
   clearAllFilters(): void {
     this.statusFilter = 'All';
-    this.productQuery = '';
+    this.productQuery = '';        // limpia también aquí
     this.selectedProductNames = [];
     this.recomputeSuggestions();
     this.pageIndex = 0;

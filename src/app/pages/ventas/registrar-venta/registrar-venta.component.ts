@@ -7,12 +7,13 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatCheckboxModule } from '@angular/material/checkbox'; // ✅ módulo correcto
+import { MatDialog } from '@angular/material/dialog';
 
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { ConfirmDialogComponent } from '../../../view/confirm-dialog/confirm-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 
 const GENERIC_DNI = '00000001';
 type DayWeek = 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado' | 'Domingo' | 'General';
@@ -24,7 +25,11 @@ type Discount = { idProduct: number; percentage: number; typeDay: DayWeek; disab
 @Component({
   selector: 'app-registrar-venta',
   standalone: true,
-  imports: [FormsModule, RouterModule, MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule, MatIconModule, MatFormFieldModule, MatAutocompleteModule],
+  imports: [
+    FormsModule, RouterModule,
+    MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule, MatIconModule,
+    MatFormFieldModule, MatAutocompleteModule, MatCheckboxModule, // ✅
+  ],
   templateUrl: './registrar-venta.component.html',
   styleUrls: ['./registrar-venta.component.scss']
 })
@@ -59,12 +64,18 @@ export class RegistrarVentaComponent implements OnInit {
   private allClientsLoaded = false;
   private dniSuggestTimer?: any;
 
+  isDelivery = false;
+
   get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
 
-  /* ==================== CONSTRUCTOR ==================== */
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private dialog: MatDialog) { }
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private dialog: MatDialog
+  ) {}
 
-  /* ==================== CICLO DE VIDA ==================== */
   ngOnInit(): void {
     this.route.paramMap.subscribe(p => {
       this.saleId = p.get('id') ? +p.get('id')! : null;
@@ -101,6 +112,7 @@ export class RegistrarVentaComponent implements OnInit {
       next: (res: any[]) => {
         const mesas = (Array.isArray(res) ? res : []).map(this.mapMesa);
         const allowedId = keepId ?? this.selectedTableId ?? null;
+        // mostrar solo mesas libres, excepto la actualmente asignada si se edita
         this.tables = mesas.filter(m => !m.active || (allowedId != null && m.idTable === allowedId));
       },
       error: () => this.toast.mostrarMensaje('❌ Error al cargar mesas'),
@@ -112,7 +124,7 @@ export class RegistrarVentaComponent implements OnInit {
       next: (res: any) => {
         const mapped = arr(res).map(this.mapProduct);
         this.allProducts = mapped;
-        this.products = mapped.filter(p => !p.disabled); // solo habilitados (selector)
+        this.products = mapped.filter(p => !p.disabled);
       },
       error: () => { this.allProducts = []; this.products = []; this.toast.mostrarMensaje('❌ Error al cargar productos'); }
     });
@@ -131,7 +143,9 @@ export class RegistrarVentaComponent implements OnInit {
         const od = String(sale?.orderDate ?? '');
         const ot = String(sale?.orderTime ?? '00:00:00');
         this.saleRefDate = this.buildLocalDate(od, ot);
-        this.selectedTableId = sale?.idTable ?? null;
+        this.isDelivery = !!sale?.delivery;
+        this.selectedTableId = this.isDelivery ? null : (sale?.idTable ?? null);
+
         const idClient = sale?.idClient ?? null;
         if (idClient) {
           this.api.getClientesById(idClient).subscribe({
@@ -155,7 +169,9 @@ export class RegistrarVentaComponent implements OnInit {
 
   /* ==================== CREAR / ACTUALIZAR ==================== */
   async saveSale(): Promise<void> {
-    if (!this.selectedTableId) return this.toast.mostrarMensaje('⚠️ Seleccione una mesa');
+    if (!this.isDelivery && !this.selectedTableId) {
+      return this.toast.mostrarMensaje('⚠️ Seleccione una mesa o marque Delivery');
+    }
     if (!this.cart.length) return this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
 
     this.isSaving = true;
@@ -167,7 +183,8 @@ export class RegistrarVentaComponent implements OnInit {
       const payload = {
         idClient: customer.idClient,
         idUser,
-        idTable: this.selectedTableId,
+        idTable: this.isDelivery ? null : this.selectedTableId,
+        delivery: this.isDelivery,
         items: this.cart.map(i => ({ idProduct: i.idProduct, quantity: i.quantity }))
       };
 
@@ -190,6 +207,12 @@ export class RegistrarVentaComponent implements OnInit {
   toggleGeneric(): void {
     this.isGeneric = !this.isGeneric;
     this.isGeneric ? this.setGenericCustomer() : this.clearCustomer();
+  }
+
+  onToggleDelivery(): void {
+    if (this.isDelivery) {
+      this.selectedTableId = null;
+    }
   }
 
   onDniChange(): void {
@@ -218,25 +241,15 @@ export class RegistrarVentaComponent implements OnInit {
       const name = (this.isGeneric ? 'Cliente Genérico' : (this.customerName || '').trim());
       const birthdate = this.customerBirthdate || '2000-01-01';
 
-      if (!dni || !name)
-        return reject('⚠️ Complete nombre y DNI del cliente.');
-
-      const dniValido = /^\d{8}$/.test(dni);
-      if (!dniValido)
-        return reject('⚠️ Escriba un DNI válido (8 dígitos numéricos).');
+      if (!dni || !name) return reject('⚠️ Complete nombre y DNI del cliente.');
+      if (!/^\d{8}$/.test(dni)) return reject('⚠️ Escriba un DNI válido (8 dígitos numéricos).');
 
       this.api.ensureCliente({ name, dni, birthdate }).subscribe({
         next: (c: any) => {
           if (c?.idClient) {
-            this.currentCustomer = {
-              idClient: c.idClient,
-              name: c.name,
-              dni: c.dni
-            };
+            this.currentCustomer = { idClient: c.idClient, name: c.name, dni: c.dni };
             resolve(this.currentCustomer);
-          } else {
-            reject('❌ Respuesta inválida del servidor al asegurar cliente.');
-          }
+          } else reject('❌ Respuesta inválida del servidor al asegurar cliente.');
         },
         error: () => reject('❌ No se pudo asegurar/obtener el cliente.')
       });
@@ -244,37 +257,25 @@ export class RegistrarVentaComponent implements OnInit {
   }
 
   cancelSale(): void {
-
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       maxWidth: '95vw',
       panelClass: 'custom-confirm-dialog',
       disableClose: true,
-      data: {
-        title: 'Cancelar venta',
-        message: '¿Seguro que deseas cancelar esta venta?'
-      }
+      data: { title: 'Cancelar venta', message: '¿Seguro que deseas cancelar esta venta?' }
     });
 
     dialogRef.afterClosed().subscribe(ok => {
-      if (!ok) return;
-      if (!this.saleId) return;
+      if (!ok || !this.saleId) return;
 
       this.isSaving = true;
       this.api.updateSale(this.saleId, { status: 'Cancelled' }).subscribe({
         next: () => {
           this.toast.mostrarMensaje('✅ Venta cancelada correctamente');
-          if (this.selectedTableId) {
-            this.api.updateMesa(this.selectedTableId, { active: false }).subscribe({
-              next: () => console.log('Mesa liberada correctamente'),
-              error: () => console.warn('No se pudo liberar la mesa')
-            });
-          }
+          // ⛔️ NO tocar mesas desde el front. El backend libera la mesa.
           this.router.navigate(['/view/ventas']);
         },
-        error: () => {
-          this.toast.mostrarMensaje('❌ Error al cancelar la venta');
-        },
+        error: () => this.toast.mostrarMensaje('❌ Error al cancelar la venta'),
         complete: () => (this.isSaving = false)
       });
     });
@@ -310,7 +311,6 @@ export class RegistrarVentaComponent implements OnInit {
 
   addToCart(): void {
     if (!this.selectedProductId || this.selectedQty <= 0) return;
-
     const prod = this.products.find(p => p.idProduct === this.selectedProductId);
     if (!prod) return;
 
@@ -350,7 +350,6 @@ export class RegistrarVentaComponent implements OnInit {
     const ok = /^\d$/.test(e.key) || ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key);
     if (!ok) e.preventDefault();
   }
-
 
   private limaDayName(date: Date): DayWeek {
     const name = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
@@ -392,23 +391,18 @@ export class RegistrarVentaComponent implements OnInit {
 
   private mapDetailToCart(d: any): CartItem {
     const idProduct = toNum(d?.idProduct ?? d?.id_producto);
-    const prod = this.allProducts.find(p => p.idProduct === idProduct); // 👈 usar allProducts
+    const prod = this.allProducts.find(p => p.idProduct === idProduct);
     const qty = toNum(d?.quantity ?? d?.cantidad ?? 1);
     const unit = prod?.price ?? (toNum(d?.subtotal) / Math.max(1, qty));
     const pct = this.getDiscountPct(idProduct);
-    return {
-      idProduct, name: prod?.name ?? `#${idProduct}`, unitPrice: unit, quantity: qty, discountPct: pct, subtotal: subTotal(unit, qty, pct)
-    };
+    return { idProduct, name: prod?.name ?? `#${idProduct}`, unitPrice: unit, quantity: qty, discountPct: pct, subtotal: subTotal(unit, qty, pct) };
   }
 
   onDniInput(term: string): void {
     const q = (term || '').trim();
     this.customerDni = q;
 
-    if (q.length < 1) {
-      this.dniSuggestions = [];
-      return;
-    }
+    if (q.length < 1) { this.dniSuggestions = []; return; }
 
     if (this.dniSuggestTimer) clearTimeout(this.dniSuggestTimer);
     this.dniSuggestTimer = setTimeout(() => this.fetchDniSuggestions(q), 200);
@@ -425,14 +419,9 @@ export class RegistrarVentaComponent implements OnInit {
       this.dniSuggestions = this.allClientsCache.filter(c => c.dni?.toLowerCase().startsWith(p)).slice(0, 10);
     };
 
-    if (this.allClientsLoaded) {
-      doFilter();
-      return;
-    }
+    if (this.allClientsLoaded) { doFilter(); return; }
 
-    const list$ =
-      (this.api as any).getAllClientes?.() ||
-      (this.api as any).getClientes?.();
+    const list$ = (this.api as any).getAllClientes?.() || (this.api as any).getClientes?.();
 
     if (!list$) {
       this.allClientsLoaded = true;
@@ -445,8 +434,10 @@ export class RegistrarVentaComponent implements OnInit {
       next: (arr: any[]) => {
         const list = Array.isArray(arr) ? arr : [];
         this.allClientsCache = list.map(c => ({
-          idClient: c?.idClient ?? c?.id_cliente, name: String(c?.name ?? c?.nombre ?? ''),
-          dni: String(c?.dni ?? ''), birthdate: c?.birthdate ?? c?.fecha_nacimiento
+          idClient: c?.idClient ?? c?.id_cliente,
+          name: String(c?.name ?? c?.nombre ?? ''),
+          dni: String(c?.dni ?? ''),
+          birthdate: c?.birthdate ?? c?.fecha_nacimiento
         })).filter(c => !!c.dni);
         this.allClientsLoaded = true;
         doFilter();

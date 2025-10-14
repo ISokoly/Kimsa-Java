@@ -1,116 +1,166 @@
 @use "sass:color";
 
-$color-bg: #f9f9f9;
-$color-verde: #0b6e4f;
-$color-btn-bg: #0b6e4f;
-$color-btn-bg-hover: #095a3f;
-$color-btn-text: #fff;
-$color-input-border: #ccc;
-$color-input-focus: $color-verde;
+// ======== PALETA DE COLORES ========
+$primary-color: #0b6e4f;
+$secondary-color: #007acc;
+$danger-color: #e74c3c;
+$bg-color: #f9f9f9;
 
+// ======== CONTENEDOR PRINCIPAL ========
 .pagos-container {
   padding: 2rem;
-  border-radius: 10px;
-  background-color: $color-bg;
-  max-width: 600px;
+  border-radius: 12px;
+  background-color: $bg-color;
+  max-width: 760px;
   margin: 0 auto;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  h1.titulo {
-    color: $color-verde;
-    border-bottom: 2px dashed $color-verde;
+  h1.titulo, h2 {
+    color: $primary-color;
+    border-bottom: 2px dashed $primary-color;
     padding-bottom: 8px;
-    text-align: center;
     margin-bottom: 1.5rem;
+    text-align: center;
+    width: 100%;
   }
+}
 
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+// ======== FORMULARIO DE PAGOS ========
+.form {
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: grid;
+  gap: 1rem;
 
-    label {
-      font-weight: 600;
-      color: color.adjust($color-verde, $lightness: -10%);
+  mat-form-field {
+    width: 100%;
+
+    .mat-mdc-text-field-wrapper {
+      border-radius: 10px;
+      background: #fff;
     }
 
-    .form-input {
-      padding: 0.5rem 0.75rem;
-      font-size: 1rem;
-      border: 1px solid $color-input-border;
-      border-radius: 5px;
-      transition: border-color 0.3s ease;
-
-      &:focus {
-        outline: none;
-        border-color: $color-input-focus;
-        box-shadow: 0 0 5px rgba($color-verde, 0.5);
-      }
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__trailing,
+    .mdc-notched-outline__notch {
+      border-color: #ccc;
     }
 
-    button.btn {
-      background-color: $color-btn-bg;
-      color: $color-btn-text;
-      font-weight: 700;
-      padding: 0.75rem 1.25rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      align-self: center;
-      width: fit-content;
-      min-width: 180px;
-
-      &:hover:not(:disabled) {
-        background-color: $color-btn-bg-hover;
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+    &.mdc-text-field--focused .mdc-notched-outline__leading,
+    &.mdc-text-field--focused .mdc-notched-outline__trailing,
+    &.mdc-text-field--focused .mdc-notched-outline__notch {
+      border-color: $primary-color !important;
     }
   }
 
+  button[mat-raised-button] {
+    background-color: $primary-color !important;
+    color: #fff !important;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    min-width: 180px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: color.scale($primary-color, $lightness: -25%) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
+// ======== TABLA DETALLE DE PEDIDO ========
+.ventas-tabla {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+  th[mat-header-cell] {
+    background: $primary-color;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    padding: 18px 10px; // header más alto
+    letter-spacing: 0.3px;
+  }
+
+  td[mat-cell] {
+    color: #333;
+    padding: 12px 10px;
+    vertical-align: middle;
+  }
+
+  tr[mat-row] {
+    &:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    &:hover td {
+      background: color.scale($primary-color, $lightness: 90%);
+    }
+  }
+}
+
+// ======== ALINEACIONES PERSONALIZADAS ========
+.celdas-centradas {
+  text-align: center;
+}
+
+.cabecera-izquierda {
+  text-align: left;
+}
+
+.cabecera-derecha {
+  text-align: right;
+}
+
+// ======== SECCIÓN DE BOLETA ========
+.boleta {
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+
+  .total {
+    text-align: right;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: $primary-color;
+  }
+}
+
+// ======== PANEL DEL SELECT MATERIAL ========
+.mat-mdc-select-panel {
+  border-radius: 10px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  font-weight: 700;
+}
+
+// ======== RESPONSIVE ========
+@media (max-width: 768px) {
+  .pagos-container {
+    padding: 1.25rem;
+  }
+
+  .form,
   .boleta {
-    margin-top: 2rem;
+    padding: 1rem;
+  }
 
-    h3 {
-      color: $color-verde;
-      border-bottom: 2px dashed $color-verde;
-      padding-bottom: 6px;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-
-    .tabla {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 1rem;
-
-      th,
-      td {
-        padding: 0.75rem 1rem;
-        text-align: left;
-        border-bottom: 1px solid color.adjust($color-verde, $lightness: 60%);
-      }
-
-      th {
-        background-color: color.adjust($color-verde, $lightness: 90%);
-        color: $color-verde;
-        font-weight: 600;
-      }
-
-      tbody tr:hover {
-        background-color: color.adjust($color-verde, $lightness: 95%);
-      }
-    }
-
-    .total {
-      text-align: right;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: $color-verde;
-    }
+  .ventas-tabla th[mat-header-cell],
+  .ventas-tabla td[mat-cell] {
+    padding: 10px;
   }
 }

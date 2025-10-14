@@ -33,16 +33,18 @@ export class ViewComponent {
   sidenavWidth = computed(() => this.collapsed() ? '65px' : '250px');
   isUsuariosPage: boolean = false;
   static estaSeleccionado: boolean;
-  isReady = false;
+  ready = false;
 
   constructor(private router: Router, private apiService: ApiService, private toastService: ToastService) {
     this.router.events.subscribe(() => {
       this.isUsuariosPage = this.router.url.startsWith('/view/usuarios');
     });
+    const saved = localStorage.getItem('collapsed');
+    if (saved != null) this.collapsed.set(saved === 'true');
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.isReady = true);
+    setTimeout(() => { this.ready = true; });
   }
 
   ngOnInit() {

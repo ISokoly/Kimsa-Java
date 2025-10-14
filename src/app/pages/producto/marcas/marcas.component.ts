@@ -38,7 +38,6 @@ export class MarcasComponent implements OnInit {
   formMarca: BrandLite = { name: '', category: null };
   selectedMarca: BrandLite | null = null;
 
-  // esto sólo decide qué panel mostrar dentro del MISMO overlay del padre
   mostrarFormularioAgregarMarca = false;
 
   constructor(

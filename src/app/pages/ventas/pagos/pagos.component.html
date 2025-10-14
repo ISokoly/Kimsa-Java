@@ -1,99 +1,136 @@
 @if (!yaPagado) {
 <div class="pagos-container">
-    <h1 class="titulo">Registrar Pagos</h1>
+  <h1 class="titulo">Registrar Pagos</h1>
 
-    <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form">
-        <label for="tipo_pago">Tipo de Pago:</label>
-        <select id="tipo_pago" name="tipo_pago" [(ngModel)]="nuevoPago.tipo_pago" required class="form-input">
-            <option [ngValue]="null" disabled>Seleccione un tipo</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Transferencia">Transferencia</option>
-        </select>
+  <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form grid gap-4">
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Tipo de Pago</mat-label>
+      <mat-select name="paymentType" [(ngModel)]="nuevoPago.paymentType" required>
+        <mat-option [value]="null" disabled>Seleccione un tipo</mat-option>
+        <mat-option value="Efectivo">Efectivo</mat-option>
+        <mat-option value="Tarjeta">Tarjeta</mat-option>
+        <mat-option value="Transferencia">Transferencia</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-        <label for="fecha_pago">Fecha de Pago:</label>
-        <input type="datetime-local" id="fecha_pago" name="fecha_pago" [(ngModel)]="nuevoPago.fecha_pago" required
-            class="form-input" />
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Fecha de Pago</mat-label>
+      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" required />
+    </mat-form-field>
 
-        <button type="submit" [disabled]="!boletaForm.valid" class="btn">
-            Registrar Pago
-        </button>
-    </form>
+    <button mat-raised-button color="primary" type="submit" [disabled]="!boletaForm.valid">
+      Registrar Pago
+    </button>
+  </form>
 
-    @if (detallesPedido.length > 0) {
-    <div class="boleta">
-        <h3>Detalle del Pedido</h3>
-        <table class="tabla">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (detalle of detallesPedido; track $index) {
-                <tr>
-                    <td>{{ obtenerNombreProducto((detalle.idProduct ?? detalle.id_producto) ?? 0) }}</td>
-                    <td>{{ detalle.quantity ?? detalle.cantidad }}</td>
-                    <td>S/ {{ (detalle.subtotal || 0) | number:'1.2-2' }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
+  @if (detallesPedido.length > 0) {
+  <div class="boleta">
+    <h2>Detalle del Pedido</h2>
 
-        <div class="total">
-            <strong>Total:</strong> S/ {{ (pedidoActual.total || 0) | number:'1.2-2' }}
-        </div>
+    <!-- usa .ventas-tabla para que apliquen tus estilos -->
+    <table mat-table [dataSource]="detallesPedido" class="mat-elevation-z1 ventas-tabla">
+      <!-- Producto (izquierda) -->
+      <ng-container matColumnDef="producto">
+        <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
+        <td mat-cell *matCellDef="let detalle" class="cabecera-izquierda">
+          {{ obtenerNombreProducto((detalle.idProduct) ?? 0) }}
+        </td>
+      </ng-container>
+
+      <!-- Cantidad (centrado) -->
+      <ng-container matColumnDef="cantidad">
+        <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:120px">Cantidad</th>
+        <td mat-cell *matCellDef="let detalle" class="celdas-centradas">
+          {{ detalle.quantity }}
+        </td>
+      </ng-container>
+
+      <!-- Subtotal (centrado) -->
+      <ng-container matColumnDef="subtotal">
+        <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:140px">Subtotal</th>
+        <td mat-cell *matCellDef="let detalle" class="celdas-centradas">
+          S/ {{ (detalle.subtotal || 0) | number:'1.2-2' }}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="['producto','cantidad','subtotal']"></tr>
+      <tr mat-row *matRowDef="let row; columns: ['producto','cantidad','subtotal'];"></tr>
+
+      @if (detallesPedido.length === 0) {
+      <tr class="mat-mdc-row">
+        <td class="mat-mdc-cell celdas-centradas" colspan="3" style="padding:16px;">
+          <em>Sin productos</em>
+        </td>
+      </tr>
+      }
+    </table>
+
+    <div class="total cabecera-derecha" style="margin-top:.5rem;">
+      <strong>Total:</strong> S/ {{ (pedidoActual.total || 0) | number:'1.2-2' }}
     </div>
-    }
+  </div>
+  }
 </div>
 }
 @else {
 <div class="pagos-container">
-    <h1 class="titulo">Pago Registrado</h1>
+  <h1 class="titulo">Pago Registrado</h1>
 
-    <div class="form">
-        <label for="tipo_pago">Tipo de Pago:</label>
-        <select id="tipo_pago" name="tipo_pago" [(ngModel)]="nuevoPago.tipo_pago" class="form-input" disabled>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Transferencia">Transferencia</option>
-        </select>
+  <div class="form grid gap-4">
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Tipo de Pago</mat-label>
+      <mat-select name="paymentType" [(ngModel)]="nuevoPago.paymentType" disabled>
+        <mat-option [value]="null" disabled>Seleccione un tipo</mat-option>
+        <mat-option value="Efectivo">Efectivo</mat-option>
+        <mat-option value="Tarjeta">Tarjeta</mat-option>
+        <mat-option value="Transferencia">Transferencia</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-        <label for="fecha_pago">Fecha de Pago:</label>
-        <input type="datetime-local" id="fecha_pago" name="fecha_pago" [(ngModel)]="nuevoPago.fecha_pago"
-            class="form-input" disabled />
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Fecha de Pago</mat-label>
+      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" disabled />
+    </mat-form-field>
 
-        <button type="button" disabled class="btn">Pago Registrado</button>
+    <button mat-raised-button color="primary" type="button" disabled>
+      Pago Registrado
+    </button>
+  </div>
+
+  @if (detallesPedido.length > 0) {
+  <div class="boleta">
+    <h2>Detalle del Pedido</h2>
+
+    <table mat-table [dataSource]="detallesPedido" class="mat-elevation-z1 ventas-tabla">
+      <ng-container matColumnDef="producto">
+        <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
+        <td mat-cell *matCellDef="let detalle" class="cabecera-izquierda">
+          {{ obtenerNombreProducto((detalle.idProduct) ?? 0) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="cantidad">
+        <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:120px">Cantidad</th>
+        <td mat-cell *matCellDef="let detalle" class="celdas-centradas">
+          {{ detalle.quantity }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="subtotal">
+        <th mat-header-cell *matHeaderCellDef class="celdas-centradas" style="width:140px">Subtotal</th>
+        <td mat-cell *matCellDef="let detalle" class="celdas-centradas">
+          S/ {{ (detalle.subtotal || 0) | number:'1.2-2' }}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="['producto','cantidad','subtotal']"></tr>
+      <tr mat-row *matRowDef="let row; columns: ['producto','cantidad','subtotal'];"></tr>
+    </table>
+
+    <div class="total cabecera-derecha" style="margin-top:.5rem;">
+      <strong>Total:</strong> S/ {{ (pedidoActual.total || 0) | number:'1.2-2' }}
     </div>
-
-    @if (detallesPedido.length > 0) {
-    <div class="boleta">
-        <h3>Detalle del Pedido</h3>
-        <table class="tabla">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (detalle of detallesPedido; track $index) {
-                <tr>
-                    <td>{{ obtenerNombreProducto((detalle.idProduct ?? detalle.id_producto) ?? 0) }}</td>
-                    <td>{{ detalle.quantity ?? detalle.cantidad }}</td>
-                    <td>S/ {{ (detalle.subtotal || 0) | number:'1.2-2' }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
-
-        <div class="total">
-            <strong>Total:</strong> S/ {{ (pedidoActual.total || 0) | number:'1.2-2' }}
-        </div>
-    </div>
-    }
+  </div>
+  }
 </div>
 }

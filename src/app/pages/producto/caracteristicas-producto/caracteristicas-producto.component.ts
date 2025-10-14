@@ -1,15 +1,18 @@
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, TemplateRef, ViewChild } from '@angular/core';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { MatSelectModule } from "@angular/material/select";
-import { CaracteristicasComponent } from "../caracteristicas/caracteristicas.component";
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select';
+
+import { CaracteristicasComponent } from '../caracteristicas/caracteristicas.component';
+import { OverlayHandle, OverlayPortalService } from '../../../core/services/overlay-portal.service';
 
 @Component({
   selector: 'app-caracteristicas-producto',
@@ -26,7 +29,7 @@ import { CaracteristicasComponent } from "../caracteristicas/caracteristicas.com
     CaracteristicasComponent
   ],
   templateUrl: './caracteristicas-producto.component.html',
-  styleUrl: './caracteristicas-producto.component.scss'
+  styleUrls: ['./caracteristicas-producto.component.scss']
 })
 export class CaracteristicasProductoComponent implements OnInit {
 
@@ -35,27 +38,35 @@ export class CaracteristicasProductoComponent implements OnInit {
   @Input() categoriaSeleccionada: number | null = null;
   @Input() soloFormulario: boolean = false;
   @Output() productFeatureDeleted = new EventEmitter<number>();
+  @ViewChild('formCrearCaractTpl') formCrearCaractTpl!: TemplateRef<any>;
+  @ViewChild('formOrgCaractTpl') formOrgCaractTpl!: TemplateRef<any>;
+
+  private overlay = inject(OverlayPortalService);
+
+  private crearCaractRef?: OverlayHandle;
+  private orgCaractRef?: OverlayHandle;
 
   productFeatures: any[] = [];
-  formProductFeature = { featureValue: '', product: 0 as number | null, feature: 0 as number | null };
+  features: any[] = [];
+
+  formProductFeature = {
+    featureValue: '',
+    product: 0 as number | null,
+    feature: 0 as number | null
+  };
   selectedProductFeature: any = null;
 
   mostrarFormularioAgregarProductFeature = false;
-  mostrarCrearFeature = false;
+  mostrarCrearFeatureSolo = false;
+  mostrarConfigurarFeature = false;
 
-  features: any[] = [];
-  productCategoryId: number | null = null;
-  selectedCategoryId: number | null = null;
-  constructor(private apiService: ApiService,
-    private toastService: ToastService,
-    private cd: ChangeDetectorRef) { }
+  constructor(private apiService: ApiService, private toastService: ToastService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     if (!this.productoSeleccionado) {
       this.toastService.mostrarMensaje('❌ No se ha seleccionado un producto.');
       return;
     }
-
     if (!this.categoriaSeleccionada) {
       this.toastService.mostrarMensaje('❌ La categoría del producto es obligatoria.');
       return;
@@ -67,11 +78,11 @@ export class CaracteristicasProductoComponent implements OnInit {
 
     this.cd.detectChanges();
   }
+
   /* ==================== CARGA ==================== */
   loadProductData(idProduct: number): void {
     this.apiService.getProductoById(idProduct).subscribe((product: any) => {
-      this.formProductFeature.product = product.idProduct;
-
+      this.formProductFeature.product = product?.idProduct ?? null;
       this.loadAllFeatures();
     });
   }
@@ -84,17 +95,15 @@ export class CaracteristicasProductoComponent implements OnInit {
 
   loadProductFeatures(): void {
     if (!this.productoSeleccionado) return;
-
     this.apiService.getProductFeaturesByProduct(this.productoSeleccionado).subscribe((data: any[]) => {
-      this.productFeatures = data;
+      this.productFeatures = data || [];
     });
   }
 
   onSelectOpened(opened: boolean): void {
-    if (opened) {
-      this.loadAllFeatures();
-    }
+    if (opened) this.loadAllFeatures();
   }
+
   /* ==================== CREAR / ACTUALIZAR ==================== */
   createProductFeature(): void {
     if (!this.formProductFeature.featureValue.trim()) {
@@ -114,9 +123,7 @@ export class CaracteristicasProductoComponent implements OnInit {
         this.loadProductFeatures();
         this.cancelEditProductFeature();
       },
-      error: (err) => {
-        this.toastService.mostrarMensaje('❌ Ocurrió un error al crear el detalle de característica.');
-      }
+      error: () => this.toastService.mostrarMensaje('❌ Ocurrió un error al crear el detalle de característica.')
     });
   }
 
@@ -125,12 +132,11 @@ export class CaracteristicasProductoComponent implements OnInit {
       this.toastService.mostrarMensaje('❌ El valor de la característica es obligatorio.');
       return;
     }
-
     if (!this.selectedProductFeature) return;
 
     const payload = {
       featureValue: this.formProductFeature.featureValue,
-      product: { idProduct: this.productoSeleccionado }, // ✅ objeto
+      product: { idProduct: this.productoSeleccionado },
       feature: this.formProductFeature.feature ? { idFeature: Number(this.formProductFeature.feature) } : null
     };
 
@@ -140,13 +146,11 @@ export class CaracteristicasProductoComponent implements OnInit {
         this.loadProductFeatures();
         this.cancelEditProductFeature();
       },
-      error: (err) => {
-        this.toastService.mostrarMensaje('❌ Ocurrió un error al actualizar el detalle de característica.');
-      }
+      error: () => this.toastService.mostrarMensaje('❌ Ocurrió un error al actualizar el detalle de característica.')
     });
   }
 
-  /* ==================== FORMULARIO ==================== */
+  /* ==================== FORM PF ==================== */
   abrirFormularioAgregarProductFeature(productFeature: any = null): void {
     if (productFeature) {
       this.selectedProductFeature = productFeature;
@@ -156,16 +160,14 @@ export class CaracteristicasProductoComponent implements OnInit {
         productFeature.idFeature ??
         null;
 
-      const featureEncontrado = this.features.find(f => f.idFeature === featureId) || null;
+      const found = this.features.find((f: any) => f.idFeature === featureId) || null;
 
       this.formProductFeature = {
         featureValue: productFeature.featureValue,
         product: this.productoSeleccionado,
-        feature: featureEncontrado ? featureEncontrado.idFeature : null
+        feature: found ? found.idFeature : null
       };
-
     } else {
-
       this.selectedProductFeature = null;
       this.formProductFeature = {
         featureValue: '',
@@ -187,12 +189,31 @@ export class CaracteristicasProductoComponent implements OnInit {
     this.selectedProductFeature = null;
     this.formProductFeature = { featureValue: '', product: this.productoSeleccionado, feature: null };
     this.mostrarFormularioAgregarProductFeature = false;
-
-    if (this.soloFormulario) {
-      this.closed.emit();
-    }
-
+    if (this.soloFormulario) this.closed.emit();
     this.loadProductFeatures();
+  }
+
+  /* ==================== MODALES: crear base / configurar base ==================== */
+  abrirCrearFeatureSolo(): void {
+    this.mostrarCrearFeatureSolo = true;
+    this.crearCaractRef = this.overlay.open(this.formCrearCaractTpl)
+  }
+  cerrarCrearFeatureSolo(): void {
+    this.mostrarCrearFeatureSolo = false;
+    this.crearCaractRef?.close();
+    this.crearCaractRef = undefined;
+    this.loadAllFeatures();
+  }
+
+  abrirConfigurarFeature(): void {
+    this.mostrarConfigurarFeature = true;
+    this.orgCaractRef = this.overlay.open(this.formOrgCaractTpl)
+  }
+  cerrarConfigurarFeature(): void {
+    this.mostrarConfigurarFeature = false;
+    this.orgCaractRef?.close();
+    this.orgCaractRef = undefined;
+    this.loadAllFeatures();
   }
 
   /* ==================== UTILIDADES ==================== */
@@ -209,14 +230,7 @@ export class CaracteristicasProductoComponent implements OnInit {
     });
   }
 
-  abrirCrearFeature(): void {
-    this.mostrarCrearFeature = true;
-  }
-
-  onFeatureCreated(): void {
-    this.mostrarCrearFeature = false;
-  }
-
+  /* ==================== GRID helpers ==================== */
   getGridColumns(): number {
     if (this.productFeatures.length <= 3) return 1;
     return Math.ceil(Math.sqrt(this.productFeatures.length));
