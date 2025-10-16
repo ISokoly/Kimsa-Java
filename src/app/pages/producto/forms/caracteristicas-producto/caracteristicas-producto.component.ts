@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, TemplateRef, ViewChild } from '@angular/core';
-import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../core/services/toast.service';
+import { ApiService } from '../../../../core/services/api.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -12,7 +12,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
 
 import { CaracteristicasComponent } from '../caracteristicas/caracteristicas.component';
-import { OverlayHandle, OverlayPortalService } from '../../../core/services/overlay-portal.service';
+import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
+import { HoverScrollDirective } from '../../../../core/extras/hover-scroll.directive';
 
 @Component({
   selector: 'app-caracteristicas-producto',
@@ -26,7 +27,7 @@ import { OverlayHandle, OverlayPortalService } from '../../../core/services/over
     MatIconModule,
     MatAutocompleteModule,
     MatSelectModule,
-    CaracteristicasComponent
+    CaracteristicasComponent,
   ],
   templateUrl: './caracteristicas-producto.component.html',
   styleUrls: ['./caracteristicas-producto.component.scss']

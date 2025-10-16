@@ -108,17 +108,22 @@
 
                 <tr>
                     <td>
-                        <mat-form-field appearance="outline" style="width:90%;">
+                        <mat-form-field appearance="outline" style="width: 90%;">
                             <mat-label>Seleccionar producto</mat-label>
-                            <mat-select [(ngModel)]="selectedProductId">
-                                @if (products.length === 0) {
-                                <mat-option [value]="null" disabled>— Sin productos —</mat-option>
+
+                            <input type="text" matInput placeholder="Buscar producto..." [(ngModel)]="productSearch"
+                                [matAutocomplete]="autoProductos" (input)="filtrarProductos()" />
+
+                            <mat-autocomplete #autoProductos="matAutocomplete"
+                                (optionSelected)="onProductoSeleccionado($event.option.value)">
+                                @if (filteredProducts.length === 0) {
+                                <mat-option disabled>— Sin coincidencias —</mat-option>
                                 } @else {
-                                @for (p of products; track p.idProduct) {
-                                <mat-option [value]="p.idProduct">{{ p.name }} — S/{{ p.price }}</mat-option>
+                                @for (p of filteredProducts; track p.idProduct) {
+                                <mat-option [value]="p">{{ p.name }} — S/{{ p.price }}</mat-option>
                                 }
                                 }
-                            </mat-select>
+                            </mat-autocomplete>
                         </mat-form-field>
                     </td>
                     <td>
@@ -146,7 +151,14 @@
                         </mat-form-field>
                     </td>
                     <td>S/{{ item.unitPrice }}</td>
-                    <td>S/{{ item.subtotal }}</td>
+                    <td>
+                        @if (item.discountPct && item.discountPct > 0) {
+                        <span class="badge-descuento">
+                            -{{ item.discountPct }}%
+                        </span>
+                        }
+                        S/{{ item.subtotal }}
+                    </td>
                     <td>
                         <button mat-icon-button color="warn"
                             (click)="removeItem(item)"><mat-icon>delete</mat-icon></button>

@@ -71,6 +71,7 @@ h2 {
     overflow: hidden;
     width: fit-content;
     height: fit-content;
+    transition: all 0.3s ease;
   }
 
   .horizontal-container {
@@ -83,11 +84,13 @@ h2 {
     max-height: 100%;
     object-fit: cover;
     border-radius: 20px;
+    transition: all 0.3s ease;
   }
 
   .actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 10px;
   }
 }
 
@@ -325,5 +328,27 @@ select[disabled] {
       pointer-events: none;
       text-decoration: none;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .horizontal-container {
+    max-height: 150px;
+  }
+
+  .img-container {
+    max-width: 300px;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .horizontal-container {
+    max-height: 120px;
+  }
+
+  .img-container {
+    max-width: 240px;
+    padding: 6px;
   }
 }

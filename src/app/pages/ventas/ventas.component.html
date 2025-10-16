@@ -5,7 +5,10 @@
     <!-- Fecha -->
     <mat-form-field appearance="fill" class="filtro-item">
       <mat-label>Seleccionar Fecha</mat-label>
-      <input matInput type="date" [(ngModel)]="selectedDateStr" (ngModelChange)="onDateChange()" />
+      <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" (dateChange)="onDateChange($event)"
+        placeholder="dd/mm/aaaa" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
     </mat-form-field>
 
     <!-- Estado -->

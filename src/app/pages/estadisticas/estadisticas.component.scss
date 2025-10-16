@@ -1,5 +1,7 @@
+@use "sass:color";
+
 $color-bg: #f9f9f9;
-$color-verde: #097d4c;
+$primary-color: #0b6e4f;
 
 .ventas-container {
   padding: 2rem;
@@ -8,76 +10,105 @@ $color-verde: #097d4c;
 
   .ventas-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
+/* Títulos */
 h1,
 h2 {
-  color: $color-verde;
-  border-bottom: 2px dashed $color-verde;
+  color: $primary-color;
+  border-bottom: 2px dashed $primary-color;
   padding-bottom: 8px;
   text-align: center;
 }
 
-.title {
-  font-size: 22px;
-  font-weight: bold;
-  cursor: pointer;
-  color: $color-verde;
-  transition: 0.3s;
-  text-align: justify;
-
-}
-
+.title,
 .title-one {
   font-size: 22px;
   font-weight: bold;
-  cursor: pointer;
-  color: $color-verde;
-  transition: 0.3s;
+  color: $primary-color;
+  transition: color 0.3s;
   text-align: justify;
-  padding-top: 0px !important;
-  margin-top: 0px !important;
+
+  &:hover {
+    color: color.scale($primary-color, $lightness: -20%);
+  }
 }
 
-.estadisticas-tabla {
+.title-one {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
 
+.estadisticas-tabla{
+  margin-bottom: 0;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 2px solid #333;
+.ventas-tabla {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
 
-    th {
-      background-color: #097d4c;
-      border: 2px solid #333;
+  th[mat-header-cell] {
+    background: $primary-color;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    padding: 18px 10px; // header más alto
+    letter-spacing: .2px;
+  }
 
-      color: white;
-      padding: 10px;
+  td[mat-cell] {
+    color: #333;
+    padding: 12px 10px;
+    vertical-align: middle;
+  }
+
+  tr[mat-row] {
+    &:nth-child(even) td {
+      background: #fafafa;
     }
 
-    td {
-      padding: 8px;
-      text-align: center;
-      border: 2px solid #333;
-    }
-
-    .fila-total {
-      font-weight: bold;
-      background-color: #f0f0f0;
+    &:hover td {
+      background: color.scale($primary-color, $lightness: 90%);
     }
   }
+
+  .fila-total {
+    td {
+      font-weight: 700;
+      background-color: #f0f0f0;
+      border-top: 1px solid #e1e1e1;
+    }
+  }
+}
+
+.celdas-centradas {
+  text-align: center;
 }
 
 .imagen-contenedor {
   display: flex;
   justify-content: center;
   align-items: center;
-}
+  margin-bottom: 2rem;
 
-.pizza-imagen {
-  width: 400px;
-  max-width: 100%;
-  opacity: 0.9;
+  .pizza-imagen {
+    width: 320px;
+    height: auto;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
 }

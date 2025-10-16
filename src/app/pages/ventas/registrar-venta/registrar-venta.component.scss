@@ -166,6 +166,7 @@ mat-form-field {
         background-color: color.scale($primary-color, $lightness: -30%);
       }
     }
+
     .boton-volver {
       width: 220px;
       background-color: $secondary-color;
@@ -177,6 +178,7 @@ mat-form-field {
         background-color: color.scale($secondary-color, $lightness: -30%);
       }
     }
+
     .boton-cancelar {
       width: 220px;
       background-color: $danger-color;
@@ -217,6 +219,20 @@ mat-form-field {
 }
 
 table td {
+  position: relative;
   padding: 6px 10px;
   vertical-align: middle;
+
+  .badge-descuento {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: #a30e0e;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
 }

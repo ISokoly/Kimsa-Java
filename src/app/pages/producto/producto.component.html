@@ -3,7 +3,7 @@
     <h1>Productos - {{categoriaNombre}}</h1>
 
     <div class="filtros">
-      <div style="display: flex; gap: 10px; align-items: center;">
+      <div style="display: flex; gap: 10px; align-items: center; width: 100%; padding-right: 15px;">
         <mat-form-field appearance="fill" style="flex: 1;">
           <mat-label>
             {{
@@ -79,39 +79,30 @@
 
     <div class="products-grid">
       @for (p of filtrarProductos(); track p.idProduct ?? $index) {
-      <div class="product-item">
-        <h2 class="product-name" style="cursor: pointer;">
+      <div class="product-item clickable" (click)="openProductDetail(p)">
+        <h2 class="product-name">
           {{ p.name }}
         </h2>
 
         @if (p.idImage) {
-        <div class="img-container horizontal-container" style="cursor: pointer;">
-          <img [src]="getUrlImagen(p.idImage)" alt="Imagen de la Categoría" class="preview-img img-horizontal"
+        <div class="img-container horizontal-container">
+          <img [src]="getUrlImagen(p.idImage)" alt="Imagen del producto" class="preview-img img-horizontal"
             (error)="onImageError($event)" />
         </div>
         } @else {
         <div class="img-container horizontal-container">
-          <img src="/img/no-image.png" alt="Sin imagen" class="preview-img img-horizontal" />
+          <img src="/img/no-image.png" alt="Sin imagen" class="img-horizontal" />
         </div>
         }
 
-        <p class="product-price">Precio: S/. {{ p.price }}</p>
-
-        <div class="actions">
-          <button class="form-btn-verde" (click)="editProducto(p)" [disabled]="isLoading">Editar</button>
-          @if (!p.disabled) {
-          <button class="form-btn-rojo" (click)="deshabilitar(p)" [disabled]="isLoading">
-            Deshabilitar
-          </button>
-          } @else {
-          <button class="form-btn-azul" (click)="habilitar(p)" [disabled]="isLoading">
-            Habilitar
-          </button>
-          }
-        </div>
+        <p>
+          <span class="label-precio">Precio: </span>
+          <span class="valor-precio">S/. {{ p.price }}</span>
+        </p>
       </div>
       }
     </div>
+
     <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
       <button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()" [disabled]="isLoading">
         Añadir Nuevo Producto
@@ -126,17 +117,89 @@
       </button>
     </div>}
 
+    <ng-template #productDetailTpl>
+      @if (selectedProducto) {
+      <div class="form-modal product-detail-modal">
+        <!-- Cerrar (X) -->
+        <button class="close-x" type="button" aria-label="Cerrar" (click)="closeProductDetail()">×</button>
+
+        <h2 class="form-title">Detalle del Producto</h2>
+
+        <div class="product-detail-body">
+
+          <div class="info-side">
+            <table mat-table [dataSource]="productInfoRows" class="mat-elevation-z8 info-tabla">
+              <!-- Propiedad -->
+              <ng-container matColumnDef="prop">
+                <th mat-header-cell *matHeaderCellDef> Propiedad </th>
+                <td mat-cell *matCellDef="let element">
+                  <strong>{{ element.prop }}</strong>
+                </td>
+              </ng-container>
+
+              <!-- Valor -->
+              <ng-container matColumnDef="value">
+                <th mat-header-cell *matHeaderCellDef> Valor </th>
+                <td mat-cell *matCellDef="let element">
+                  <span [class.ok]="element.prop === 'Estado' && element.value === 'Habilitado'"
+                    [class.bad]="element.prop === 'Estado' && element.value === 'Deshabilitado'">
+                    {{ element.value }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <tr mat-row *matRowDef="let row; columns: displayedInfoColumns;"></tr>
+            </table>
+
+            @if (productFeatureRows.length !== 0) {
+            <h4 class="subtitulo-tabla">Características del producto</h4>
+
+            <div class="features-tabla"></div>
+            <table mat-table [dataSource]="productFeatureRows" class="mat-elevation-z8 info-tabla">
+              <ng-container matColumnDef="base">
+                <th mat-header-cell *matHeaderCellDef> Característica </th>
+                <td mat-cell *matCellDef="let row">
+                  <strong>{{ row.base }}</strong>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="value">
+                <th mat-header-cell *matHeaderCellDef> Valor </th>
+                <td mat-cell *matCellDef="let row">
+                  {{ row.value || '—' }}
+                </td>
+              </ng-container>
+
+              <tr mat-row *matRowDef="let row; columns: displayedFeatureColumns;"></tr>
+            </table>
+            }
+          </div>
+        </div>
+
+        <div class="botones">
+          <button class="form-btn-verde" type="button" (click)="editProducto(selectedProducto)">Editar</button>
+
+          @if (!selectedProducto.disabled) {
+          <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedProducto)">Deshabilitar</button>
+          } @else {
+          <button class="form-btn-azul" type="button" (click)="habilitar(selectedProducto)">Habilitar</button>
+          }
+        </div>
+      </div>
+      }
+    </ng-template>
+
     <ng-template #formOrganizarMarcasTpl>
       <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="false"
-        (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(categoriaId!)"
-        (marcaDeleted)="onMarcaDeleted($event)">
+        (closed)="cerrarFormularioMarca(); loadMarcasPorCategoria(categoriaId!); refreshDetailNow()"
+        (marcaDeleted)="onMarcaDeleted($event); refreshDetailNow()">
       </app-marcas>
     </ng-template>
 
     <ng-template #formCrearMarcaTpl>
       <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true"
-        (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(categoriaId!)"
-        (marcaDeleted)="onMarcaDeleted($event)">
+        (closed)="cerrarFormularioCrearMarca(); loadMarcasPorCategoria(categoriaId!); refreshDetailNow()"
+        (marcaDeleted)="onMarcaDeleted($event); refreshDetailNow()">
       </app-marcas>
     </ng-template>
 
@@ -144,7 +207,8 @@
       <div style="max-width: min(96vw, 900px); width: 820px;">
         @if (selectedProducto) {
         <app-caracteristicas-producto [productoSeleccionado]="selectedProducto.idProduct"
-          [categoriaSeleccionada]="selectedProducto.idCategory" (closed)="cerrarFormularioCaracteristicaProducto()">
+          (productFeatureDeleted)="refreshDetailNow()" [categoriaSeleccionada]="selectedProducto.idCategory"
+          (closed)="cerrarFormularioCaracteristicaProducto(); refreshDetailNow()">
         </app-caracteristicas-producto>
         }
       </div>
@@ -174,7 +238,7 @@
         @if (mostrarMasOpciones) {
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Marca</mat-label>
-          <mat-select [(ngModel)]="formData.brand" name="brand">
+          <mat-select [(ngModel)]="formData.brand" name="brand" [disabled]="isLoading">
             @for(marca of marcas; track $index) {
             <mat-option [value]="marca.idBrand">{{ marca.name }}</mat-option>
             }
@@ -186,14 +250,15 @@
 
         @if (selectedProducto) {
         <div class="full-width">
-          <button class="btn-caracteristicas-producto" (click)="abrirFormularioCrearCaracteristicaProducto()">
+          <button class="btn-caracteristicas-producto" (click)="abrirFormularioCrearCaracteristicaProducto()"
+            [disabled]="isLoading">
             🧩 Gestionar características del producto
           </button>
         </div>
         }
 
-        <div class="mas-opciones full-width">
-          <label (click)="mostrarMasOpciones = !mostrarMasOpciones">
+        <div class="mas-opciones full-width" [class.disabled]="isLoading">
+          <label (click)="!isLoading && mostrarMasOpciones = !mostrarMasOpciones">
             {{ mostrarMasOpciones ? 'Menos opciones' : 'Más opciones' }}
           </label>
         </div>

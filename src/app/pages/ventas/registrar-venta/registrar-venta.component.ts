@@ -65,16 +65,12 @@ export class RegistrarVentaComponent implements OnInit {
   private dniSuggestTimer?: any;
 
   isDelivery = false;
+  productSearch = '';
+  filteredProducts: Product[] = [];
 
   get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
 
-  constructor(
-    private api: ApiService,
-    private toast: ToastService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private dialog: MatDialog
-  ) {}
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private dialog: MatDialog) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(p => {
@@ -82,6 +78,7 @@ export class RegistrarVentaComponent implements OnInit {
       this.init();
       this.onDniChange();
     });
+    this.filteredProducts = this.products.slice(0, 10);
   }
 
   private init(): void {
@@ -105,6 +102,7 @@ export class RegistrarVentaComponent implements OnInit {
     idTable: Number(m?.idTable ?? m?.id ?? 0),
     number: String(m?.number ?? ''),
     active: Boolean(m?.active ?? m?.isActive ?? m?.activo ?? false),
+    disabled: Boolean(m?.disabled ?? m?.inhabilitado ?? false),
   });
 
   loadTables(keepId: number | null = null): void {
@@ -112,8 +110,7 @@ export class RegistrarVentaComponent implements OnInit {
       next: (res: any[]) => {
         const mesas = (Array.isArray(res) ? res : []).map(this.mapMesa);
         const allowedId = keepId ?? this.selectedTableId ?? null;
-        // mostrar solo mesas libres, excepto la actualmente asignada si se edita
-        this.tables = mesas.filter(m => !m.active || (allowedId != null && m.idTable === allowedId));
+        this.tables = mesas.filter(m => !m.active || (allowedId != null && m.idTable === allowedId)).filter(m => !m.disabled);
       },
       error: () => this.toast.mostrarMensaje('❌ Error al cargar mesas'),
     });
@@ -132,8 +129,11 @@ export class RegistrarVentaComponent implements OnInit {
 
   loadDiscounts(): void {
     this.api.getDescuentos().subscribe({
-      next: (list: any[]) => this.discounts = arr(list).map(this.mapDiscount).filter(d => d.idProduct),
-      error: () => { this.discounts = []; }
+      next: (list: any[]) => {
+        this.discounts = arr(list).map(this.mapDiscount).filter(d => d.idProduct);
+        this.refreshCartPricing();
+      },
+      error: () => { this.discounts = [];}
     });
   }
 
@@ -157,7 +157,10 @@ export class RegistrarVentaComponent implements OnInit {
         }
 
         this.api.getOrderDetailsByOrderId(id).subscribe({
-          next: (details: any[]) => this.cart = arr(details).map(this.mapDetailToCart, this),
+          next: (details: any[]) => {
+            this.cart = arr(details).map(this.mapDetailToCart, this);
+            this.refreshCartPricing();
+          },
           error: () => this.cart = []
         });
 
@@ -192,9 +195,12 @@ export class RegistrarVentaComponent implements OnInit {
       req$.subscribe({
         next: () => {
           this.toast.mostrarMensaje(this.saleId ? '✅ Venta actualizada correctamente' : '✅ Venta registrada correctamente');
-          this.router.navigate(['/view/ventas']);
+          this.goBack();
         },
-        error: () => this.toast.mostrarMensaje(this.saleId ? '❌ Error al actualizar la venta' : '❌ Error al registrar la venta')
+        error: () => {
+          this.toast.mostrarMensaje(this.saleId ? '❌ Error al actualizar la venta' : '❌ Error al registrar la venta');
+          if (this.saleId != null) this.loadExistingSale(this.saleId, () => this.loadTables(this.selectedTableId));
+        }
       });
     } catch (e: any) {
       this.toast.mostrarMensaje('❌ ' + (e?.toString?.() ?? 'Error al validar cliente'));
@@ -232,6 +238,21 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
+  filtrarProductos(): void {
+    const q = this.productSearch.toLowerCase().trim();
+    if (!q) {
+      this.filteredProducts = this.products.slice(0, 10); // muestra los primeros
+    } else {
+      this.filteredProducts = this.products
+        .filter(p => p.name.toLowerCase().includes(q))
+        .slice(0, 10);
+    }
+  }
+
+  onProductoSeleccionado(producto: Product): void {
+    this.selectedProductId = producto.idProduct; this.productSearch = `${producto.name} — S/${producto.price}`;
+  }
+
   ensureCustomer(): Promise<{ idClient: number; name: string; dni: string }> {
     return new Promise((resolve, reject) => {
       if (this.isGeneric && this.currentCustomer?.idClient)
@@ -256,13 +277,18 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
+  private recalcItemPricing(i: CartItem): void {
+    const pct = this.getDiscountPct(i.idProduct);
+    i.discountPct = pct; i.subtotal = subTotal(i.unitPrice, i.quantity, pct);
+  }
+
+  private refreshCartPricing(): void {
+    this.cart.forEach(i => this.recalcItemPricing(i));
+  }
+
   cancelSale(): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '420px',
-      maxWidth: '95vw',
-      panelClass: 'custom-confirm-dialog',
-      disableClose: true,
-      data: { title: 'Cancelar venta', message: '¿Seguro que deseas cancelar esta venta?' }
+      width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true, data: { title: 'Cancelar venta', message: '¿Seguro que deseas cancelar esta venta?' }
     });
 
     dialogRef.afterClosed().subscribe(ok => {
@@ -272,8 +298,7 @@ export class RegistrarVentaComponent implements OnInit {
       this.api.updateSale(this.saleId, { status: 'Cancelled' }).subscribe({
         next: () => {
           this.toast.mostrarMensaje('✅ Venta cancelada correctamente');
-          // ⛔️ NO tocar mesas desde el front. El backend libera la mesa.
-          this.router.navigate(['/view/ventas']);
+          this.goBack();
         },
         error: () => this.toast.mostrarMensaje('❌ Error al cancelar la venta'),
         complete: () => (this.isSaving = false)
@@ -282,31 +307,19 @@ export class RegistrarVentaComponent implements OnInit {
   }
 
   private setGenericCustomer(): void {
-    this.isGeneric = true;
-    this.isExistingClient = true;
-    this.customerName = 'Cliente Genérico';
-    this.customerDni = GENERIC_DNI;
-    this.customerBirthdate = '2000-01-01';
-    this.currentCustomer = null;
+    this.isGeneric = true; this.isExistingClient = true; this.customerName = 'Cliente Genérico'; this.customerDni = GENERIC_DNI;
+    this.customerBirthdate = '2000-01-01'; this.currentCustomer = null;
   }
 
   private clearCustomer(): void {
-    this.isExistingClient = false;
-    this.customerName = '';
-    this.customerDni = '';
-    this.customerBirthdate = '2000-01-01';
-    this.currentCustomer = null;
+    this.isExistingClient = false; this.customerName = ''; this.customerDni = ''; this.customerBirthdate = '2000-01-01'; this.currentCustomer = null;
   }
 
   private applyLoadedClient(c: any): void {
     if (!c) return this.setGenericCustomer();
     const isGeneric = String(c?.dni) === GENERIC_DNI;
-    this.isGeneric = isGeneric;
-    this.isExistingClient = true;
-    this.currentCustomer = { idClient: toNum(c.idClient), name: String(c.name ?? ''), dni: String(c.dni ?? '') };
-    this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name;
-    this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni;
-    this.customerBirthdate = c?.birthdate ?? '2000-01-01';
+    this.isGeneric = isGeneric; this.isExistingClient = true; this.currentCustomer = { idClient: toNum(c.idClient), name: String(c.name ?? ''), dni: String(c.dni ?? '') };
+    this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name; this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni; this.customerBirthdate = c?.birthdate ?? '2000-01-01';
   }
 
   addToCart(): void {
@@ -323,12 +336,7 @@ export class RegistrarVentaComponent implements OnInit {
       existing.subtotal = subTotal(existing.unitPrice, existing.quantity, pct);
     } else {
       this.cart.push({
-        idProduct: prod.idProduct,
-        name: prod.name,
-        unitPrice: prod.price,
-        quantity: this.selectedQty,
-        discountPct: pct,
-        subtotal: subTotal(prod.price, this.selectedQty, pct)
+        idProduct: prod.idProduct, name: prod.name, unitPrice: prod.price, quantity: this.selectedQty, discountPct: pct, subtotal: subTotal(prod.price, this.selectedQty, pct)
       });
     }
 
@@ -351,9 +359,18 @@ export class RegistrarVentaComponent implements OnInit {
     if (!ok) e.preventDefault();
   }
 
+  private normalizeNoAccent(s: string): string {
+    return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
   private limaDayName(date: Date): DayWeek {
-    const name = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
-    return (name.charAt(0).toUpperCase() + name.slice(1)) as DayWeek;
+    const raw = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
+    const key = this.normalizeNoAccent(raw);
+    const map: Record<string, DayWeek> = {
+      'lunes': 'Lunes', 'martes': 'Martes', 'miercoles': 'Miercoles', 'jueves': 'Jueves', 'viernes': 'Viernes', 'sabado': 'Sabado', 'domingo': 'Domingo'
+    };
+    const value = map[key] ?? 'General';
+    return value as DayWeek;
   }
 
   private getDiscountPct(productId: number): number {
@@ -361,7 +378,8 @@ export class RegistrarVentaComponent implements OnInit {
     const active = this.discounts.filter(d => !d.disabled && d.idProduct === productId);
     const pick = active.filter(d => d.typeDay !== 'General' && d.typeDay === today);
     const bag = pick.length ? pick : active.filter(d => d.typeDay === 'General');
-    return bag.length ? Math.max(...bag.map(d => d.percentage || 0)) : 0;
+    const pct = bag.length ? Math.max(...bag.map(d => d.percentage || 0)) : 0;
+    return pct;
   }
 
   private buildLocalDate(orderDate: string, orderTime?: string): Date {
@@ -369,24 +387,17 @@ export class RegistrarVentaComponent implements OnInit {
     let hh = 0, mm = 0, ss = 0, ms = 0;
     if (orderTime) {
       const [hms, msPart] = orderTime.split('.');
-      const [h, m2, s] = (hms || '').split(':').map(n => parseInt(n || '0', 10));
-      hh = h || 0; mm = m2 || 0; ss = s || 0; ms = msPart ? parseInt(msPart, 10) : 0;
+      const [h, m2, s] = (hms || '').split(':').map(n => parseInt(n || '0', 10)); hh = h || 0; mm = m2 || 0; ss = s || 0; ms = msPart ? parseInt(msPart, 10) : 0;
     }
     return new Date(y, (m - 1), d, hh, mm, ss, ms);
   }
 
   private mapProduct = (raw: any): Product => ({
-    idProduct: toNum(raw?.idProduct ?? raw?.id_producto ?? raw?.id),
-    name: String(raw?.name ?? raw?.nombre ?? ''),
-    price: toNum(raw?.price ?? raw?.precio ?? 0),
-    disabled: !!raw?.disabled
+    idProduct: toNum(raw?.idProduct ?? raw?.id_producto ?? raw?.id), name: String(raw?.name ?? raw?.nombre ?? ''), price: toNum(raw?.price ?? raw?.precio ?? 0), disabled: !!raw?.disabled
   });
 
   private mapDiscount = (d: any): Discount => ({
-    idProduct: toNum(d?.idProduct ?? d?.id_producto),
-    percentage: toNum(d?.percentage ?? d?.porcentaje ?? 0),
-    typeDay: String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek,
-    disabled: !!d?.disabled
+    idProduct: toNum(d?.idProduct ?? d?.id_producto), percentage: toNum(d?.percentage ?? d?.porcentaje ?? 0), typeDay: String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek, disabled: !!d?.disabled
   });
 
   private mapDetailToCart(d: any): CartItem {
@@ -424,9 +435,7 @@ export class RegistrarVentaComponent implements OnInit {
     const list$ = (this.api as any).getAllClientes?.() || (this.api as any).getClientes?.();
 
     if (!list$) {
-      this.allClientsLoaded = true;
-      this.allClientsCache = [];
-      this.dniSuggestions = [];
+      this.allClientsLoaded = true; this.allClientsCache = []; this.dniSuggestions = [];
       return;
     }
 
@@ -434,18 +443,13 @@ export class RegistrarVentaComponent implements OnInit {
       next: (arr: any[]) => {
         const list = Array.isArray(arr) ? arr : [];
         this.allClientsCache = list.map(c => ({
-          idClient: c?.idClient ?? c?.id_cliente,
-          name: String(c?.name ?? c?.nombre ?? ''),
-          dni: String(c?.dni ?? ''),
-          birthdate: c?.birthdate ?? c?.fecha_nacimiento
+          idClient: c?.idClient ?? c?.id_cliente, name: String(c?.name ?? c?.nombre ?? ''), dni: String(c?.dni ?? ''), birthdate: c?.birthdate ?? c?.fecha_nacimiento
         })).filter(c => !!c.dni);
         this.allClientsLoaded = true;
         doFilter();
       },
       error: () => {
-        this.allClientsLoaded = true;
-        this.allClientsCache = [];
-        this.dniSuggestions = [];
+        this.allClientsLoaded = true; this.allClientsCache = []; this.dniSuggestions = [];
       }
     });
   }

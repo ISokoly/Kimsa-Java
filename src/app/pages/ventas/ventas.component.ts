@@ -11,6 +11,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 
 import { ApiService } from '../../core/services/api.service';
 
@@ -47,7 +50,9 @@ interface ProductLite { idProduct: number; name: string; }
     MatInputModule,
     MatSelectModule,
     MatAutocompleteModule,
-    MatChipsModule
+    MatChipsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
   ],
   templateUrl: './ventas.component.html',
   styleUrls: ['./ventas.component.scss']
@@ -55,7 +60,6 @@ interface ProductLite { idProduct: number; name: string; }
 export class VentasComponent implements OnInit {
 
   /* === Estado UI === */
-  selectedDateStr = '';
   displayedColumns: string[] = ['number', 'producto', 'hora', 'estado', 'ganancia', 'opciones'];
 
   sales: Order[] = [];
@@ -74,19 +78,27 @@ export class VentasComponent implements OnInit {
   pageIndex = 0;
   displayEmpty = (_: any): string => '';
 
+  // Datepicker
+  fechaSeleccionada: Date = new Date();
+
+  get fecha(): string {
+    return this.fechaSeleccionada
+      ? this.fechaSeleccionada.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+  }
+
   private productNameById: Record<number, string> = {};
 
   constructor(private api: ApiService, private router: Router) { }
 
   ngOnInit(): void {
-    this.selectedDateStr = this.todayInLimaISO();
     this.loadProducts();
-    this.loadSales();
+    this.loadSales(); // carga del día seleccionado
   }
 
   /* === Carga de datos === */
   loadSales(): void {
-    const targetIso = this.selectedDateStr;
+    const targetIso = this.toIsoYYYYMMDD(this.fechaSeleccionada);
 
     this.api.getSales().subscribe({
       next: (raw: any[]) => {
@@ -94,7 +106,8 @@ export class VentasComponent implements OnInit {
           idOrder: Number(v.idOrder ?? v.id),
           status: String(v.status ?? 'Pending') as OrderStatus,
           total: Number(v.total ?? 0),
-          orderDate: String(v.orderDate ?? v.fecha_pedido ?? this.selectedDateStr),
+          // Normaliza a 'YYYY-MM-DD'
+          orderDate: String(v.orderDate ?? v.fecha_pedido ?? targetIso).slice(0, 10),
           orderTime: String(v.orderTime ?? v.hora_pedido ?? '00:00:00'),
           details: []
         }));
@@ -166,8 +179,9 @@ export class VentasComponent implements OnInit {
     this.applyFilters();
   }
 
-  onDateChange(): void {
-    this.selectedDateStr = (this.selectedDateStr || '').slice(0, 10);
+  // Datepicker -> cambio de fecha
+  onDateChange(ev: MatDatepickerInputEvent<Date>): void {
+    this.fechaSeleccionada = ev.value ?? new Date();
     this.pageIndex = 0;
     this.loadSales();
   }
@@ -193,7 +207,7 @@ export class VentasComponent implements OnInit {
 
   clearAllFilters(): void {
     this.statusFilter = 'All';
-    this.productQuery = '';        // limpia también aquí
+    this.productQuery = '';
     this.selectedProductNames = [];
     this.recomputeSuggestions();
     this.pageIndex = 0;
@@ -304,10 +318,13 @@ export class VentasComponent implements OnInit {
     return `${h}:${m}`;
   }
 
-  private todayInLimaISO(): string {
+  private toIsoYYYYMMDD(d: Date): string {
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(new Date());
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(d);
   }
 
   private localMillis(date: string, time?: string): number {

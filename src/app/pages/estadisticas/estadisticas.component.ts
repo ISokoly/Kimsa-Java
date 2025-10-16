@@ -10,10 +10,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
+import { MatTableModule } from '@angular/material/table';
 
 @Component({
   selector: 'app-estadisticas',
-  imports: [CommonModule,
+  standalone: true,
+  imports: [
+    CommonModule,
     FormsModule,
     MatButtonModule,
     MatPaginatorModule,
@@ -21,24 +24,22 @@ import { FormsModule } from '@angular/forms';
     MatFormFieldModule,
     MatInputModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatTableModule
   ],
   templateUrl: './estadisticas.component.html',
-  styleUrl: './estadisticas.component.scss'
+  styleUrls: ['./estadisticas.component.scss']
 })
 export class EstadisticasComponent implements OnInit {
-  estadisticasSemanales: {
-    semana: string;
-    producto: string;
-    ganancia: number;
-  }[] = [];
 
-  gananciasSemanales: {
-    semana: string;
-    ganancia: number;
-  }[] = [];
+  // columnas para mat-table
+  colsTop = ['semana', 'producto', 'ganancia'];
+  colsGan = ['semana', 'ganancia'];
 
-  gananciaMensual: number = 0;
+  estadisticasSemanales: { semana: string; producto: string; ganancia: number; }[] = [];
+  gananciasSemanales: { semana: string; ganancia: number; }[] = [];
+
+  gananciaMensual = 0;
   ventas: any[] = [];
   detallesPedido: any[] = [];
   productos: any[] = [];
@@ -56,30 +57,69 @@ export class EstadisticasComponent implements OnInit {
     this.cargarProductos();
   }
 
+  /* =================== CARGA =================== */
   cargarVentas() {
-    this.apiService.getSales().subscribe(response => {
-      this.ventas = response;
+    this.apiService.getSales().subscribe((response: any[]) => {
+      this.ventas = Array.isArray(response) ? response : (response ? [response] : []);
       this.ventasCargadas = true;
       this.intentarGenerarEstadisticas();
     });
   }
 
   cargarDetallesPedido() {
-    this.apiService.getOrderDetails().subscribe(response => {
-      this.detallesPedido = response;
+    this.apiService.getOrderDetails().subscribe((response: any[]) => {
+      this.detallesPedido = Array.isArray(response) ? response : (response ? [response] : []);
       this.detallesCargados = true;
       this.intentarGenerarEstadisticas();
     });
   }
 
   cargarProductos() {
-    this.apiService.getProductos().subscribe(response => {
-      this.productos = response;
+    this.apiService.getProductos().subscribe((response: any[]) => {
+      this.productos = Array.isArray(response) ? response : (response ? [response] : []);
       this.productosCargados = true;
       this.intentarGenerarEstadisticas();
     });
   }
 
+  /* ============== Normalizadores (nombres viejos/nuevos) ============== */
+  private vIdOrder(v: any): number | null {
+    return Number(v?.idOrder ?? v?.id ?? v?.id_pedido ?? null) || null;
+  }
+  private vDate(v: any): Date | null {
+    const raw = v?.orderDate ?? v?.fecha_pedido ?? v?.fecha ?? v?.date ?? null;
+    const d = raw ? new Date(raw) : null;
+    return (d && !isNaN(d.getTime())) ? d : null;
+  }
+  private vStatus(v: any): string {
+    return String(v?.status ?? v?.estado ?? '');
+  }
+  private vTotal(v: any): number {
+    return Number(v?.total ?? 0);
+  }
+
+  private dOrderId(d: any): number | null {
+    return Number(d?.idOrder ?? d?.order?.idOrder ?? d?.id_pedido ?? null) || null;
+  }
+  private dProductId(d: any): number | null {
+    return Number(d?.idProduct ?? d?.product?.idProduct ?? d?.id_producto ?? d?.productId ?? null) || null;
+  }
+  private dQty(d: any): number {
+    return Number(d?.quantity ?? d?.cantidad ?? 0);
+  }
+  private dSubtotal(d: any): number {
+    return Number(d?.subtotal ?? 0);
+  }
+
+  private pNameById(id: number | null): string {
+    if (!id) return 'Desconocido';
+    const p = this.productos.find(x =>
+      Number(x?.idProduct ?? x?.id ?? x?.id_producto) === Number(id)
+    );
+    return p ? String(p?.name ?? p?.nombre ?? 'Desconocido') : 'Desconocido';
+  }
+
+  /* ============== Generación de estadísticas ============== */
   intentarGenerarEstadisticas() {
     if (this.ventasCargadas && this.detallesCargados && this.productosCargados) {
       this.agregarDetallesAVentas();
@@ -89,9 +129,17 @@ export class EstadisticasComponent implements OnInit {
   }
 
   agregarDetallesAVentas() {
-    this.ventas.forEach(venta => {
-      venta.detalles = this.detallesPedido.filter(det => det.id_pedido === venta.id);
-    });
+    const byOrder: Record<number, any[]> = {};
+    for (const det of this.detallesPedido) {
+      const key = this.dOrderId(det);
+      if (!key) continue;
+      (byOrder[key] ||= []).push(det);
+    }
+    // asigna a cada venta
+    for (const v of this.ventas) {
+      const id = this.vIdOrder(v);
+      (v as any).detalles = id ? (byOrder[id] ?? []) : [];
+    }
   }
 
   onMesSeleccionado(date: Date, picker: any) {
@@ -101,119 +149,85 @@ export class EstadisticasComponent implements OnInit {
     this.generarEstadisticasPorSemana();
   }
 
-  generarGananciasPorSemana(): void {
-    const semanas: any[][] = [[], [], [], []];
-
-    const ventasFiltradas = this.ventas.filter(venta => {
-      const fecha = new Date(venta.fecha_pedido);
-      return (
-        this.fechaSeleccionada &&
-        fecha.getMonth() === this.fechaSeleccionada.getMonth() &&
-        fecha.getFullYear() === this.fechaSeleccionada.getFullYear()
-      );
+  private ventasDelMes(): any[] {
+    return this.ventas.filter(v => {
+      const d = this.vDate(v);
+      return d
+        && d.getMonth() === this.fechaSeleccionada.getMonth()
+        && d.getFullYear() === this.fechaSeleccionada.getFullYear();
     });
+  }
 
-    for (const venta of ventasFiltradas) {
-      const fecha = new Date(venta.fecha_pedido);
-      const dia = fecha.getDate();
-
-      let indexSemana = 0;
-      if (dia >= 1 && dia <= 7) indexSemana = 0;
-      else if (dia >= 8 && dia <= 14) indexSemana = 1;
-      else if (dia >= 15 && dia <= 21) indexSemana = 2;
-      else if (dia >= 22) indexSemana = 3;
-
-      semanas[indexSemana].push(venta);
+  private bucketSemanas(ventas: any[]): any[][] {
+    const semanas: any[][] = [[], [], [], []];
+    for (const v of ventas) {
+      const d = this.vDate(v);
+      if (!d) continue;
+      const day = d.getDate();
+      let idx = 0;
+      if (day <= 7) idx = 0;
+      else if (day <= 14) idx = 1;
+      else if (day <= 21) idx = 2;
+      else idx = 3;
+      semanas[idx].push(v);
     }
+    return semanas;
+  }
+
+  generarGananciasPorSemana(): void {
+    const semanas = this.bucketSemanas(this.ventasDelMes());
 
     this.gananciasSemanales = semanas.map((ventasSemana, i) => {
-      let gananciaSemana = 0;
-
-      for (const venta of ventasSemana) {
-        if (venta.estado !== 'Cancelado') {
-          gananciaSemana += Number(venta.total || 0);
+      let ganancia = 0;
+      for (const v of ventasSemana) {
+        if (this.isConfirmed(v)) {
+          ganancia += this.vTotal(v);
         }
       }
-
-      return {
-        semana: `Semana ${i + 1}`,
-        ganancia: gananciaSemana
-      };
+      return { semana: `Semana ${i + 1}`, ganancia };
     });
 
-    this.gananciaMensual = this.gananciasSemanales.reduce(
-      (suma, s) => suma + Number(s.ganancia || 0),
-      0
-    );
+    this.gananciaMensual = this.gananciasSemanales
+      .reduce((acc, s) => acc + Number(s.ganancia || 0), 0);
   }
 
   generarEstadisticasPorSemana(): void {
-    const semanas: any[][] = [[], [], [], []];
-
-    const ventasFiltradas = this.ventas.filter(venta => {
-      const fecha = new Date(venta.fecha_pedido);
-      return (
-        this.fechaSeleccionada &&
-        fecha.getMonth() === this.fechaSeleccionada.getMonth() &&
-        fecha.getFullYear() === this.fechaSeleccionada.getFullYear()
-      );
-    });
-
-    for (const venta of ventasFiltradas) {
-      const fecha = new Date(venta.fecha_pedido);
-      const dia = fecha.getDate();
-
-      let indexSemana = 0;
-      if (dia >= 1 && dia <= 7) indexSemana = 0;
-      else if (dia >= 8 && dia <= 14) indexSemana = 1;
-      else if (dia >= 15 && dia <= 21) indexSemana = 2;
-      else if (dia >= 22) indexSemana = 3;
-
-      semanas[indexSemana].push(venta);
-    }
+    const semanas = this.bucketSemanas(this.ventasDelMes());
 
     this.estadisticasSemanales = semanas.map((ventasSemana, i) => {
-      const productosContador: { [key: string]: number } = {};
-      const productosGanancia: { [key: string]: number } = {};
-      let gananciaSemana = 0;
+      const contador: Record<string, number> = {};
+      const porGanancia: Record<string, number> = {};
 
-      for (const venta of ventasSemana) {
-        if (venta.estado !== 'Cancelado') {
-          gananciaSemana += Number(venta.total || 0);
+      for (const v of ventasSemana) {
+        if (!this.isConfirmed(v)) continue;
 
-          for (const detalle of venta.detalles || []) {
-            const nombre = this.obtenerNombreProducto(detalle.id_producto);
-            productosContador[nombre] = (productosContador[nombre] || 0) + Number(detalle.cantidad || 0);
-            productosGanancia[nombre] = (productosGanancia[nombre] || 0) + Number(detalle.subtotal || 0);
-          }
+        const detalles = (v as any).detalles ?? [];
+        for (const det of detalles) {
+          const pid = this.dProductId(det);
+          const nombre = this.pNameById(pid);
+          contador[nombre] = (contador[nombre] ?? 0) + this.dQty(det);
+          porGanancia[nombre] = (porGanancia[nombre] ?? 0) + this.dSubtotal(det);
         }
       }
 
-      const productoMasVendido = Object.entries(productosContador)
-        .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sin datos';
+      const productoMasVendido = Object.entries(contador)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Sin datos';
+      const gananciaProducto = Number(porGanancia[productoMasVendido] ?? 0);
 
-      const gananciaProductoMasVendido = Number(productosGanancia[productoMasVendido]) || 0;
-
-      return {
-        semana: `Semana ${i + 1}`,
-        producto: productoMasVendido,
-        ganancia: gananciaProductoMasVendido
-      };
+      return { semana: `Semana ${i + 1}`, producto: productoMasVendido, ganancia: gananciaProducto };
     });
 
-    this.gananciaMensual = semanas.reduce((suma, ventasSemana) => {
-      let totalSemana = 0;
-      for (const venta of ventasSemana) {
-        if (venta.estado !== 'Cancelado') {
-          totalSemana += Number(venta.total || 0);
-        }
-      }
-      return suma + totalSemana;
-    }, 0);
+    this.gananciaMensual = this.gananciasSemanales
+      .reduce((acc, s) => acc + Number(s.ganancia || 0), 0);
   }
 
+
   obtenerNombreProducto(idProducto: number): string {
-    const producto = this.productos.find(p => p.id === idProducto);
-    return producto ? producto.nombre : 'Desconocido';
+    return this.pNameById(idProducto);
+  }
+
+  private isConfirmed(v: any): boolean {
+    const s = this.vStatus(v);
+    return s === 'Confirmed';
   }
 }

@@ -1,59 +1,73 @@
 <div class="ventas-container">
-    <h1>Estadisticas</h1>
-    <mat-form-field appearance="fill">
-        <mat-label>Seleccionar Mes</mat-label>
-        <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" [readonly]="true">
-        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker startView="year" (monthSelected)="onMesSeleccionado($event, picker)"
-            panelClass="datepicker-month-year"></mat-datepicker>
-    </mat-form-field>
-    <div class="ventas-grid">
-        <div class="estadisticas-tabla">
-            <h2 class="title-one">Productos mas vendidos</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Semana</th>
-                        <th>Producto mayor vendido</th>
-                        <th>Ganancias</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let estadistica of estadisticasSemanales">
-                        <td>{{ estadistica.semana }}</td>
-                        <td>{{ estadistica.producto }}</td>
-                        <td>S/ {{ estadistica.ganancia }}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <h2 class="title">Ganancias Semanales</h2>
+  <h1>Estadisticas</h1>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Semana</th>
-                        <th>Ganancias</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let ganancias of gananciasSemanales">
-                        <td>{{ ganancias.semana }}</td>
-                        <td>S/ {{ ganancias.ganancia }}</td>
-                    </tr>
+  <mat-form-field appearance="fill" style="width: 50%;">
+    <mat-label>Seleccionar Mes</mat-label>
+    <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" [readonly]="true" />
+    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-datepicker
+      #picker
+      startView="year"
+      (monthSelected)="onMesSeleccionado($event, picker)"
+      panelClass="datepicker-month-year">
+    </mat-datepicker>
+  </mat-form-field>
 
-                    <tr class="fila-total">
-                        <td colspan="1"><strong>Ganancia del mes</strong></td>
-                        <td><strong>S/ {{ gananciaMensual }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+  <div class="ventas-grid">
+    <div class="estadisticas-tabla">
+      <h2 class="title-one">Productos más vendidos</h2>
 
-        </div>
-        <div>
-            <br><br><br><br>
-            <div class="imagen-contenedor">
-                <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
-            </div>
-        </div>
+      <table mat-table [dataSource]="estadisticasSemanales" class="mat-elevation-z1 ventas-tabla">
+        <!-- Semana -->
+        <ng-container matColumnDef="semana">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Semana</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.semana }}</td>
+        </ng-container>
+
+        <!-- Producto -->
+        <ng-container matColumnDef="producto">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Producto mayor vendido</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.producto }}</td>
+        </ng-container>
+
+        <!-- Ganancias -->
+        <ng-container matColumnDef="ganancia">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Ganancias</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">S/ {{ row.ganancia | number:'1.2-2' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="colsTop"></tr>
+        <tr mat-row *matRowDef="let r; columns: colsTop"></tr>
+      </table>
+
+      <h2 class="title">Ganancias Semanales</h2>
+
+      <table mat-table [dataSource]="gananciasSemanales" class="mat-elevation-z1 ventas-tabla">
+
+        <ng-container matColumnDef="semana">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Semana</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.semana }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="ganancia">
+          <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Ganancias</th>
+          <td mat-cell *matCellDef="let row" class="celdas-centradas">S/ {{ row.ganancia | number:'1.2-2' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="colsGan"></tr>
+        <tr mat-row *matRowDef="let r; columns: colsGan"></tr>
+
+        <tr class="mat-mdc-row fila-total">
+          <td class="mat-mdc-cell celdas-centradas"><strong>Ganancia del mes</strong></td>
+          <td class="mat-mdc-cell celdas-centradas"><strong>S/ {{ gananciaMensual | number:'1.2-2' }}</strong></td>
+        </tr>
+      </table>
     </div>
+
+    <div>
+      <div class="imagen-contenedor">
+        <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
+      </div>
+    </div>
+  </div>
 </div>

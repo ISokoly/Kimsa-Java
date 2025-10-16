@@ -65,8 +65,12 @@
     @for (pf of productFeatures; track $index) {
     <div class="product-feature-item">
       <div class="product-feature-wrapper">
-        <span class="product-feature-name">{{ pf.feature?.featureName }}</span>
-        <span class="product-feature-value">- {{ pf.featureValue }}</span>
+        <span class="product-feature-name">
+          {{ pf.feature?.featureName }}:
+        </span>
+        <span class="product-feature-value">
+          {{ pf.featureValue }}
+        </span>
       </div>
 
       <span class="actions">

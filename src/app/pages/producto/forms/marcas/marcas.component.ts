@@ -1,6 +1,4 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../core/services/toast.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +6,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from "@angular/material/list";
 import { CommonModule } from '@angular/common';
-import { HoverScrollDirective } from "../../../core/extras/hover-scroll.directive";
+import { ApiService } from '../../../../core/services/api.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { HoverScrollDirective } from '../../../../core/extras/hover-scroll.directive';
 
 type BrandLite = { idBrand?: number; name: string; category: number | null };
 

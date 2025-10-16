@@ -1,30 +1,28 @@
-import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
-import { MatSelectModule } from "@angular/material/select";
+import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
-import { MarcasComponent } from "./marcas/marcas.component";
-import { CaracteristicasProductoComponent } from "./caracteristicas-producto/caracteristicas-producto.component";
+import { CaracteristicasProductoComponent } from './forms/caracteristicas-producto/caracteristicas-producto.component';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
 import { OverlayHandle, OverlayPortalService } from '../../core/services/overlay-portal.service';
 
-interface Brand { idBrand: number; name: string; category?: number; }
-interface Product {
-  idProduct: number; name: string; price: number; idCategory: number;
-  idBrand?: number | null; brand?: { idBrand: number; name: string } | null;
-  idImage?: number | null; disabled: boolean;
-}
-interface Category { idCategory: number; name: string; }
-interface ImageResp { idImage?: number; id?: number; url: string; }
+import { lower, mapProductos, norm, productosPorEstado, take, uniq } from './producto.utils';
+import { Brand, Category, ImageResp, Product } from './producto.models';
+import { FeatureFilterService } from '../../core/services/feature-filter.service';
+import { MarcasComponent } from './forms/marcas/marcas.component';
+import { MatHeaderCellDef, MatTableModule } from "@angular/material/table";
+import { MatIconModule } from '@angular/material/icon';
+import { refreshSelectedProductSimple } from './product-refresh.util';
 
 @Component({
   selector: 'app-producto',
@@ -33,7 +31,9 @@ interface ImageResp { idImage?: number; id?: number; url: string; }
     FormsModule, RouterModule,
     MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule,
     MatAutocompleteModule, MatChipsModule,
-    MarcasComponent, CaracteristicasProductoComponent
+    MarcasComponent, CaracteristicasProductoComponent,
+    MatHeaderCellDef,
+    MatTableModule, MatIconModule
   ],
   templateUrl: './producto.component.html',
   styleUrls: ['./producto.component.scss']
@@ -66,11 +66,30 @@ export class ProductoComponent implements OnInit {
   filtroSugs: string[] = [];
   isLoading = false;
 
-  featureQuery = '';
-  featureSuggestions: string[] = [];
-  selectedFeatureTags: string[] = []; // chips
+  private namePool: string[] = [];
+  private brandPool: string[] = [];
+
+  displayedInfoColumns: string[] = ['prop', 'value'];
+  displayedFeatureColumns: string[] = ['base', 'value'];
+  productFeatureRows: Array<{ base: string; value: string }> = [];
+
+  get productInfoRows() {
+    const p = this.selectedProducto;
+    if (!p) return [];
+    return [
+      { prop: 'Nombre', value: p.name }, { prop: 'Precio', value: `S/. ${p.price}` }, { prop: 'Marca', value: p.brand?.name || '—' }, { prop: 'Estado', value: p.disabled ? 'Deshabilitado' : 'Habilitado' },
+    ];
+  }
+
+  get featureQuery() { return this.featuresSvc.featureQuery; }
+  set featureQuery(v: string) { this.featuresSvc.featureQuery = v; }
+  get featureSuggestions() { return this.featuresSvc.featureSuggestions; }
+  get selectedFeatureTags() { return this.featuresSvc.selectedFeatureTags; }
+
   displayEmpty = (_: any): string => '';
-  productFeatureTags: Record<number, string[]> = {};
+  getDisplayWith(): ((value: any) => string) | null {
+    return this.tipoFiltro === 'caracteristica' ? this.displayEmpty : null;
+  }
 
   get mainQuery(): string {
     return this.tipoFiltro === 'caracteristica' ? this.featureQuery : this.filtro;
@@ -85,14 +104,14 @@ export class ProductoComponent implements OnInit {
 
   categoriaId: number | null = null;
   categoriaNombre = '';
-  features: any[] = [];
-  productFeatures: any[] = [];
 
   @ViewChild('formProductoTpl') formProductoTpl!: TemplateRef<any>;
   @ViewChild('formOrganizarMarcasTpl') formOrganizarMarcasTpl!: TemplateRef<any>;
   @ViewChild('formCrearMarcaTpl') formCrearMarcaTpl!: TemplateRef<any>;
   @ViewChild('formProdCaractTpl') formProdCaractTpl!: TemplateRef<any>;
+  @ViewChild('productDetailTpl') productDetailTpl!: TemplateRef<any>;
 
+  private productDetailRef?: OverlayHandle;
   private overlay = inject(OverlayPortalService);
 
   private productFormRef?: OverlayHandle;
@@ -100,7 +119,7 @@ export class ProductoComponent implements OnInit {
   private crearMarcaRef?: OverlayHandle;
   private prodCaractRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog) { }
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog, private featuresSvc: FeatureFilterService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async params => {
@@ -111,58 +130,36 @@ export class ProductoComponent implements OnInit {
     });
   }
 
+  private async refreshProductNow(idProduct: number): Promise<void> {
+    await refreshSelectedProductSimple({
+      api: {
+        getProductoById: (id: number) => this.api.getProductoById(id),
+        getProductFeaturesByProduct: (id: number) => this.api.getProductFeaturesByProduct(id),
+      },
+      idProduct,
+      marcaMap: this.marcaMap,
+      setSelected: (p: Product) => { this.selectedProducto = p; },
+
+      setFeatureRows: (rows: Array<{ base: string; value?: string; detail?: string }>) => {
+        this.productFeatureRows = rows.map(r => ({
+          base: r.base,
+          value: r.value ?? r.detail ?? ''
+        }));
+      },
+
+      reloadImage: async (idImage: number) => { await this.loadImagen(idImage); }
+    });
+    this.cd.detectChanges();
+  }
+
+  public async refreshDetailNow(): Promise<void> {
+    if (!this.selectedProducto) return;
+    await this.refreshProductNow(this.selectedProducto.idProduct);
+  }
+
   get estaEditando(): boolean { return !!this.selectedProducto; }
 
-  private mapProductos(raw: any[], idCategory: number): Product[] {
-    return (raw || [])
-      .filter((p: any) => (p.idCategory ?? p.category?.idCategory) === idCategory)
-      .map((p: any) => {
-        const idBrand = p.idBrand ?? p.brand?.idBrand ?? null;
-        return {
-          idProduct: Number(p.idProduct ?? p.id),
-          name: String(p.name ?? ''),
-          price: Number(p.price ?? 0),
-          idCategory: Number(p.idCategory ?? p.category?.idCategory ?? idCategory),
-          idBrand,
-          brand: idBrand ? { idBrand, name: this.marcaMap[idBrand] } : null,
-          idImage: p.idImage ?? null,
-          disabled: !!p.disabled
-        } as Product;
-      });
-  }
-
-  private async ensureImagen(file: File | null, nombre: string, categoriaId: number, currentIdImage: number | null): Promise<number | null> {
-    if (!file) return currentIdImage;
-    if (currentIdImage) {
-      const res = await firstValueFrom(this.api.updateImagen(currentIdImage, file, nombre, 'producto', String(categoriaId))) as ImageResp;
-      const imgId = res.idImage ?? res.id ?? currentIdImage;
-      this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
-      return imgId;
-    } else {
-      const res = await firstValueFrom(this.api.uploadImage(file, nombre, 'producto', String(categoriaId))) as ImageResp;
-      const imgId = res.idImage ?? res.id ?? null;
-      if (imgId) this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
-      return imgId;
-    }
-  }
-
-  private buildPayload(idImage: number | null) {
-    return {
-      name: this.formData.name,
-      price: this.formData.price,
-      category: this.categoriaId ? { idCategory: this.categoriaId } : null,
-      brand: this.formData.brand ? { idBrand: this.formData.brand } : null,
-      idImage,
-      disabled: false
-    };
-  }
-
-  private requireCamposBasicos(): boolean {
-    const ok = !!this.formData.name?.trim() && this.formData.price > 0 && !!this.categoriaId;
-    if (!ok) this.toast.mostrarMensaje('❌ Complete los campos requeridos');
-    return ok;
-  }
-
+  // ======= CARGA =======
   async loadCategoriaYProductos(nombre: string): Promise<void> {
     try {
       const categoria = await firstValueFrom(this.api.getCategoriaByNombre(nombre)) as Category;
@@ -174,13 +171,34 @@ export class ProductoComponent implements OnInit {
     }
   }
 
+  async loadProductFeaturesTable(productId: number): Promise<void> {
+    try {
+      const list = await firstValueFrom(this.api.getProductFeaturesByProduct(productId)) as any[];
+
+      this.productFeatureRows = (list || []).map(pf => ({
+        base: String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim(),
+        value: String(pf?.featureValue ?? '').trim()
+      })).filter(r => r.base);
+    } catch {
+      this.productFeatureRows = [];
+    }
+  }
+
   async loadProductosPorCategoria(idCategory: number): Promise<void> {
     const data = await firstValueFrom(this.api.getProductos());
-    this.productos = this.mapProductos(data, idCategory);
+    this.productos = mapProductos(data, idCategory, this.marcaMap);
+
     await Promise.all(this.productos.filter(p => !!p.idImage).map(p => this.loadImagen(p.idImage!)));
 
-    // construir mapa de tags de características
-    await this.buildFeatureTagsForProducts();
+    this.namePool = uniq(this.productos.map(p => norm(p.name)).filter(Boolean));
+    this.brandPool = uniq(
+      this.productos
+        .map(p => p.brand?.name ?? this.marcaMap[p.idBrand ?? -1])
+        .map(norm)
+        .filter(Boolean)
+    );
+
+    await this.featuresSvc.buildFeatureTagsForProducts(this.productos);
   }
 
   async loadMarcasPorCategoria(idCategory: number): Promise<void> {
@@ -189,39 +207,21 @@ export class ProductoComponent implements OnInit {
     this.marcaMap = Object.fromEntries(this.marcas.map(m => [m.idBrand, m.name]));
   }
 
-  loadFeatures(): void {
-    this.api.getFeatures().subscribe({
-      next: (data) => this.features = data || [],
-      error: () => this.features = []
-    });
-  }
+  // ======= FILTROS =======
+  private productosPorEstado(): Product[] { return productosPorEstado(this.productos, this.estadoFiltro); }
 
-  private productosPorEstado(): Product[] {
-    if (this.estadoFiltro === 'habilitados') return this.productos.filter(p => !p.disabled);
-    if (this.estadoFiltro === 'deshabilitados') return this.productos.filter(p => p.disabled);
-    return this.productos;
-  }
-
-  // ======= Filtro principal (nombre/marca + características) =======
   filtrarProductos(): Product[] {
     let base = this.productosPorEstado();
 
-    const q = this.filtro.trim().toLowerCase();
+    const q = lower(this.filtro);
     if (q && this.tipoFiltro && this.tipoFiltro !== 'caracteristica') {
-      base = base.filter(p => {
-        const nombre = p.name?.toLowerCase() || '';
-        const marca = p.brand?.name?.toLowerCase() || '';
-        return this.tipoFiltro === 'nombre' ? nombre.includes(q) : marca.includes(q);
-      });
+      const byName = (p: Product) => lower(p.name).includes(q);
+      const byBrand = (p: Product) => lower(p.brand?.name).includes(q);
+      base = base.filter(p => (this.tipoFiltro === 'nombre' ? byName(p) : byBrand(p)));
     }
 
     if (this.tipoFiltro === 'caracteristica' && this.selectedFeatureTags.length > 0) {
-      const selected = this.selectedFeatureTags.map(t => t.toLowerCase().trim());
-      base = base.filter(p => {
-        const tags = (this.productFeatureTags[p.idProduct] || []).map(t => t.toLowerCase());
-        if (tags.length === 0) return false;
-        return selected.every(sel => tags.includes(sel));
-      });
+      base = this.featuresSvc.filterProductsBySelectedTags(base);
     }
 
     return base;
@@ -230,119 +230,49 @@ export class ProductoComponent implements OnInit {
   onEstadoFiltroChange(): void { this.onFiltroTyping(this.filtro); }
 
   onMainTyping(val: any): void {
-    if (this.tipoFiltro === 'caracteristica') {
-      this.onFeatureInput(val);
-    } else {
-      this.onFiltroTyping(val);
-    }
+    if (this.tipoFiltro === 'caracteristica') this.onFeatureInput(val);
+    else this.onFiltroTyping(val);
   }
 
-  // ======= Sugerencias por nombre/marca =======
+  // ======= Sugerencias nombre/marca =======
   onFiltroTyping(val: any): void {
-    const q = (val ?? '').toString().trim().toLowerCase();
+    const q = lower(val);
     this.filtro = val ?? '';
     if (!this.tipoFiltro || !q) { this.filtroSugs = []; return; }
+
     if (this.tipoFiltro === 'nombre') {
-      const pool = this.productosPorEstado().map(p => p.name).filter(Boolean) as string[];
-      this.filtroSugs = Array.from(new Set(pool.filter(n => n.toLowerCase().includes(q)))).slice(0, 12);
+      this.filtroSugs = take(this.namePool.filter(n => lower(n).includes(q)), 12);
     } else {
-      const pool = this.marcas.map(m => m.name).filter(Boolean) as string[];
-      this.filtroSugs = Array.from(new Set(pool.filter(n => n.toLowerCase().includes(q)))).slice(0, 12);
+      this.filtroSugs = take(this.brandPool.filter(n => lower(n).includes(q)), 12);
     }
   }
 
-  // ======= Selección en autocomplete según tipo =======
   onMainAutoSelected(value: string): void {
-    if (this.tipoFiltro === 'caracteristica') {
-      this.onFeatureSuggestionSelected(value);
-    } else {
-      this.onFiltroSugSelected(value);
-    }
+    if (this.tipoFiltro === 'caracteristica') this.onFeatureSuggestionSelected(value);
+    else this.onFiltroSugSelected(value);
   }
 
   onFiltroSugSelected(nombre: string): void { this.filtro = nombre; this.filtroSugs = []; }
+
   onTipoFiltroChange(): void {
-    // limpia búsquedas al cambiar el tipo
     this.filtro = '';
     this.filtroSugs = [];
 
     if (this.tipoFiltro === 'caracteristica') {
       this.featureQuery = '';
-      this.recomputeFeatureSuggestions();
+      this.featuresSvc.recomputeFeatureSuggestions();
     } else {
-      this.selectedFeatureTags = [];
-      this.featureQuery = '';
-      this.featureSuggestions = [];
+      this.featuresSvc.clearFeatureFilters();
     }
   }
 
-  // ======= Características: input/sugerencias/chips =======
-  onFeatureInput(val: any): void {
-    this.featureQuery = (val ?? '').toString();
-    this.recomputeFeatureSuggestions();
-  }
+  // ======= CARACTERÍSTICAS =======
+  onFeatureInput(val: any): void { this.featuresSvc.onFeatureInput(val); }
+  onFeatureSuggestionSelected(tag: string): void { this.featuresSvc.onFeatureSuggestionSelected(tag); }
+  removeSelectedFeatureTag(tag: string): void { this.featuresSvc.removeSelectedFeatureTag(tag); }
+  clearFeatureFilters(): void { this.featuresSvc.clearFeatureFilters(); }
 
-  onFeatureSuggestionSelected(tag: string): void {
-    const t = (tag || '').trim();
-    if (!t) return;
-    const exists = this.selectedFeatureTags.some(x => x.toLowerCase() === t.toLowerCase());
-    if (!exists) this.selectedFeatureTags.push(t);
-    this.featureQuery = '';
-    this.recomputeFeatureSuggestions();
-  }
-
-  removeSelectedFeatureTag(tag: string): void {
-    this.selectedFeatureTags = this.selectedFeatureTags.filter(x => x.toLowerCase() !== tag.toLowerCase());
-    this.recomputeFeatureSuggestions();
-  }
-
-  clearFeatureFilters(): void {
-    this.featureQuery = '';
-    this.selectedFeatureTags = [];
-    this.recomputeFeatureSuggestions();
-  }
-
-  private recomputeFeatureSuggestions(): void {
-    const q = this.featureQuery.trim().toLowerCase();
-    const taken = new Set(this.selectedFeatureTags.map(t => t.toLowerCase()));
-
-    const poolAll: string[] = [];
-    for (const p of this.productosPorEstado()) {
-      const tags = this.productFeatureTags[p.idProduct] || [];
-      poolAll.push(...tags);
-    }
-
-    const uniq = Array.from(new Set(poolAll));
-    this.featureSuggestions = uniq
-      .filter(t => !!t)
-      .filter(t => !taken.has(t.toLowerCase()))
-      .filter(t => !q || t.toLowerCase().includes(q))
-      .slice(0, 15);
-  }
-
-  private async buildFeatureTagsForProducts(): Promise<void> {
-    this.productFeatureTags = {};
-    await Promise.all(
-      this.productos.map(async (p) => {
-        try {
-          const list = await firstValueFrom(this.api.getProductFeaturesByProduct(p.idProduct)) as any[];
-          const tags = (list || []).map((pf) => this.makeTag(pf)).filter(Boolean);
-          this.productFeatureTags[p.idProduct] = Array.from(new Set(tags));
-        } catch {
-          this.productFeatureTags[p.idProduct] = [];
-        }
-      })
-    );
-    this.recomputeFeatureSuggestions();
-  }
-
-  private makeTag(pf: any): string {
-    const base = String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim();
-    const val = String(pf?.featureValue ?? '').trim();
-    if (!base) return '';
-    return val ? `${base}: ${val}` : base;
-  }
-
+  // ======= Imágenes =======
   async loadImagen(idImage: number): Promise<void> {
     try {
       const res = await firstValueFrom(this.api.getImagenById(idImage)) as ImageResp;
@@ -372,13 +302,37 @@ export class ProductoComponent implements OnInit {
     r.readAsDataURL(file);
   }
 
-  resetImageSelection(): void {
-    this.selectedFile = null;
-    this.imagePreview = null;
-    this.nombreArchivo = null;
+  resetImageSelection(): void { this.selectedFile = null; this.imagePreview = null; this.nombreArchivo = null; }
+  onImageError(ev: Event): void { (ev.target as HTMLImageElement).src = '/img/no-image.png'; }
+
+  // ======= CRUD Producto =======
+  private requireCamposBasicos(): boolean {
+    const ok = !!this.formData.name?.trim() && this.formData.price > 0 && !!this.categoriaId;
+    if (!ok) this.toast.mostrarMensaje('❌ Complete los campos requeridos');
+    return ok;
   }
 
-  onImageError(ev: Event): void { (ev.target as HTMLImageElement).src = '/img/no-image.png'; }
+  private buildPayload(idImage: number | null) {
+    return {
+      name: this.formData.name, price: this.formData.price, category: this.categoriaId ? { idCategory: this.categoriaId } : null,
+      brand: this.formData.brand ? { idBrand: this.formData.brand } : null, idImage, disabled: false
+    };
+  }
+
+  private async ensureImagen(file: File | null, nombre: string, categoriaId: number, currentIdImage: number | null): Promise<number | null> {
+    if (!file) return currentIdImage;
+    if (currentIdImage) {
+      const res = await firstValueFrom(this.api.updateImagen(currentIdImage, file, nombre, 'producto', String(categoriaId))) as ImageResp;
+      const imgId = res.idImage ?? res.id ?? currentIdImage;
+      this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
+      return imgId;
+    } else {
+      const res = await firstValueFrom(this.api.uploadImage(file, nombre, 'producto', String(categoriaId))) as ImageResp;
+      const imgId = res.idImage ?? res.id ?? null;
+      if (imgId) this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
+      return imgId;
+    }
+  }
 
   async crearProducto(): Promise<void> {
     if (!this.requireCamposBasicos() || !this.categoriaId) return;
@@ -404,6 +358,7 @@ export class ProductoComponent implements OnInit {
       this.toast.mostrarMensaje('✅ Producto actualizado correctamente');
       this.cerrarFormulario();
       await this.loadProductosPorCategoria(this.categoriaId);
+      await this.refreshProductNow(this.selectedProducto.idProduct);
     } catch {
       this.toast.mostrarMensaje('❌ Error al actualizar producto');
     } finally { this.isLoading = false; }
@@ -411,16 +366,23 @@ export class ProductoComponent implements OnInit {
 
   guardarProducto(): void { this.estaEditando ? this.actualizarProducto() : this.crearProducto(); }
 
-  // ======= OVERLAY DEL FORM DE PRODUCTO =======
+  // ======= Overlays =======
+  openProductDetail(p: Product): void {
+    this.selectedProducto = p;
+    this.productDetailRef = this.overlay.open(this.productDetailTpl);
+    this.loadProductFeaturesTable(p.idProduct);
+  }
+
+  closeProductDetail(): void {
+    this.productDetailRef?.close();
+    this.productDetailRef = undefined;
+  }
+
   abrirFormulario(producto: Product | null = null): void {
     this.selectedProducto = producto;
     this.formData = {
-      name: producto?.name ?? '',
-      price: producto?.price ?? 0,
-      category: this.categoriaId,
-      brand: producto?.brand?.idBrand ?? producto?.idBrand ?? null,
-      idImage: producto?.idImage ?? null,
-      disabled: false
+      name: producto?.name ?? '', price: producto?.price ?? 0, category: this.categoriaId,
+      brand: producto?.brand?.idBrand ?? producto?.idBrand ?? null, idImage: producto?.idImage ?? null, disabled: false
     };
 
     if (this.categoriaId && (!this.marcas || this.marcas.length === 0)) {
@@ -436,15 +398,12 @@ export class ProductoComponent implements OnInit {
     this.resetForm();
     this.mostrarFormulario = false;
     this.mostrarMasOpciones = false;
-    if (this.productFormRef) {
-      this.productFormRef?.close()
-      this.productFormRef = undefined;
-    }
+    this.productFormRef?.close();
+    this.productFormRef = undefined;
   }
 
   resetForm(): void {
     this.formData = { name: '', price: 0, category: null, brand: null, disabled: false, idImage: null };
-    this.selectedProducto = null;
     this.resetImageSelection();
   }
 
@@ -455,24 +414,23 @@ export class ProductoComponent implements OnInit {
     if (this.categoriaId) this.loadMarcasPorCategoria(this.categoriaId);
     this.organizarMarcasRef = this.overlay.open(this.formOrganizarMarcasTpl);
   }
-  abrirFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl) }
-  abrirFormularioMarcaDesdeSelect(): void { this.mostrarFormularioMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl) }
+  abrirFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl); }
+  abrirFormularioMarcaDesdeSelect(): void { this.mostrarFormularioMarca = true; this.crearMarcaRef = this.overlay.open(this.formCrearMarcaTpl); }
   cerrarFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = false; this.crearMarcaRef?.close(); this.crearMarcaRef = undefined; }
   cerrarFormularioMarca(): void { this.mostrarFormularioMarca = false; this.organizarMarcasRef?.close(); this.organizarMarcasRef = undefined; }
 
   abrirFormularioCrearCaracteristicaProducto(): void {
     if (!this.selectedProducto) return;
     this.mostrarCaracteristicasProducto = true;
-    this.loadFeatures();
     this.prodCaractRef = this.overlay.open(this.formProdCaractTpl);
   }
   cerrarFormularioCaracteristicaProducto(): void {
     this.mostrarCaracteristicasProducto = false;
     this.prodCaractRef?.close(); this.prodCaractRef = undefined;
-    // refrescar tags de características tras gestionar
-    this.buildFeatureTagsForProducts();
+    this.featuresSvc.buildFeatureTagsForProducts(this.productos);
   }
 
+  // ======= Habilitar/Deshabilitar =======
   deshabilitar(p: Product): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true,
@@ -481,15 +439,13 @@ export class ProductoComponent implements OnInit {
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
       const payload = {
-        name: p.name, price: p.price,
-        category: { idCategory: p.idCategory ?? this.categoriaId },
-        brand: p.idBrand ? { idBrand: p.idBrand } : null,
-        idImage: p.idImage ?? null,
-        disabled: true
+        name: p.name, price: p.price, category: { idCategory: p.idCategory ?? this.categoriaId },
+        brand: p.idBrand ? { idBrand: p.idBrand } : null, idImage: p.idImage ?? null, disabled: true
       };
       this.api.updateProducto(p.idProduct, payload).subscribe({
         next: async () => {
           this.toast.mostrarMensaje('✅ Producto deshabilitado correctamente');
+          await this.refreshProductNow(p.idProduct);
           if (this.categoriaId) await this.loadProductosPorCategoria(this.categoriaId);
         },
         error: () => this.toast.mostrarMensaje('❌ Error al deshabilitar producto')
@@ -501,17 +457,14 @@ export class ProductoComponent implements OnInit {
     if (!this.categoriaId) return;
 
     const payload = {
-      name: p.name,
-      price: p.price,
-      category: { idCategory: p.idCategory ?? this.categoriaId },
-      brand: (p.idBrand ?? p.brand?.idBrand) ? { idBrand: (p.idBrand ?? p.brand!.idBrand) } : null,
-      idImage: p.idImage ?? null,
-      disabled: false
+      name: p.name, price: p.price, category: { idCategory: p.idCategory ?? this.categoriaId },
+      brand: (p.idBrand ?? p.brand?.idBrand) ? { idBrand: (p.idBrand ?? p.brand!.idBrand) } : null, idImage: p.idImage ?? null, disabled: false
     };
 
     this.api.updateProducto(p.idProduct, payload).subscribe({
       next: async () => {
         this.toast.mostrarMensaje('✅ Producto habilitado correctamente');
+        await this.refreshProductNow(p.idProduct);
         await this.loadProductosPorCategoria(this.categoriaId!);
       },
       error: () => this.toast.mostrarMensaje('❌ Error al habilitar producto')
@@ -527,9 +480,5 @@ export class ProductoComponent implements OnInit {
       this.formData.brand = null;
       this.mostrarMasOpciones = false;
     }
-  }
-
-  getDisplayWith(): ((value: any) => string) | null {
-    return this.tipoFiltro === 'caracteristica' ? this.displayEmpty : null;
   }
 }

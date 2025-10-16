@@ -9,7 +9,7 @@ import { MatOptionModule } from '@angular/material/core';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { HoverScrollDirective } from '../../core/extras/hover-scroll.directive';
-import { MarcasComponent } from '../producto/marcas/marcas.component';
+import { MarcasComponent } from '../producto/forms/marcas/marcas.component';
 
 @Component({
   selector: 'app-categorias',
