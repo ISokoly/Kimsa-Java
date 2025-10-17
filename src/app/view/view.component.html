@@ -6,10 +6,17 @@
 
     <span class="example-spacer"></span>
 
-    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': isUsuariosPage }" (click)="irAUsuarios()">
+    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': estaSeleccionado }" (click)="irAUsuarios()">
       <mat-icon>account_circle</mat-icon>
       Bienvenido: {{ usuarioNombre }}
     </button>
+
+    @if (usuarioAutenticado?.administratorPermissions) {
+    <select class="rol-select" [(ngModel)]="usuarioRol" (ngModelChange)="cambiarRol($event)">
+      <option value="Administrator">Administrador</option>
+      <option value="Employee">Empleado</option>
+    </select>
+    }
 
     <span class="example-spacer"></span>
 

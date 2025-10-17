@@ -1,3 +1,6 @@
+@use "sass:color";
+$primary-color: #0b6e4f;
+
 .view-content {
   position: relative;
 }
@@ -21,7 +24,7 @@ button[mat-icon-button] {
   color: white;
 
   &:hover {
-    background-color: #76C7A0;
+    opacity: 0.8;
     transform: scale(1.1);
   }
 }
@@ -64,7 +67,7 @@ mat-sidenav-content {
   transition: color 0.3s ease-in-out;
 
   &:hover {
-    background-color: #76C7A0;
+    opacity: 1;
     transform: scale(1.1);
   }
 
@@ -104,4 +107,20 @@ button[mat-button] {
 
 .anim mat-sidenav-content {
   transition: margin-left 0.3s ease-in-out !important;
+}
+
+.rol-select {
+  margin-left: 2rem;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid white;
+  font-weight: 500;
+  background-color: $primary-color;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+
+  &:hover {
+    background: color.scale($primary-color, $lightness: 10%);
+  }
 }
