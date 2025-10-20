@@ -1,3 +1,11 @@
+import "./chunk-DELSYPTG.js";
+import {
+  _animationsDisabled
+} from "./chunk-RR26YET7.js";
+import "./chunk-VENV3F3G.js";
+import {
+  coerceBooleanProperty
+} from "./chunk-GWFLKVBH.js";
 import {
   CdkScrollable,
   CdkScrollableModule,
@@ -5,14 +13,7 @@ import {
   ViewportRuler
 } from "./chunk-IUR4QG47.js";
 import "./chunk-6TU72PAN.js";
-import "./chunk-DELSYPTG.js";
-import {
-  _animationsDisabled
-} from "./chunk-QEUT2BIY.js";
-import "./chunk-VENV3F3G.js";
-import {
-  coerceBooleanProperty
-} from "./chunk-GWFLKVBH.js";
+import "./chunk-7UJZXIJQ.js";
 import {
   ESCAPE,
   FocusMonitor,
@@ -20,12 +21,11 @@ import {
   InteractivityChecker,
   MatCommonModule,
   hasModifierKey
-} from "./chunk-7C2GXEGI.js";
-import "./chunk-7UJZXIJQ.js";
+} from "./chunk-LMUVQFLX.js";
+import "./chunk-M6CEXJ5E.js";
 import {
   Directionality
 } from "./chunk-BRGVXSCV.js";
-import "./chunk-M6CEXJ5E.js";
 import {
   Platform,
   coerceNumberProperty

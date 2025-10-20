@@ -1,9 +1,9 @@
 import {
-  BidiModule
-} from "./chunk-BRGVXSCV.js";
-import {
   _CdkPrivateStyleLoader
 } from "./chunk-M6CEXJ5E.js";
+import {
+  BidiModule
+} from "./chunk-BRGVXSCV.js";
 import {
   Platform,
   coerceElement,
@@ -3162,4 +3162,4 @@ export {
   MATERIAL_SANITY_CHECKS,
   MatCommonModule
 };
-//# sourceMappingURL=chunk-7C2GXEGI.js.map
+//# sourceMappingURL=chunk-LMUVQFLX.js.map
