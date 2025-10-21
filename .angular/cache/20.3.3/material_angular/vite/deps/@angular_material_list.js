@@ -2,11 +2,9 @@ import {
   SelectionModel
 } from "./chunk-364TDFVL.js";
 import {
-  NG_VALUE_ACCESSOR
-} from "./chunk-LEAHLM6I.js";
-import {
   MatPseudoCheckboxModule
 } from "./chunk-Y2UNE5NR.js";
+import "./chunk-6TU72PAN.js";
 import {
   MatRippleModule
 } from "./chunk-LQEOVZHX.js";
@@ -23,8 +21,10 @@ import "./chunk-VENV3F3G.js";
 import {
   coerceBooleanProperty
 } from "./chunk-GWFLKVBH.js";
-import "./chunk-6TU72PAN.js";
 import "./chunk-7UJZXIJQ.js";
+import {
+  NG_VALUE_ACCESSOR
+} from "./chunk-LEAHLM6I.js";
 import {
   A,
   CdkObserveContent,

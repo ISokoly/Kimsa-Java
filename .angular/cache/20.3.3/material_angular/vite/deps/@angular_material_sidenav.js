@@ -1,3 +1,10 @@
+import {
+  CdkScrollable,
+  CdkScrollableModule,
+  ScrollDispatcher,
+  ViewportRuler
+} from "./chunk-IUR4QG47.js";
+import "./chunk-6TU72PAN.js";
 import "./chunk-DELSYPTG.js";
 import {
   _animationsDisabled
@@ -6,13 +13,6 @@ import "./chunk-VENV3F3G.js";
 import {
   coerceBooleanProperty
 } from "./chunk-GWFLKVBH.js";
-import {
-  CdkScrollable,
-  CdkScrollableModule,
-  ScrollDispatcher,
-  ViewportRuler
-} from "./chunk-IUR4QG47.js";
-import "./chunk-6TU72PAN.js";
 import "./chunk-7UJZXIJQ.js";
 import {
   ESCAPE,

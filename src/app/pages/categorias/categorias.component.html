@@ -1,6 +1,6 @@
 <div class="tabla-scroll">
   <div class="categoria-container">
-    <h1>Categorías de la pizzería</h1>
+    <h1>Productos de la pizzería</h1>
     <div class="products-grid">
       @for (categoria of categorias; track $index) {
       <div class="product-item">
@@ -40,14 +40,6 @@
         Añadir Nueva Categoría
       </button>
     </div>
-    @if (categorias && categorias.length > 0) {
-    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-      <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioProducto()"
-        [disabled]="isLoading">
-        Añadir Nuevo Producto
-      </button>
-    </div>
-    }
   </div>
 </div>
 
