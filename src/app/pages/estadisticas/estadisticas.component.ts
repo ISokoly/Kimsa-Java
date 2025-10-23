@@ -11,6 +11,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
+import { PageLoadingService } from '../../core/services/page-loading.service';
 
 @Component({
   selector: 'app-estadisticas',
@@ -32,7 +33,6 @@ import { MatTableModule } from '@angular/material/table';
 })
 export class EstadisticasComponent implements OnInit {
 
-  // columnas para mat-table
   colsTop = ['semana', 'producto', 'ganancia'];
   colsGan = ['semana', 'ganancia'];
 
@@ -49,9 +49,10 @@ export class EstadisticasComponent implements OnInit {
   productosCargados = false;
   fechaSeleccionada: Date = new Date();
 
-  constructor(private apiService: ApiService, private router: Router) { }
+  constructor(private apiService: ApiService, private router: Router, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
+    this.pageLoading.start();
     this.cargarVentas();
     this.cargarDetallesPedido();
     this.cargarProductos();
@@ -63,6 +64,7 @@ export class EstadisticasComponent implements OnInit {
       this.ventas = Array.isArray(response) ? response : (response ? [response] : []);
       this.ventasCargadas = true;
       this.intentarGenerarEstadisticas();
+      this.pageLoading.stop();
     });
   }
 
@@ -71,6 +73,7 @@ export class EstadisticasComponent implements OnInit {
       this.detallesPedido = Array.isArray(response) ? response : (response ? [response] : []);
       this.detallesCargados = true;
       this.intentarGenerarEstadisticas();
+      this.pageLoading.stop();
     });
   }
 
@@ -79,10 +82,11 @@ export class EstadisticasComponent implements OnInit {
       this.productos = Array.isArray(response) ? response : (response ? [response] : []);
       this.productosCargados = true;
       this.intentarGenerarEstadisticas();
+      this.pageLoading.stop();
     });
   }
 
-  /* ============== Normalizadores (nombres viejos/nuevos) ============== */
+  // ================= Utilidades =================
   private vIdOrder(v: any): number | null {
     return Number(v?.idOrder ?? v?.id ?? v?.id_pedido ?? null) || null;
   }
@@ -119,7 +123,6 @@ export class EstadisticasComponent implements OnInit {
     return p ? String(p?.name ?? p?.nombre ?? 'Desconocido') : 'Desconocido';
   }
 
-  /* ============== Generación de estadísticas ============== */
   intentarGenerarEstadisticas() {
     if (this.ventasCargadas && this.detallesCargados && this.productosCargados) {
       this.agregarDetallesAVentas();
@@ -135,7 +138,6 @@ export class EstadisticasComponent implements OnInit {
       if (!key) continue;
       (byOrder[key] ||= []).push(det);
     }
-    // asigna a cada venta
     for (const v of this.ventas) {
       const id = this.vIdOrder(v);
       (v as any).detalles = id ? (byOrder[id] ?? []) : [];

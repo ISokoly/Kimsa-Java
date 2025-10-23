@@ -183,10 +183,8 @@ export class ProductoComponent implements OnInit {
         base: String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim(),
         value: String(pf?.featureValue ?? '').trim()
       })).filter(r => r.base);
-      this.pageLoading.stop();
     } catch {
       this.productFeatureRows = [];
-      this.pageLoading.stop();
     }
   }
 
@@ -205,19 +203,17 @@ export class ProductoComponent implements OnInit {
     );
 
     await this.featuresSvc.buildFeatureTagsForProducts(this.productos);
-    this.pageLoading.stop();
   }
 
   async loadMarcasPorCategoria(idCategory: number): Promise<void> {
     const all = await firstValueFrom(this.api.getMarcas()) as Brand[];
     this.marcas = (all || []).filter(m => Number(m.category ?? (m as any).idCategory) === idCategory);
     this.marcaMap = Object.fromEntries(this.marcas.map(m => [m.idBrand, m.name]));
-    this.pageLoading.stop();
   }
 
   // ======= FILTROS =======
   private productosPorEstado(): Product[] {
-    return productosPorEstado(this.productos, this.estadoFiltro); this.pageLoading.stop();
+    return productosPorEstado(this.productos, this.estadoFiltro);
   }
 
   filtrarProductos(): Product[] {

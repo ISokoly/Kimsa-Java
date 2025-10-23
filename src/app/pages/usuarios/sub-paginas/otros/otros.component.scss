@@ -7,14 +7,6 @@ $warning-color: #f4d03f;
 $success-color: #76dfa2;
 $bg-color: #f9f9f9;
 
-h1,
-h2 {
-    color: $primary-color;
-    border-bottom: 2px dashed $primary-color;
-    padding-bottom: 8px;
-    text-align: center;
-}
-
 .mat-mdc-header-cell {
     text-align: center;
 }
@@ -82,7 +74,6 @@ button {
     padding: 10px 15px;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
     cursor: pointer;
     transition: 0.3s ease-in-out;
     margin: 5px;
@@ -90,6 +81,7 @@ button {
     &.btn-verde {
         background: $primary-color;
         color: #fff;
+        height: 35px;
 
         &:hover {
             background: color.scale($primary-color, $lightness: -30%);
@@ -108,6 +100,7 @@ button {
     &.btn-rojo {
         background: $danger-color;
         color: #fff;
+        height: 35px;
 
         &:hover {
             background: color.scale($danger-color, $lightness: -30%);
@@ -198,10 +191,7 @@ button {
 }
 
 .form-title {
-    text-align: center;
     font-size: 22px;
-    font-weight: bold;
-    color: $primary-color;
     margin: 20px;
     margin-bottom: 30px;
 }

@@ -1,32 +1,23 @@
 <div class="tabla-scroll">
   <div class="products-container">
-    <h1>Productos - {{categoriaNombre}}</h1>
+    <h1 class="title">Productos - {{categoriaNombre}}</h1>
 
     <div class="filtros">
       <div style="display: flex; gap: 10px; align-items: center; width: 100%; padding-right: 15px;">
         <mat-form-field appearance="fill" style="flex: 1;">
           <mat-label>
             {{
-            !tipoFiltro
-            ? 'Seleccione tipo de búsqueda'
-            : (tipoFiltro === 'nombre'
-            ? 'Buscar producto'
-            : (tipoFiltro === 'marca'
-            ? 'Buscar marca'
-            : 'Buscar característica (Ej: Tamaño: Grande)'))
+            !tipoFiltro ? 'Seleccione tipo de búsqueda': (tipoFiltro === 'nombre'
+            ? 'Buscar producto': (tipoFiltro === 'marca'? 'Buscar marca': 'Buscar característica (Ej: Tamaño: Grande)'))
             }}
           </mat-label>
 
           <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="mainQuery"
             (ngModelChange)="onMainTyping($event)" [placeholder]="
               !tipoFiltro
-                ? 'Primero elige: Producto, Marca o Característica'
-                : (tipoFiltro === 'nombre'
-                      ? 'Ingrese nombre...'
-                      : (tipoFiltro === 'marca'
-                            ? 'Ingrese marca...'
-                            : 'Ej: Tamaño: Grande, Material: Madera'))
-            " autocomplete="off" />
+                ? 'Primero elige: Producto, Marca o Característica' : (tipoFiltro === 'nombre' ? 'Ingrese nombre...'
+                      : (tipoFiltro === 'marca' ? 'Ingrese marca...': 'Ej: Tamaño: Grande, Material: Madera'))"
+            autocomplete="off" />
 
           <mat-autocomplete #autoBusq="matAutocomplete" (optionSelected)="onMainAutoSelected($event.option.value)"
             [displayWith]="getDisplayWith()" autoActiveFirstOption="false">
@@ -80,13 +71,13 @@
     <div class="products-grid">
       @for (p of filtrarProductos(); track p.idProduct ?? $index) {
       <div class="product-item clickable" (click)="openProductDetail(p)">
-        <h2 class="product-name">
+        <h2 class="title product-name">
           {{ p.name }}
         </h2>
         <div class="img-container horizontal-container">
           <img [src]="getUrlImagen(p.idImage)" class="preview-img img-horizontal"
             [class.img-loaded]="p.idImage ? imgLoaded[p.idImage] : false"
-            (load)="p.idImage && (imgLoaded[p.idImage] = true)" (error)="p.idImage && (imgLoaded[p.idImage] = true)" />
+            (load)="p.idImage && (imgLoaded[p.idImage] = true)" (error)="onImageError($event)" />
         </div>
 
         <p>
@@ -116,7 +107,7 @@
       <div class="form-modal product-detail-modal">
         <button class="close-x" type="button" aria-label="Cerrar" (click)="closeProductDetail()">×</button>
 
-        <h2 class="form-title">Detalle del Producto</h2>
+        <h2 class="title form-title">Detalle del Producto</h2>
 
         <div class="product-detail-body">
           <table mat-table [dataSource]="productInfoRows" class="mat-elevation-z8 info-tabla">
@@ -142,7 +133,7 @@
           </table>
 
           @if (productFeatureRows.length !== 0) {
-          <h4 class="subtitulo-tabla">Características del producto</h4>
+          <h4 class="title">Características del producto</h4>
 
           <div class="features-tabla"></div>
           <table mat-table [dataSource]="productFeatureRows" class="mat-elevation-z8 info-tabla">
@@ -164,16 +155,18 @@
           </table>
           }
         </div>
-      </div>
+        <div class="botones">
+          <button class="form-btn-verde" type="button" (click)="editProducto(selectedProducto)"
+            [disabled]="isLoading">Editar</button>
 
-      <div class="botones">
-        <button class="form-btn-verde" type="button" (click)="editProducto(selectedProducto)">Editar</button>
-
-        @if (!selectedProducto.disabled) {
-        <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedProducto)">Deshabilitar</button>
-        } @else {
-        <button class="form-btn-azul" type="button" (click)="habilitar(selectedProducto)">Habilitar</button>
-        }
+          @if (!selectedProducto.disabled) {
+          <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedProducto)"
+            [disabled]="isLoading">Deshabilitar</button>
+          } @else {
+          <button class="form-btn-azul" type="button" (click)="habilitar(selectedProducto)"
+            [disabled]="isLoading">Habilitar</button>
+          }
+        </div>
       </div>
       }
     </ng-template>
@@ -207,7 +200,7 @@
 
 <ng-template #formProductoTpl>
   <div class="form-modal">
-    <h2 class="form-title">
+    <h2 class="title form-title">
       @if (!selectedProducto) { Añadir Producto } @else { Editar Producto }
     </h2>
     <form class="form-container">

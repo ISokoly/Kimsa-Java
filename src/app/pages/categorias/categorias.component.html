@@ -1,6 +1,6 @@
 <div class="tabla-scroll">
   <div class="categoria-container">
-    <h1>Productos de la pizzería</h1>
+    <h1 class="title">Productos de la pizzería</h1>
 
     <div class="products-grid">
       @for (categoria of categorias; track $index) {
@@ -11,15 +11,21 @@
             <mat-icon>settings</mat-icon>
           </button>
         </div>
-        <h2 class="category-name" (click)="verProductos(categoria.name)" style="cursor: pointer;">
+        <h2 class="title category-name" (click)="verProductos(categoria.name)" style="cursor: pointer;">
           {{ categoria.name }}
         </h2>
-
+        @if (categoria.idImage) {
         <div class="img-container horizontal-container" (click)="verProductos(categoria.name)" style="cursor: pointer;">
           <img [src]="getUrlImagen(categoria.idImage)" class="preview-img img-horizontal"
             [class.img-loaded]="imgLoaded[categoria.idImage]" (load)="imgLoaded[categoria.idImage]=true"
-            (error)="imgLoaded[categoria.idImage]=true" />
+            (error)="imgLoaded[categoria.idImage]=true" (error)="onImageError($event)" />
         </div>
+        }
+        @else {
+        <div class="img-container horizontal-container">
+          <img src="/img/no-image.png" alt="Sin imagen" class="preview-img img-horizontal" />
+        </div>
+        }
 
         <div class="category-description-wrapper" (click)="verProductos(categoria.name)">
           @if(categoria.description.length > 39) {
@@ -35,19 +41,17 @@
     </div>
 
     <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-      <button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()" [disabled]="isLoading">
+      <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()"
+        [disabled]="isLoading">
         Añadir Nueva Categoría
       </button>
     </div>
   </div>
 </div>
 
-<!-- ========== TEMPLATES USADOS CON OverlayPortalService ========== -->
-
-<!-- Formulario Crear/Editar Categoría -->
 <ng-template #formCategoriaTpl>
   <div class="form-modal">
-    <h2 class="form-title">
+    <h2 class="title form-title">
       @if (!selectedCategoria) { Añadir Categoría } @else { Editar Categoría }
     </h2>
 
@@ -91,12 +95,11 @@
   </div>
 </ng-template>
 
-<!-- Detalle de Categoría -->
 <ng-template #categoryDetailTpl>
   @if (selectedCategoria) {
   <div class="form-modal product-detail-modal">
     <button class="close-x" type="button" aria-label="Cerrar" (click)="closeCategoryDetail()">×</button>
-    <h2 class="form-title">Detalle de la Categoría</h2>
+    <h2 class="title form-title">Detalle de la Categoría</h2>
     <div class="category-detail-body">
       <table mat-table [dataSource]="CategoryInfoRows" class="mat-elevation-z8 info-tabla">
         <ng-container matColumnDef="prop">
@@ -114,13 +117,13 @@
     </div>
 
     <div class="botones">
-      <button class="form-btn-verde" type="button" (click)="abrirFormulario(selectedCategoria)"
+      <button mat-raised-button class="form-btn-verde" type="button" (click)="abrirFormulario(selectedCategoria)"
         [disabled]="isLoading">Editar</button>
       @if (!selectedCategoria.disabled) {
-      <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedCategoria.idCategory)"
+      <button mat-raised-button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedCategoria.idCategory)"
         [disabled]="isLoading">Deshabilitar</button>
       } @else {
-      <button class="form-btn-azul" type="button" (click)="habilitar(selectedCategoria.idCategory)"
+      <button mat-raised-button class="form-btn-azul" type="button" (click)="habilitar(selectedCategoria.idCategory)"
         [disabled]="isLoading">Habilitar</button>
       }
     </div>

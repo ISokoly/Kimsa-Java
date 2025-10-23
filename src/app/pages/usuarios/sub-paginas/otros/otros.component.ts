@@ -12,18 +12,14 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
 import { ConfirmDialogComponent } from '../../../../view/confirm-dialog/confirm-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { PageLoadingService } from '../../../../core/services/page-loading.service';
 
 @Component({
   selector: 'app-otros',
   standalone: true,
   imports: [
-    FormsModule,
-    MatInputModule,
-    MatGridListModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatOptionModule,
-    MatTableModule
+    FormsModule, MatInputModule, MatGridListModule,
+    MatButtonModule, MatSelectModule, MatOptionModule, MatTableModule
   ],
   templateUrl: './otros.component.html',
   styleUrls: ['./otros.component.scss']
@@ -45,47 +41,38 @@ export class OtrosComponent implements OnInit {
   ];
 
   Empleado = {
-    username: '',
-    name: '',
-    lastName: '',
-    dni: '',
-    direction: '',
-    numberPhone: '',
-    password: '',
-    rol: '',
-    disabled: false,
-    confirmarPassword: '',
-    passwordActual: '',
-    nuevaPassword: ''
+    username: '', name: '', lastName: '', dni: '', direction: '', numberPhone: '', password: '', rol: '', disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
   };
 
   userSeleccionado: any = null;
 
-  // overlay
   @ViewChild('formEditarTpl') formEditarTpl!: TemplateRef<any>;
   @ViewChild('formCrearTpl') formCrearTpl!: TemplateRef<any>;
   @ViewChild('formPasswordTpl') formPasswordTpl!: TemplateRef<any>;
+
   private overlay = inject(OverlayPortalService);
   private editRef?: OverlayHandle;
   private createRef?: OverlayHandle;
   private passRef?: OverlayHandle;
 
-  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog) { }
+  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
-    this.refrescarListados();
+    this.pageLoading.start();
+    this.cargarOtrosUsuarios();
     this.listaFiltrada = [...this.listaUsuarios];
   }
 
   /* ====== Datos ====== */
-  private refrescarListados(): void {
+  private cargarOtrosUsuarios(): void {
     this.obtenerUsuario();
     this.apiService.getUsuarios().subscribe(data => {
       this.listaUsuarios = data || [];
       const actual = this.apiService.getUsuarioActual();
       this.listaFiltrada = this.listaUsuarios.filter(u => u.idUser !== actual?.idUser);
-      this.aplicarFiltro(); // recalcular con filtros vigentes
+      this.aplicarFiltro();
     });
+    this.pageLoading.stop();
   }
 
   obtenerUsuario(): void {
@@ -95,6 +82,7 @@ export class OtrosComponent implements OnInit {
       return;
     }
     this.usuario = usuario;
+    this.pageLoading.stop();
   }
 
   /* ====== Formularios (overlay) ====== */
@@ -155,7 +143,7 @@ export class OtrosComponent implements OnInit {
     this.apiService.updateUsuario(id, this.Empleado).subscribe(
       () => {
         this.toastService.mostrarMensaje('✅ Usuario actualizado correctamente');
-        this.refrescarListados();
+        this.cargarOtrosUsuarios();
         this.cerrarFormulario();
       },
       () => this.toastService.mostrarMensaje('❌ Error al actualizar usuario')
@@ -181,7 +169,7 @@ export class OtrosComponent implements OnInit {
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario creado correctamente');
         this.cerrarFormulario();
-        this.refrescarListados();
+        this.cargarOtrosUsuarios();
       },
       error: (err) => {
         this.toastService.mostrarMensaje('❌ Error al crear el usuario');
@@ -247,7 +235,7 @@ export class OtrosComponent implements OnInit {
       this.apiService.updateUsuario(id, body).subscribe({
         next: () => {
           this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
-          this.refrescarListados();
+          this.cargarOtrosUsuarios();
         },
         error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario')
       });
@@ -270,7 +258,7 @@ export class OtrosComponent implements OnInit {
     this.apiService.updateUsuario(id, body).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario habilitado correctamente');
-        this.refrescarListados();
+        this.cargarOtrosUsuarios();
       },
       error: () => this.toastService.mostrarMensaje('❌ Error al habilitar usuario')
     });

@@ -7,6 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { PageLoadingService } from '../../../../core/services/page-loading.service';
 
 type Mesa = {
   idTable: number;
@@ -24,77 +25,67 @@ type Mesa = {
 })
 export class MesasComponent implements OnInit {
   // ======= Estado =======
-  cantidadMesas = 0;          // valor editable
-  cantidadActual = 0;         // valor real en backend
+  cantidadMesas = 0;
+  cantidadActual = 0;
   mesas: Mesa[] = [];
   mesasActivas = 0;
 
-  // Flags UI
   isSavingEstados = false;
   isUpdatingCantidad = false;
 
-  // Snapshot para detectar cambios en "disabled"
   private snapshotDisabled = new Map<number, boolean>();
 
-  constructor(private api: ApiService, private toastService: ToastService) {}
+  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
 
   ngOnInit() {
+    this.pageLoading.start();
     this.refrescarMesas();
   }
 
   // ======= Carga de datos =======
   refrescarMesas() {
-    // Mesas totales (sin 'delivery')
     this.api.getMesas().subscribe({
       next: (data: Mesa[]) => {
         const sinDelivery = (data || []).filter(m => m.number !== 'delivery');
-        // Ordenar por número si es numérico
         this.mesas = sinDelivery.sort((a, b) => Number(a.number) - Number(b.number));
         this.cantidadActual = this.mesas.length;
 
-        // Inicializa cantidad editable si aún es 0
         if (this.cantidadMesas === 0) this.cantidadMesas = this.cantidadActual;
 
-        // Toma snapshot de estados "disabled"
         this.snapshotDisabled.clear();
         for (const m of this.mesas) this.snapshotDisabled.set(m.idTable, !!m.disabled);
+        this.pageLoading.stop();
       },
-      error: () => this.toastService.mostrarMensaje('❌ Error al cargar mesas')
+      error: () => {
+        this.toastService.mostrarMensaje('❌ Error al cargar mesas'); this.pageLoading.stop();
+      }
     });
 
-    // Mesas activas (ocupadas)
     this.api.getMesasActivas().subscribe({
       next: actives => {
         const sinDelivery = (actives || []).filter((m: Mesa) => m.number !== 'delivery');
         this.mesasActivas = sinDelivery.length;
-
-        // Asegura que la cantidad editable nunca sea < activas
         if (this.cantidadMesas < this.mesasActivas) {
           this.cantidadMesas = this.mesasActivas;
         }
       },
-      error: () => this.toastService.mostrarMensaje('❌ Error al obtener mesas activas')
+      error: () => {
+        this.toastService.mostrarMensaje('❌ Error al obtener mesas activas'); this.pageLoading.stop();
+      }
     });
   }
 
   // ======= Utilidades UI =======
   clampCantidad() {
-    // No permitir bajar por debajo de activas
     if (this.cantidadMesas < this.mesasActivas) this.cantidadMesas = this.mesasActivas;
-    // No permitir valores negativos/NaN
     if (!Number.isFinite(this.cantidadMesas) || this.cantidadMesas < 0) this.cantidadMesas = this.cantidadActual;
   }
 
   get mesasDirty(): boolean {
-    // ¿Hay alguna mesa cuyo "disabled" difiera del snapshot?
     for (const m of this.mesas) {
       if (this.snapshotDisabled.get(m.idTable) !== !!m.disabled) return true;
     }
     return false;
-  }
-
-  onMesaToggle(_mesa: Mesa) {
-    // No hacemos nada pesado aquí; el getter mesasDirty reevaluará
   }
 
   trackMesa = (_: number, m: Mesa) => m.idTable;
@@ -132,7 +123,6 @@ export class MesasComponent implements OnInit {
     this.api.actualizarEstadosMesas(cambios).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Cambios guardados correctamente');
-        // Refresca y re-toma snapshot
         this.refrescarMesas();
         this.isSavingEstados = false;
       },

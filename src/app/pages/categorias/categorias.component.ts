@@ -111,6 +111,10 @@ export class CategoriasComponent implements OnInit {
 
   resetImageSelection() { this.selectedFile = null; this.nombreArchivo = null; }
 
+  onImageError(event: Event) {
+    (event.target as HTMLImageElement).src = '/img/no-image.png';
+  }
+
   /* === Formularios con Overlay === */
   abrirFormulario(categoria: any = null): void {
     this.selectedCategoria = categoria;

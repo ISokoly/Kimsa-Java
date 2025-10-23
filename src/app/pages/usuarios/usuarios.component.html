@@ -2,9 +2,9 @@
   <div class="tabla-scroll">
     <div class="usuarios-container">
       @if(usuario?.rol === 'Administrator'){
-      <h1>Perfil del Administrador</h1>
+      <h1 class="title">Perfil del Administrador</h1>
       } @else if(usuario?.rol === 'Employee'){
-      <h1>Perfil del Empleado</h1>
+      <h1 class="title">Perfil del Empleado</h1>
       }
 
       <div class="info-admin">
@@ -45,21 +45,21 @@
         </mat-list>
 
         <div class="acciones">
-          <button class="btn-verde" (click)="abrirFormulario(usuario)">Editar usuario</button>
-          <button class="btn-rojo" (click)="deshabilitarUsuario(usuario.idUser)">Deshabilitar usuario</button>
+          <button mat-raised-button class="btn-verde" (click)="abrirFormulario(usuario)">Editar usuario</button>
+          <button mat-raised-button class="btn-rojo" (click)="deshabilitarUsuario(usuario.idUser)">Deshabilitar usuario</button>
         </div>
       </div>
 
 
-      <h2>Aspectos de la Pizzería</h2>
+      <h2 class="title">Aspectos de la Pizzería</h2>
       <div class="info-admin">
         @if(usuario?.rol === 'Administrator'){
-        <button class="btn-azul" (click)="verOtros()">Ver otros usuarios</button>
-        <button class="btn-azul" (click)="verMesas()">Administrar Mesas</button>
+        <button mat-raised-button class="btn-azul" (click)="verOtros()">Ver otros usuarios</button>
+        <button mat-raised-button class="btn-azul" (click)="verMesas()">Administrar Mesas</button>
         }
         @else {
-        <button class="btn-azul" (click)="verClientes()">Administrar Clientes</button>
-        <button class="btn-azul" (click)="verDescuentos()">Administrar Descuentos</button>
+        <button mat-raised-button class="btn-azul" (click)="verClientes()">Administrar Clientes</button>
+        <button mat-raised-button class="btn-azul" (click)="verDescuentos()">Administrar Descuentos</button>
         }
       </div>
     </div>
@@ -68,7 +68,7 @@
 <ng-template #formUsuarioTpl>
   <div class="form-modal">
     @if(userSeleccionado){
-    <h2 class="form-title">Editar Usuario</h2>
+    <h2 class="title form-title">Editar Usuario</h2>
     }
 
     <div class="form-container">
@@ -120,15 +120,15 @@
       </div>
 
       <div class="botones">
-        <button class="form-btn-verde" (click)="guardarEmpleado()" [disabled]="isLoading">Guardar</button>
-        <button class="form-btn-gris" (click)="cerrarFormulario()" [disabled]="isLoading">Cancelar</button>
+        <button mat-raised-button class="form-btn-verde" (click)="guardarEmpleado()" [disabled]="isLoading">Guardar</button>
+        <button mat-raised-button class="form-btn-gris" (click)="cerrarFormulario()" [disabled]="isLoading">Cancelar</button>
       </div>
     </div>
   </div>
 </ng-template>
 <ng-template #formPasswordTpl>
   <div class="form-modal">
-    <h2 class="form-title">Cambiar Contraseña</h2>
+    <h2 class="title form-title">Cambiar Contraseña</h2>
     <div class="form-container">
       <div class="form-grid">
         <mat-form-field appearance="fill" class="full-width">
@@ -145,8 +145,8 @@
       </div>
 
       <div class="botones">
-        <button class="form-btn-verde" (click)="guardarNuevaContrasena()" [disabled]="isLoading">Guardar</button>
-        <button class="form-btn-gris" (click)="cerrarCambiarContrasena()" [disabled]="isLoading">Cancelar</button>
+        <button mat-raised-button class="form-btn-verde" (click)="guardarNuevaContrasena()" [disabled]="isLoading">Guardar</button>
+        <button mat-raised-button class="form-btn-gris" (click)="cerrarCambiarContrasena()" [disabled]="isLoading">Cancelar</button>
       </div>
     </div>
   </div>

@@ -6,21 +6,12 @@ $danger-color: #e74c3c;
 $pay-color: #eca100;
 $bg-color: #f9f9f9;
 
-h1,
-h2,
-h4 {
-  color: $primary-color;
-  border-bottom: 2px dashed $primary-color;
-  padding-bottom: 8px;
-  text-align: center;
-}
-
 .label-precio {
   font-weight: bolder;
 }
 
 .valor-precio {
-  color: $pay-color; // o un verde o dorado, depende del estilo general
+  color: $pay-color;
   font-weight: 600;
 }
 
@@ -58,9 +49,7 @@ h4 {
   .product-name,
   .category-name {
     font-size: 18px;
-    font-weight: bold;
     margin-bottom: 10px;
-    color: $primary-color;
     cursor: pointer;
     transition: color 0.3s;
 
@@ -124,6 +113,7 @@ button {
   font-size: 14px;
   cursor: pointer;
   transition: 0.3s ease-in-out;
+  font-weight: 600;
 
   &.edit-btn {
     background-color: $primary-color;
@@ -180,10 +170,7 @@ button {
 }
 
 .form-title {
-  text-align: center;
   font-size: 22px;
-  font-weight: bold;
-  color: $primary-color;
   margin: 20px;
   margin-bottom: 30px;
 }
@@ -207,45 +194,47 @@ button {
 .botones {
   display: flex;
   justify-content: space-between;
-}
+  gap: 10px;
+  font-weight: 600;
 
-.form-btn-verde {
-  width: 48%;
-  background: $primary-color;
-  color: #fff;
+  .form-btn-verde {
+    width: 48%;
+    background: $primary-color;
+    color: #fff;
 
-  &:hover {
-    background: color.scale($primary-color, $lightness: -30%);
+    &:hover {
+      background: color.scale($primary-color, $lightness: -30%);
+    }
   }
-}
 
-.form-btn-rojo {
-  width: 48%;
-  background: $danger-color;
-  color: #fff;
+  .form-btn-rojo {
+    width: 48%;
+    background: $danger-color;
+    color: #fff;
 
-  &:hover {
-    background: color.scale($danger-color, $lightness: -30%);
+    &:hover {
+      background: color.scale($danger-color, $lightness: -30%);
+    }
   }
-}
 
-.form-btn-azul {
-  width: 48%;
-  background: $secondary-color;
-  color: #fff;
+  .form-btn-azul {
+    width: 48%;
+    background: $secondary-color;
+    color: #fff;
 
-  &:hover {
-    background: color.scale($secondary-color, $lightness: -30%);
+    &:hover {
+      background: color.scale($secondary-color, $lightness: -30%);
+    }
   }
-}
 
-.form-btn-gris {
-  width: 48%;
-  background: #777;
-  color: #fff;
+  .form-btn-gris {
+    width: 48%;
+    background: #777;
+    color: #fff;
 
-  &:hover {
-    background: #555;
+    &:hover {
+      background: #555;
+    }
   }
 }
 

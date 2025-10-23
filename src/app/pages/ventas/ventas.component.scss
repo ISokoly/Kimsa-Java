@@ -11,13 +11,6 @@ $bg-color: #f9f9f9;
   border-radius: 10px;
   background-color: $bg-color;
 
-  h1.titulo {
-    color: $primary-color;
-    border-bottom: 2px dashed $primary-color;
-    padding-bottom: 8px;
-    text-align: center;
-  }
-
   mat-form-field {
     width: 320px;
     margin: 0 0 1rem 0;

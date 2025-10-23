@@ -51,13 +51,12 @@ $bg-color: #f9f9f9;
 
   &.btn-cancelar {
     background-color: #e9eef3; color: #1d2630;
-    &:hover { background-color: #dfe6ed; }
+    &:hover { background-color: color.scale(#e9eef3, $lightness: -10%); }
   }
 
   &.btn-aceptar {
     background-color: $danger-color; color: #fff;
-    &:hover { background-color: color.scale($danger-color, $lightness: -12%); transform: translateY(-1px); }
-    &:active { transform: translateY(0); }
+    &:hover { background-color: color.scale($danger-color, $lightness: -30%); }
   }
 }
 

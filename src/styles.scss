@@ -1,6 +1,9 @@
-/* You can add global styles to this file, and also import other style files */
 @use '@angular/material' as mat;
 @use './style/theme-colors';
+
+@use "sass:color";
+
+@use "style/variables" as *;
 
 @include mat.app-background();
 
@@ -43,27 +46,22 @@ body {
     ));
 }
 
-html,
-body {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-}
-
-html,
-body {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-}
-
 .cdk-overlay-container,
 .cdk-global-overlay-wrapper {
   z-index: 12000 !important;
+}
+
+button {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+h1.title,
+h2.title,
+h3.title,
+h4.title {
+  color: $primary-color !important;
+  border-bottom: 2px dashed $primary-color !important;
+  padding-bottom: 8px !important;
+  text-align: center;
 }

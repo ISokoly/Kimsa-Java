@@ -2,18 +2,7 @@
 
 $primary-color: #0b6e4f;
 $secondary-color: #007acc;
-$danger-color: #e74c3c;
-$warning-color: #f4d03f;
-$success-color: #76dfa2;
 $bg-color: #f9f9f9;
-
-h1,
-h2 {
-    color: $primary-color;
-    border-bottom: 2px dashed $primary-color;
-    padding-bottom: 8px;
-    text-align: center;
-}
 
 .contenedor {
     padding: 2rem;
@@ -76,10 +65,8 @@ button {
 }
 
 .form-title {
-    text-align: center;
     font-size: 22px;
     font-weight: bold;
-    color: $primary-color;
     margin-bottom: 30px;
 }
 

@@ -1,28 +1,20 @@
 <div class="descuentos-container">
-  <h1>Descuentos</h1>
+  <h1 class="title">Descuentos</h1>
   <ng-template #formDescuentoTpl>
     <div class="form-modal">
-      <h2 class="form-title">{{ editando ? 'Editar Descuento' : 'Nuevo Descuento' }}</h2>
+      <h2 class="title form-title">{{ editando ? 'Editar Descuento' : 'Nuevo Descuento' }}</h2>
       <div class="form-container">
         <div class="form-grid">
 
           <mat-form-field appearance="fill" class="full-width">
             <mat-label>Producto</mat-label>
-            <input type="text"
-                   matInput
-                   placeholder="Escriba el nombre del producto"
-                   [(ngModel)]="productoSeleccionado"
-                   [matAutocomplete]="auto"
-                   (input)="filtrarProductos()"
-                   name="producto"
-                   autocomplete="off"
-                   required />
+            <input type="text" matInput placeholder="Escriba el nombre del producto" [(ngModel)]="productoSeleccionado"
+              [matAutocomplete]="auto" (input)="filtrarProductos()" name="producto" autocomplete="off" required />
 
-            <mat-autocomplete #auto="matAutocomplete"
-                              [displayWith]="mostrarNombreProducto"
-                              (optionSelected)="seleccionarProducto($event.option.value)">
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="mostrarNombreProducto"
+              (optionSelected)="seleccionarProducto($event.option.value)">
               @for (producto of productosFiltrados; track $index) {
-                <mat-option [value]="producto">{{ producto.name }}</mat-option>
+              <mat-option [value]="producto">{{ producto.name }}</mat-option>
               }
             </mat-autocomplete>
           </mat-form-field>
@@ -31,8 +23,8 @@
 
           <mat-form-field appearance="fill">
             <mat-label>Porcentaje (%)</mat-label>
-            <input type="number" matInput name="percentage"
-                   [(ngModel)]="descuento.percentage" required min="1" max="100" />
+            <input type="number" matInput name="percentage" [(ngModel)]="descuento.percentage" required min="1"
+              max="100" />
           </mat-form-field>
 
           <mat-form-field appearance="fill">
@@ -40,17 +32,17 @@
             <mat-select name="typeDay" [(ngModel)]="descuento.typeDay" required>
               <mat-option value="" disabled>Seleccione un día</mat-option>
               @for (dia of diasSemana; track $index) {
-                <mat-option [value]="dia">{{ dia }}</mat-option>
+              <mat-option [value]="dia">{{ dia }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
         </div>
 
         <div class="botones">
-          <button type="button" class="form-btn-verde" (click)="guardarDescuento()">
+          <button mat-raised-button type="button" class="form-btn-verde" (click)="guardarDescuento()">
             {{ editando ? 'Actualizar' : 'Guardar' }}
           </button>
-          <button type="button" class="form-btn-gris" (click)="cancelarEdicion()">Cancelar</button>
+          <button mat-raised-button type="button" class="form-btn-gris" (click)="cancelarEdicion()">Cancelar</button>
         </div>
       </div>
     </div>
@@ -97,13 +89,13 @@
             </button>
 
             @if (descuento.disabled) {
-              <button class="btn-azul" (click)="habilitarDescuento(descuento.idDiscount!)">
-                <mat-icon>lock</mat-icon>
-              </button>
+            <button class="btn-azul" (click)="habilitarDescuento(descuento.idDiscount!)">
+              <mat-icon>lock</mat-icon>
+            </button>
             } @else {
-              <button class="delete-btn" (click)="deshabilitarDescuento(descuento.idDiscount!)">
-                <mat-icon>lock_open</mat-icon>
-              </button>
+            <button class="delete-btn" (click)="deshabilitarDescuento(descuento.idDiscount!)">
+              <mat-icon>lock_open</mat-icon>
+            </button>
             }
           </div>
         </td>
@@ -112,10 +104,13 @@
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
     </table>
+    @if (!descuentos || descuentos.length === 0) {
+    <div class="empty"><em>No hay descuentos registrados</em></div>
+    }
   </div>
 
   <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-    <button class="btn-azul" style="width: 225px; height: 50px;" (click)="mostrarFormularioNuevo()">
+    <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px;" (click)="mostrarFormularioNuevo()">
       Añadir Nuevo Descuento
     </button>
   </div>

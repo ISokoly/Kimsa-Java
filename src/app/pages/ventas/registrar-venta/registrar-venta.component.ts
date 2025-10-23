@@ -14,6 +14,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../view/confirm-dialog/confirm-dialog.component';
+import { PageLoadingService } from '../../../core/services/page-loading.service';
 
 const GENERIC_DNI = '00000001';
 type DayWeek = 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado' | 'Domingo' | 'General';
@@ -70,9 +71,10 @@ export class RegistrarVentaComponent implements OnInit {
 
   get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private dialog: MatDialog) { }
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
+    this.pageLoading.start();
     this.route.paramMap.subscribe(p => {
       this.saleId = p.get('id') ? +p.get('id')! : null;
       this.init();
@@ -92,6 +94,7 @@ export class RegistrarVentaComponent implements OnInit {
       this.saleRefDate = new Date();
       this.loadTables(null);
     }
+    this.pageLoading.stop();
   }
 
   /* ==================== NAVEGACIÓN ==================== */
@@ -111,8 +114,12 @@ export class RegistrarVentaComponent implements OnInit {
         const mesas = (Array.isArray(res) ? res : []).map(this.mapMesa);
         const allowedId = keepId ?? this.selectedTableId ?? null;
         this.tables = mesas.filter(m => !m.active || (allowedId != null && m.idTable === allowedId)).filter(m => !m.disabled);
+        this.pageLoading.stop();
       },
-      error: () => this.toast.mostrarMensaje('❌ Error al cargar mesas'),
+      error: () => {
+        this.toast.mostrarMensaje('❌ Error al cargar mesas');
+        this.pageLoading.stop();
+      },
     });
   }
 
@@ -122,8 +129,11 @@ export class RegistrarVentaComponent implements OnInit {
         const mapped = arr(res).map(this.mapProduct);
         this.allProducts = mapped;
         this.products = mapped.filter(p => !p.disabled);
+        this.pageLoading.stop();
       },
-      error: () => { this.allProducts = []; this.products = []; this.toast.mostrarMensaje('❌ Error al cargar productos'); }
+      error: () => {
+        this.allProducts = []; this.products = []; this.toast.mostrarMensaje('❌ Error al cargar productos'); this.pageLoading.stop();
+      }
     });
   }
 
@@ -132,8 +142,11 @@ export class RegistrarVentaComponent implements OnInit {
       next: (list: any[]) => {
         this.discounts = arr(list).map(this.mapDiscount).filter(d => d.idProduct);
         this.refreshCartPricing();
+        this.pageLoading.stop();
       },
-      error: () => { this.discounts = [];}
+      error: () => {
+        this.discounts = []; this.pageLoading.stop();
+      }
     });
   }
 
@@ -165,8 +178,11 @@ export class RegistrarVentaComponent implements OnInit {
         });
 
         after?.();
+        this.pageLoading.stop();
       },
-      error: () => this.toast.mostrarMensaje('❌ No se pudo cargar la venta')
+      error: () => {
+        this.toast.mostrarMensaje('❌ No se pudo cargar la venta'); this.pageLoading.stop();
+      }
     });
   }
 
