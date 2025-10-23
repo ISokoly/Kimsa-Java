@@ -30,7 +30,6 @@ export class OtrosComponent implements OnInit {
   listaUsuarios: any[] = [];
   listaFiltrada: any[] = [];
 
-  // filtros
   filtroTexto: string = '';
   filtroRol: string = '';
   filtroEstado: string = '';
