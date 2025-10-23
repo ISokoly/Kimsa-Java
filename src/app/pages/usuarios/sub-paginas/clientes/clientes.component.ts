@@ -11,6 +11,7 @@ import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
 import { MatTableModule } from "@angular/material/table";
+import { PageLoadingService } from '../../../../core/services/page-loading.service';
 
 interface Client {
   idClient?: number;
@@ -51,9 +52,10 @@ export class ClientesComponent implements OnInit {
   private editFormRef?: OverlayHandle;
   private newFormRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toastService: ToastService) { }
+  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
+    this.pageLoading.start();
     this.getClients();
   }
 
@@ -62,8 +64,13 @@ export class ClientesComponent implements OnInit {
       next: (data) => {
         this.clients = data || [];
         this.pageIndex = 0;
+        this.pageLoading.stop();
+
       },
-      error: () => this.toastService.mostrarMensaje('❌ Error al obtener clientes')
+      error: () => {
+        this.toastService.mostrarMensaje('❌ Error al obtener clientes');
+        this.pageLoading.stop();
+      }
     });
   }
 
@@ -169,7 +176,7 @@ export class ClientesComponent implements OnInit {
   }
 
   onSearchChange(): void {
-    this.pageIndex = 0; 
+    this.pageIndex = 0;
   }
 
   // ------- Paginación (cliente) -------

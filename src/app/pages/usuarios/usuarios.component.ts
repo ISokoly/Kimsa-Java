@@ -13,6 +13,7 @@ import { MatListModule } from "@angular/material/list";
 import { OverlayHandle, OverlayPortalService } from '../../core/services/overlay-portal.service';
 import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { PageLoadingService } from '../../core/services/page-loading.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -52,25 +53,29 @@ export class UsuariosComponent implements OnInit {
   private userFormRef?: OverlayHandle;
   private passFormRef?: OverlayHandle;
   /* ==================== CONSTRUCTOR ==================== */
-  constructor(private apiService: ApiService, private router: Router, private toastService: ToastService, private dialog: MatDialog) { }
+  constructor(private apiService: ApiService, private router: Router, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
 
   /* ==================== CICLO DE VIDA ==================== */
   ngOnInit(): void {
+    this.pageLoading.start();
     this.refrescarDatos();
   }
 
   /* ==================== CARGA DE DATOS ==================== */
   refrescarDatos(): void {
     this.obtenerUsuario();
+    this.pageLoading.stop();
   }
 
   obtenerUsuario(): void {
     const usuario = this.apiService.getUsuarioActual();
     if (!usuario) {
       this.toastService.mostrarMensaje('❌ No se encontró un usuario autenticado');
+      this.pageLoading.stop();
       return;
     }
     this.usuario = usuario;
+    this.pageLoading.stop();
   }
 
   /* ==================== NAVEGACIÓN ==================== */

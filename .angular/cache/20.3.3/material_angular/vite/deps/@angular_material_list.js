@@ -4,6 +4,9 @@ import {
 import {
   MatPseudoCheckboxModule
 } from "./chunk-Y2UNE5NR.js";
+import {
+  NG_VALUE_ACCESSOR
+} from "./chunk-LEAHLM6I.js";
 import "./chunk-6TU72PAN.js";
 import {
   MatRippleModule
@@ -22,9 +25,6 @@ import {
   coerceBooleanProperty
 } from "./chunk-GWFLKVBH.js";
 import "./chunk-7UJZXIJQ.js";
-import {
-  NG_VALUE_ACCESSOR
-} from "./chunk-LEAHLM6I.js";
 import {
   A,
   CdkObserveContent,

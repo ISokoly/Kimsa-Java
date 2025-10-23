@@ -83,17 +83,11 @@
         <h2 class="product-name">
           {{ p.name }}
         </h2>
-
-        @if (p.idImage) {
         <div class="img-container horizontal-container">
-          <img [src]="getUrlImagen(p.idImage)" alt="Imagen del producto" class="preview-img img-horizontal"
-            (error)="onImageError($event)" />
+          <img [src]="getUrlImagen(p.idImage)" class="preview-img img-horizontal"
+            [class.img-loaded]="p.idImage ? imgLoaded[p.idImage] : false"
+            (load)="p.idImage && (imgLoaded[p.idImage] = true)" (error)="p.idImage && (imgLoaded[p.idImage] = true)" />
         </div>
-        } @else {
-        <div class="img-container horizontal-container">
-          <img src="/img/no-image.png" alt="Sin imagen" class="img-horizontal" />
-        </div>
-        }
 
         <p>
           <span class="label-precio">Precio: </span>
@@ -120,71 +114,66 @@
     <ng-template #productDetailTpl>
       @if (selectedProducto) {
       <div class="form-modal product-detail-modal">
-        <!-- Cerrar (X) -->
         <button class="close-x" type="button" aria-label="Cerrar" (click)="closeProductDetail()">×</button>
 
         <h2 class="form-title">Detalle del Producto</h2>
 
         <div class="product-detail-body">
+          <table mat-table [dataSource]="productInfoRows" class="mat-elevation-z8 info-tabla">
+            <ng-container matColumnDef="prop">
+              <th mat-header-cell *matHeaderCellDef> Propiedad </th>
+              <td mat-cell *matCellDef="let element">
+                <strong>{{ element.prop }}</strong>
+              </td>
+            </ng-container>
 
-          <div class="info-side">
-            <table mat-table [dataSource]="productInfoRows" class="mat-elevation-z8 info-tabla">
-              <!-- Propiedad -->
-              <ng-container matColumnDef="prop">
-                <th mat-header-cell *matHeaderCellDef> Propiedad </th>
-                <td mat-cell *matCellDef="let element">
-                  <strong>{{ element.prop }}</strong>
-                </td>
-              </ng-container>
+            <!-- Valor -->
+            <ng-container matColumnDef="value">
+              <th mat-header-cell *matHeaderCellDef> Valor </th>
+              <td mat-cell *matCellDef="let element">
+                <span [class.ok]="element.prop === 'Estado' && element.value === 'Habilitado'"
+                  [class.bad]="element.prop === 'Estado' && element.value === 'Deshabilitado'">
+                  {{ element.value }}
+                </span>
+              </td>
+            </ng-container>
 
-              <!-- Valor -->
-              <ng-container matColumnDef="value">
-                <th mat-header-cell *matHeaderCellDef> Valor </th>
-                <td mat-cell *matCellDef="let element">
-                  <span [class.ok]="element.prop === 'Estado' && element.value === 'Habilitado'"
-                    [class.bad]="element.prop === 'Estado' && element.value === 'Deshabilitado'">
-                    {{ element.value }}
-                  </span>
-                </td>
-              </ng-container>
+            <tr mat-row *matRowDef="let row; columns: displayedInfoColumns;"></tr>
+          </table>
 
-              <tr mat-row *matRowDef="let row; columns: displayedInfoColumns;"></tr>
-            </table>
+          @if (productFeatureRows.length !== 0) {
+          <h4 class="subtitulo-tabla">Características del producto</h4>
 
-            @if (productFeatureRows.length !== 0) {
-            <h4 class="subtitulo-tabla">Características del producto</h4>
+          <div class="features-tabla"></div>
+          <table mat-table [dataSource]="productFeatureRows" class="mat-elevation-z8 info-tabla">
+            <ng-container matColumnDef="base">
+              <th mat-header-cell *matHeaderCellDef> Característica </th>
+              <td mat-cell *matCellDef="let row">
+                <strong>{{ row.base }}</strong>
+              </td>
+            </ng-container>
 
-            <div class="features-tabla"></div>
-            <table mat-table [dataSource]="productFeatureRows" class="mat-elevation-z8 info-tabla">
-              <ng-container matColumnDef="base">
-                <th mat-header-cell *matHeaderCellDef> Característica </th>
-                <td mat-cell *matCellDef="let row">
-                  <strong>{{ row.base }}</strong>
-                </td>
-              </ng-container>
+            <ng-container matColumnDef="value">
+              <th mat-header-cell *matHeaderCellDef> Valor </th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.value || '—' }}
+              </td>
+            </ng-container>
 
-              <ng-container matColumnDef="value">
-                <th mat-header-cell *matHeaderCellDef> Valor </th>
-                <td mat-cell *matCellDef="let row">
-                  {{ row.value || '—' }}
-                </td>
-              </ng-container>
-
-              <tr mat-row *matRowDef="let row; columns: displayedFeatureColumns;"></tr>
-            </table>
-            }
-          </div>
-        </div>
-
-        <div class="botones">
-          <button class="form-btn-verde" type="button" (click)="editProducto(selectedProducto)">Editar</button>
-
-          @if (!selectedProducto.disabled) {
-          <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedProducto)">Deshabilitar</button>
-          } @else {
-          <button class="form-btn-azul" type="button" (click)="habilitar(selectedProducto)">Habilitar</button>
+            <tr mat-row *matRowDef="let row; columns: displayedFeatureColumns;"></tr>
+          </table>
           }
         </div>
+      </div>
+
+      <div class="botones">
+        <button class="form-btn-verde" type="button" (click)="editProducto(selectedProducto)">Editar</button>
+
+        @if (!selectedProducto.disabled) {
+        <button class="form-btn-rojo" type="button" (click)="deshabilitar(selectedProducto)">Deshabilitar</button>
+        } @else {
+        <button class="form-btn-azul" type="button" (click)="habilitar(selectedProducto)">Habilitar</button>
+        }
       </div>
       }
     </ng-template>

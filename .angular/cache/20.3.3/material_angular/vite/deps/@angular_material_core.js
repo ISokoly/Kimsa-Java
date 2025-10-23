@@ -1,12 +1,4 @@
 import {
-  _MatInternalFormField
-} from "./chunk-2LLQRHL6.js";
-import {
-  MatLine,
-  MatLineModule,
-  setLines
-} from "./chunk-UULRU5QR.js";
-import {
   DateAdapter,
   MAT_DATE_FORMATS,
   MAT_DATE_LOCALE,
@@ -31,6 +23,14 @@ import {
   MatPseudoCheckbox,
   MatPseudoCheckboxModule
 } from "./chunk-Y2UNE5NR.js";
+import {
+  _MatInternalFormField
+} from "./chunk-2LLQRHL6.js";
+import {
+  MatLine,
+  MatLineModule,
+  setLines
+} from "./chunk-UULRU5QR.js";
 import {
   MatRippleLoader
 } from "./chunk-DT6GF7BI.js";

@@ -25,7 +25,7 @@ export type MenuItem = {
   <mat-nav-list>
     @for (item of menuItems(); track $index) {
       <a  class="menu-item">
-      <mat-list-item routerLinkActive ="selected-menu-item" 
+      <mat-list-item routerLinkActive ="selected-menu-item"
       #rla="routerLinkActive" routerLink={{item.route}}>
         <mat-icon matListItemIcon>{{item.icon}}</mat-icon>
         @if (!sideNavCollpsed()) {

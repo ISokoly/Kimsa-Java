@@ -13,6 +13,7 @@ import { MatTableModule } from '@angular/material/table';
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
+import { PageLoadingService } from '../../../../core/services/page-loading.service';
 
 /* ==================== INTERFACES ==================== */
 export interface Discount {
@@ -48,36 +49,29 @@ export class DescuentosComponent implements OnInit {
   productosFiltrados: any[] = [];
   productoSeleccionado: any = null;
 
-  descuento: Discount = {
-    idDiscount: null,
-    idProduct: null,
-    percentage: null,
-    disabled: false,
-    typeDay: '',
-    nombreProducto: ''
-  };
+  descuento: Discount = { idDiscount: null, idProduct: null, percentage: null, disabled: false, typeDay: '', nombreProducto: '' };
 
   diasSemana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
   editando = false;
 
   displayedColumns: string[] = ['numero', 'producto', 'porcentaje', 'dia', 'estado', 'opciones'];
 
-  // Overlay
   @ViewChild('formDescuentoTpl') formDescuentoTpl!: TemplateRef<any>;
   private overlay = inject(OverlayPortalService);
   private formRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toastService: ToastService) { }
+  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
 
   ngOnInit() {
+    this.pageLoading.start();
     this.cargarProductos(() => this.obtenerDescuentos());
   }
 
   /* ==================== CARGA DE DATOS ==================== */
   obtenerDescuentos() {
     this.api.getDescuentos().subscribe(res => {
-      // no mapeamos nombre aquí; usamos obtenerNombreProducto() en el template
       this.descuentos = res;
+      this.pageLoading.stop();
     });
   }
 
@@ -86,6 +80,7 @@ export class DescuentosComponent implements OnInit {
       this.productos = res || [];
       this.productosFiltrados = this.productos.filter(p => !p.disabled);
       done?.();
+      this.pageLoading.stop();
     });
   }
 
@@ -101,14 +96,11 @@ export class DescuentosComponent implements OnInit {
     this.descuento = { ...descuento };
     const producto = this.productos.find(p => p.idProduct === descuento.idProduct);
     this.productoSeleccionado = producto || null;
-
-    // refrescar lista para autocomplete
     this.productosFiltrados = this.productos.filter(p => !p.disabled);
     this.abrirOverlayForm();
   }
 
   private abrirOverlayForm() {
-    // cierra cualquier instancia previa
     this.formRef?.close();
     this.formRef = this.overlay.open(this.formDescuentoTpl);
   }
@@ -120,14 +112,7 @@ export class DescuentosComponent implements OnInit {
   }
 
   resetDescuento() {
-    this.descuento = {
-      idDiscount: null,
-      idProduct: null,
-      percentage: null,
-      disabled: false,
-      typeDay: '',
-      nombreProducto: ''
-    };
+    this.descuento = { idDiscount: null, idProduct: null, percentage: null, disabled: false, typeDay: '', nombreProducto: '' };
     this.productoSeleccionado = null;
   }
 
@@ -155,19 +140,16 @@ export class DescuentosComponent implements OnInit {
       this.toastService.mostrarMensaje('⚠️ Complete todos los campos.');
       return;
     }
-
     const data = {
       idProduct: this.descuento.idProduct,
       percentage: this.descuento.percentage,
       disabled: this.descuento.disabled,
       typeDay: this.descuento.typeDay
     };
-
     const after = () => {
       this.obtenerDescuentos();
       this.cancelarEdicion();
     };
-
     if (this.editando && this.descuento.idDiscount !== null) {
       this.api.updateDescuento(this.descuento.idDiscount, data).subscribe(after);
     } else {

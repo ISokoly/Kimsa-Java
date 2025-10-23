@@ -1,8 +1,6 @@
 <router-outlet></router-outlet>
-
 @if (overlay.hasAny()) {
 <div class="app-overlay">
-
   @for (entry of overlay.entries(); track entry.id; let i = $index) {
   <div class="app-overlay-scrim" [style.zIndex]="1000 + i*2"></div>
   <div class="app-overlay-panel" [style.zIndex]="1001 + i*2">

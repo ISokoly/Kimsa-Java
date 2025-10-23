@@ -31,7 +31,14 @@
     </mat-sidenav>
 
     <mat-sidenav-content class="content view-content" [style.margin-left]="sidenavWidth()">
-      <router-outlet />
+      <div class="route-shell" [class.fade-in]="isEntering">
+        <router-outlet />
+      </div>
     </mat-sidenav-content>
   </mat-sidenav-container>
+  @if (pageLoading.loading$ | async) {
+  <div class="page-spinner">
+    <div class="spinner"></div>
+  </div>
+  }
 </div>

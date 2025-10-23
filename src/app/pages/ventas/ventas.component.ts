@@ -16,6 +16,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
 
 import { ApiService } from '../../core/services/api.service';
+import { PageLoadingService } from '../../core/services/page-loading.service';
 
 /* === Modelos front === */
 interface OrderDetail {
@@ -78,7 +79,6 @@ export class VentasComponent implements OnInit {
   pageIndex = 0;
   displayEmpty = (_: any): string => '';
 
-  // Datepicker
   fechaSeleccionada: Date = new Date();
 
   get fecha(): string {
@@ -89,11 +89,12 @@ export class VentasComponent implements OnInit {
 
   private productNameById: Record<number, string> = {};
 
-  constructor(private api: ApiService, private router: Router) { }
+  constructor(private api: ApiService, private router: Router, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
+    this.pageLoading.start();
     this.loadProducts();
-    this.loadSales(); // carga del día seleccionado
+    this.loadSales();
   }
 
   /* === Carga de datos === */
@@ -106,7 +107,6 @@ export class VentasComponent implements OnInit {
           idOrder: Number(v.idOrder ?? v.id),
           status: String(v.status ?? 'Pending') as OrderStatus,
           total: Number(v.total ?? 0),
-          // Normaliza a 'YYYY-MM-DD'
           orderDate: String(v.orderDate ?? v.fecha_pedido ?? targetIso).slice(0, 10),
           orderTime: String(v.orderTime ?? v.hora_pedido ?? '00:00:00'),
           details: []
@@ -116,7 +116,6 @@ export class VentasComponent implements OnInit {
           .filter(v => v.orderDate === targetIso)
           .sort((a, b) => this.localMillis(b.orderDate, b.orderTime) - this.localMillis(a.orderDate, a.orderTime));
 
-        // Cargar detalles y pagos por venta
         this.sales.forEach(sale => {
           this.api.getOrderDetailsByOrderId(sale.idOrder).subscribe({
             next: (details: any[]) => {
@@ -127,7 +126,7 @@ export class VentasComponent implements OnInit {
                 quantity: Number(d.quantity ?? d.cantidad ?? 0),
                 subtotal: Number(d.subtotal ?? 0)
               }));
-              this.applyFilters(); // 👈 actualiza visibleSales
+              this.applyFilters();
             },
             error: () => { sale.details = []; this.applyFilters(); }
           });
@@ -138,11 +137,14 @@ export class VentasComponent implements OnInit {
           });
         });
 
-        // Primer filtrado/paginado
         this.pageIndex = 0;
         this.applyFilters();
+        this.pageLoading.stop();
       },
-      error: () => { this.sales = []; this.applyFilters(); }
+      error: () => {
+        this.sales = []; this.applyFilters();
+        this.pageLoading.stop();
+      }
     });
   }
 
@@ -164,11 +166,13 @@ export class VentasComponent implements OnInit {
 
         this.products = enabled;
         this.recomputeSuggestions();
+        this.pageLoading.stop();
       },
       error: () => {
         this.products = [];
         this.productNameById = {};
         this.recomputeSuggestions();
+        this.pageLoading.stop();
       }
     });
   }
@@ -179,7 +183,6 @@ export class VentasComponent implements OnInit {
     this.applyFilters();
   }
 
-  // Datepicker -> cambio de fecha
   onDateChange(ev: MatDatepickerInputEvent<Date>): void {
     this.fechaSeleccionada = ev.value ?? new Date();
     this.pageIndex = 0;
@@ -187,13 +190,13 @@ export class VentasComponent implements OnInit {
   }
 
   onProductFilterInput(val: any): void {
-    this.productQuery = (val ?? '').toString();   // sin comas ni split
+    this.productQuery = (val ?? '').toString();
     this.recomputeSuggestions();
   }
 
   onProductSuggestionSelected(name: string): void {
     this.addProductName(name);
-    this.productQuery = '';       // limpia el input
+    this.productQuery = '';
     this.recomputeSuggestions();
   }
 
@@ -289,16 +292,6 @@ export class VentasComponent implements OnInit {
       this.pageIndex = 0;
       this.applyFilters();
     }
-  }
-
-  private addProductByTerm(term: string): void {
-    const t = term.trim();
-    if (!t) return;
-
-    const names = this.products.map(p => p.name).filter(Boolean);
-    const exact = names.find(n => n.toLowerCase() === t.toLowerCase());
-    const partial = exact ?? names.find(n => n.toLowerCase().includes(t.toLowerCase()));
-    if (partial) this.addProductName(partial);
   }
 
   /* === Helpers UI === */

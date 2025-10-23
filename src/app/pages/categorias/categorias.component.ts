@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { MatInputModule } from '@angular/material/input';
@@ -6,83 +6,87 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
+import { MatTableModule } from '@angular/material/table';
+
 import { ApiService } from '../../core/services/api.service';
-import { ToastService } from '../../core/services/toast.service';
 import { HoverScrollDirective } from '../../core/extras/hover-scroll.directive';
-import { MarcasComponent } from '../producto/forms/marcas/marcas.component';
+import { OverlayPortalService, OverlayHandle } from '../../core/services/overlay-portal.service';
+import { MatIconModule } from '@angular/material/icon';
+import { ToastService } from '../../core/services/toast.service';
+import { PageLoadingService } from '../../core/services/page-loading.service';
 
 @Component({
   selector: 'app-categorias',
   standalone: true,
   imports: [
-    FormsModule,
-    RouterModule,
-    MatInputModule,
-    MatGridListModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatOptionModule,
-    HoverScrollDirective,
-    MarcasComponent
+    FormsModule, RouterModule,
+    MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule,
+    MatOptionModule, MatTableModule,
+    HoverScrollDirective, MatIconModule
   ],
   templateUrl: './categorias.component.html',
   styleUrls: ['./categorias.component.scss']
 })
 export class CategoriasComponent implements OnInit {
-  /* ==================== PROPIEDADES ==================== */
   categorias: any[] = [];
   marcas: any[] = [];
-  imagenesCache: { [id: number]: string } = {};
-  marcaMap: { [id: number]: string } = {};
+  imagenesCache: Record<number, string> = {};
+  marcaMap: Record<number, string> = {};
+  imgLoaded: Record<number, boolean> = {};
 
   formData = { name: '', description: '', idImage: null as number | null, disabled: false };
-  formDataProducts = { name: '', price: 0, category: null as number | null, brand: null as number | null, disabled: false, idImage: null as number | null };
+
   selectedCategoria: any = null;
   imagePreview: string | null = null;
   selectedFile: File | null = null;
   caracteresRestantes = 100;
-  mostrarFormulario = false;
-  mostrarFormularioProducto = false;
   nombreArchivo: string | null = null;
   isLoading = false;
-
-  mostrarFormularioMarca = false;
-  mostrarFormularioCrearMarca = false;
   mostrarMasOpciones = false;
 
-  constructor(private router: Router, public apiService: ApiService, private toastService: ToastService) { }
+  // Overlays
+  @ViewChild('formCategoriaTpl') formCategoriaTpl!: TemplateRef<any>;
+  @ViewChild('categoryDetailTpl') categoryDetailTpl!: TemplateRef<any>;
+
+  private overlay = inject(OverlayPortalService);
+  private formCategoriaRef?: OverlayHandle;
+  private categoryDetailRef?: OverlayHandle;
+
+  displayedInfoColumns: string[] = ['prop', 'value'];
+  get CategoryInfoRows() {
+    const c = this.selectedCategoria;
+    if (!c) return [];
+    return [
+      { prop: 'Nombre', value: c.name },
+      { prop: 'Descripción', value: c.description || '—' },
+      { prop: 'Estado', value: c.disabled ? 'Deshabilitado' : 'Habilitado' }
+    ];
+  }
+
+  constructor(private router: Router, private apiService: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
+    this.pageLoading.start();
     this.loadCategorias();
-    this.loadMarcasPorCategoria(this.formDataProducts.category);
   }
 
-  /* ==================== CARGA DE DATOS ==================== */
+  /* === Datos === */
   loadCategorias(): void {
-    this.apiService.getCategorias().subscribe(data => {
-      this.categorias = data.filter((cat: any) => !cat.disabled);
-      this.categorias.forEach(cat => {
-        if (cat.idImage && !this.imagenesCache[cat.idImage]) {
-          this.loadImagen(cat.idImage);
-        }
-      });
+    this.apiService.getCategorias().subscribe({
+      next: data => {
+        this.categorias = data.filter((c: any) => !c.disabled);
+        this.categorias.forEach(cat => {
+          if (cat.idImage && !this.imagenesCache[cat.idImage]) this.loadImagen(cat.idImage);
+        });
+        this.pageLoading.stop();
+      },
+      error: _ => {
+        this.pageLoading.stop();
+      }
     });
   }
 
-  loadMarcasPorCategoria(categoryId: number | null): void {
-    if (!categoryId) {
-      this.marcas = [];
-      this.marcaMap = {};
-      return;
-    }
-    this.apiService.getMarcas().subscribe(data => {
-      this.marcas = data.filter((m: any) => m.category === categoryId);
-      this.marcaMap = {};
-      this.marcas.forEach(m => this.marcaMap[m.idBrand] = m.name);
-    });
-  }
-
-  /* ==================== IMAGENES ==================== */
+  /* === Imágenes === */
   loadImagen(idImage: number) {
     this.apiService.getImagenById(idImage).subscribe({
       next: res => this.imagenesCache[idImage] = `${res.url}?t=${Date.now()}`,
@@ -90,42 +94,53 @@ export class CategoriasComponent implements OnInit {
     });
   }
 
-  getUrlImagen(idImage: number | null | undefined): string {
-    if (!idImage) return '/img/no-image.png';
-    return this.imagenesCache[idImage] || '/img/no-image.png';
+  getUrlImagen(idImage?: number | null): string {
+    return idImage ? (this.imagenesCache[idImage] || '/img/no-image.png') : '/img/no-image.png';
   }
 
   onFileSelected(event: any) {
     const file = event.target.files[0];
-    const MAX_SIZE_MB = 1;
-    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-    if (file) {
-      if (file.size > MAX_SIZE_BYTES) {
-        this.toastService.mostrarMensaje(`❌ La imagen no puede ser mayor a ${MAX_SIZE_MB} MB.`);
-        this.resetImageSelection();
-        return;
-      }
-      this.selectedFile = file;
-      this.nombreArchivo = file.name;
-      const reader = new FileReader();
-      reader.onload = (e: any) => this.imagePreview = e.target.result;
-      reader.readAsDataURL(file);
-    } else {
-      this.resetImageSelection();
+    if (!file) return this.resetImageSelection();
+    if (file.size > 1024 * 1024) {
+      this.toastService.mostrarMensaje('❌ La imagen no puede ser mayor a 1 MB.');
+      return this.resetImageSelection();
     }
+    this.selectedFile = file;
+    this.nombreArchivo = file.name;
   }
 
-  resetImageSelection() {
-    this.selectedFile = null;
-    this.imagePreview = null;
-    this.nombreArchivo = null;
+  resetImageSelection() { this.selectedFile = null; this.nombreArchivo = null; }
+
+  /* === Formularios con Overlay === */
+  abrirFormulario(categoria: any = null): void {
+    this.selectedCategoria = categoria;
+    this.formData = {
+      name: categoria?.name ?? '',
+      description: categoria?.description ?? '',
+      idImage: categoria?.idImage ?? null,
+      disabled: categoria?.disabled ?? false
+    };
+    this.formCategoriaRef = this.overlay.open(this.formCategoriaTpl);
   }
 
-  onImageError(event: Event) {
-    (event.target as HTMLImageElement).src = '/img/no-image.png';
+  cerrarFormulario(): void {
+    this.formCategoriaRef?.close();
+    this.formCategoriaRef = undefined;
+    this.resetForm();
   }
 
-  /* ==================== CREAR / ACTUALIZAR ==================== */
+  openCategoryDetail(cat: any): void {
+    this.selectedCategoria = cat;
+    this.categoryDetailRef = this.overlay.open(this.categoryDetailTpl);
+  }
+
+  closeCategoryDetail(): void {
+    this.categoryDetailRef?.close();
+    this.categoryDetailRef = undefined;
+  }
+
+  resetForm() { this.formData = { name: '', description: '', idImage: null, disabled: false }; }
+
   async crearCategoria(): Promise<void> {
     const name = this.formData.name.trim();
     if (!name) return this.toastService.mostrarMensaje('❌ El nombre de la categoría no puede estar vacío.');
@@ -181,90 +196,28 @@ export class CategoriasComponent implements OnInit {
     } finally { this.isLoading = false; }
   }
 
-  async crearProducto(): Promise<void> {
-    const name = this.formDataProducts.name.trim();
-    if (!name || this.formDataProducts.price <= 0 || !this.formDataProducts.category) {
-      return this.toastService.mostrarMensaje('❌ Complete los campos requeridos');
-    }
-    this.isLoading = true;
-    try {
-      let idImage: number | null = null;
-      if (this.selectedFile) {
-        const res = await this.apiService
-          .uploadImage(this.selectedFile, name, 'producto', this.formDataProducts.category.toString())
-          .toPromise();
-        idImage = res.idImage;
-        if (idImage) this.imagenesCache[idImage] = `${res.url}?t=${Date.now()}`;
-      }
-      await this.apiService.createProducto({
-        name,
-        price: this.formDataProducts.price,
-        category: { idCategory: this.formDataProducts.category },
-        brand: this.formDataProducts.brand ? { idBrand: this.formDataProducts.brand } : null,
-        idImage,
-        disabled: false
-      }).toPromise();
-      this.toastService.mostrarMensaje('✅ Producto creado correctamente');
-      this.cerrarFormularioProducto();
-    } catch {
-      this.toastService.mostrarMensaje('❌ Error al crear producto');
-    } finally { this.isLoading = false; }
-  }
-
-  /* ==================== FORMULARIO ==================== */
-  abrirFormulario(categoria: any = null): void {
-    this.selectedCategoria = categoria;
-    this.formData = {
-      name: categoria?.name || '',
-      description: categoria?.description || '',
-      idImage: categoria?.idImage || null,
-      disabled: categoria?.disabled || false
-    };
-    this.caracteresRestantes = 100 - (this.formData.description?.length || 0);
-    this.mostrarMasOpciones = !!categoria?.idCategory;
-    this.imagePreview = null;
-    this.mostrarFormulario = true;
-    document.body.style.overflow = 'hidden';
-  }
-
-  cerrarFormulario(): void { this.resetForm(); this.mostrarFormulario = false; document.body.style.overflow = 'auto'; }
-  resetForm(): void { this.formData = { name: '', description: '', idImage: null, disabled: false }; this.selectedCategoria = null; this.resetImageSelection(); }
-  abrirFormularioProducto(categoryId?: number): void {
-    this.formDataProducts = { name: '', price: 0, category: categoryId || null, brand: null, idImage: null, disabled: false };
-    if (this.formDataProducts.category) this.loadMarcasPorCategoria(this.formDataProducts.category);
-    this.imagePreview = null; this.selectedFile = null; this.nombreArchivo = null;
-    this.mostrarFormularioProducto = true; document.body.style.overflow = 'hidden';
-    this.mostrarMasOpciones = false;
-  }
-  cerrarFormularioProducto(): void { this.resetFormProducto(); this.mostrarFormularioProducto = false; document.body.style.overflow = 'auto'; }
-  resetFormProducto(): void { this.formDataProducts = { name: '', price: 0, category: null, brand: null, idImage: null, disabled: false }; this.resetImageSelection(); }
-
-  abrirFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = true; }
-  abrirFormularioMarcaDesdeSelect(): void { this.mostrarFormularioMarca = true; }
-  cerrarFormularioCrearMarca(): void { this.mostrarFormularioCrearMarca = false; }
-  cerrarFormularioMarca(): void { this.mostrarFormularioMarca = false; }
-
-  limitarCaracteres(): void {
-    if (this.formData.description.length > 100) this.formData.description = this.formData.description.slice(0, 100);
-    this.caracteresRestantes = 100 - this.formData.description.length;
-  }
-
-  deshabilitar(idCategory: number): void {
-    if (!confirm('¿Seguro que deseas deshabilitar esta categoría y todos sus productos?')) return;
-
-    this.apiService.disableCategoriaYProductos(idCategory).subscribe({
-      next: () => this.toastService.mostrarMensaje('✅ Categoria y productos deshabilitados correctamente'),
-      error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar la categoría')
+  deshabilitar(id: number): void {
+    if (!confirm('¿Seguro que deseas deshabilitar esta categoría?')) return;
+    this.apiService.disableCategoriaYProductos(id).subscribe({
+      next: () => { this.toastService.mostrarMensaje('✅ Categoría deshabilitada'); this.loadCategorias(); this.closeCategoryDetail(); },
+      error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar')
     });
   }
 
-  verProductos(nombreCategoria: string) {
-    const nombreFormateado = encodeURIComponent(nombreCategoria);
-    this.router.navigate([`/view/categoria/producto/${nombreFormateado}`]);
+  habilitar(id: number): void {
+    this.apiService.updateCategoria(id, { disabled: false }).subscribe({
+      next: () => { this.toastService.mostrarMensaje('✅ Categoría habilitada'); this.loadCategorias(); this.closeCategoryDetail(); },
+      error: () => this.toastService.mostrarMensaje('❌ Error al habilitar')
+    });
   }
 
-  onCategoriaChange(): void {
-    this.loadMarcasPorCategoria(this.formDataProducts.category);
-    this.formDataProducts.brand = null;
+  verProductos(nombre: string) {
+    this.router.navigate([`/view/categoria/producto/${encodeURIComponent(nombre)}`]);
+  }
+
+  limitarCaracteres() {
+    if (this.formData.description.length > 100)
+      this.formData.description = this.formData.description.slice(0, 100);
+    this.caracteresRestantes = 100 - this.formData.description.length;
   }
 }

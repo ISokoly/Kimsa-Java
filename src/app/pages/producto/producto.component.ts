@@ -23,6 +23,7 @@ import { MarcasComponent } from './forms/marcas/marcas.component';
 import { MatHeaderCellDef, MatTableModule } from "@angular/material/table";
 import { MatIconModule } from '@angular/material/icon';
 import { refreshSelectedProductSimple } from './product-refresh.util';
+import { PageLoadingService } from '../../core/services/page-loading.service';
 
 @Component({
   selector: 'app-producto',
@@ -45,8 +46,7 @@ export class ProductoComponent implements OnInit {
   imagenesCache: Record<number, string> = {};
 
   formData = {
-    name: '', price: 0, category: null as number | null,
-    brand: null as number | null, disabled: false, idImage: null as number | null
+    name: '', price: 0, category: null as number | null, brand: null as number | null, disabled: false, idImage: null as number | null
   };
 
   selectedProducto: Product | null = null;
@@ -104,6 +104,7 @@ export class ProductoComponent implements OnInit {
 
   categoriaId: number | null = null;
   categoriaNombre = '';
+  imgLoaded: Record<number, boolean> = {};
 
   @ViewChild('formProductoTpl') formProductoTpl!: TemplateRef<any>;
   @ViewChild('formOrganizarMarcasTpl') formOrganizarMarcasTpl!: TemplateRef<any>;
@@ -119,7 +120,7 @@ export class ProductoComponent implements OnInit {
   private crearMarcaRef?: OverlayHandle;
   private prodCaractRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog, private featuresSvc: FeatureFilterService, private cd: ChangeDetectorRef) { }
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog, private featuresSvc: FeatureFilterService, private cd: ChangeDetectorRef, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async params => {
@@ -128,6 +129,7 @@ export class ProductoComponent implements OnInit {
       this.categoriaNombre = decodeURIComponent(nombreCategoria);
       await this.loadCategoriaYProductos(this.categoriaNombre);
     });
+    this.pageLoading.start();
   }
 
   private async refreshProductNow(idProduct: number): Promise<void> {
@@ -166,8 +168,10 @@ export class ProductoComponent implements OnInit {
       this.categoriaId = categoria.idCategory;
       await this.loadMarcasPorCategoria(this.categoriaId);
       await this.loadProductosPorCategoria(this.categoriaId);
+      this.pageLoading.stop();
     } catch {
       this.toast.mostrarMensaje('❌ No se encontró la categoría');
+      this.pageLoading.stop();
     }
   }
 
@@ -179,8 +183,10 @@ export class ProductoComponent implements OnInit {
         base: String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim(),
         value: String(pf?.featureValue ?? '').trim()
       })).filter(r => r.base);
+      this.pageLoading.stop();
     } catch {
       this.productFeatureRows = [];
+      this.pageLoading.stop();
     }
   }
 
@@ -199,16 +205,20 @@ export class ProductoComponent implements OnInit {
     );
 
     await this.featuresSvc.buildFeatureTagsForProducts(this.productos);
+    this.pageLoading.stop();
   }
 
   async loadMarcasPorCategoria(idCategory: number): Promise<void> {
     const all = await firstValueFrom(this.api.getMarcas()) as Brand[];
     this.marcas = (all || []).filter(m => Number(m.category ?? (m as any).idCategory) === idCategory);
     this.marcaMap = Object.fromEntries(this.marcas.map(m => [m.idBrand, m.name]));
+    this.pageLoading.stop();
   }
 
   // ======= FILTROS =======
-  private productosPorEstado(): Product[] { return productosPorEstado(this.productos, this.estadoFiltro); }
+  private productosPorEstado(): Product[] {
+    return productosPorEstado(this.productos, this.estadoFiltro); this.pageLoading.stop();
+  }
 
   filtrarProductos(): Product[] {
     let base = this.productosPorEstado();
@@ -278,8 +288,11 @@ export class ProductoComponent implements OnInit {
       const res = await firstValueFrom(this.api.getImagenById(idImage)) as ImageResp;
       const imgId = res.idImage ?? res.id ?? idImage;
       this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
+      this.pageLoading.stop();
+
     } catch {
       this.imagenesCache[idImage] = '/img/no-image.png';
+      this.pageLoading.stop();
     }
   }
 
