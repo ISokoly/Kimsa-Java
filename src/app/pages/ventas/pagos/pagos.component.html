@@ -1,8 +1,10 @@
+@if (!contentReady) {
+} @else {
 @if (!yaPagado) {
 <div class="pagos-container">
   <h1 class="titulo">Registrar Pagos</h1>
 
-  <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form grid gap-4">
+  <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form grid gap-4" autocomplete="off">
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Tipo de Pago</mat-label>
       <mat-select name="paymentType" [(ngModel)]="nuevoPago.paymentType" required>
@@ -15,7 +17,8 @@
 
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Fecha de Pago</mat-label>
-      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" required />
+      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" required
+        autocomplete="off" />
     </mat-form-field>
 
     <button mat-raised-button color="primary" type="submit" [disabled]="!boletaForm.valid">
@@ -33,7 +36,7 @@
       <ng-container matColumnDef="producto">
         <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
         <td mat-cell *matCellDef="let detalle" class="cabecera-izquierda">
-          {{ obtenerNombreProducto((detalle.idProduct) ?? 0) }}
+          {{ obtenerNombreProducto(detalle.idProduct ?? 0) }}
         </td>
       </ng-container>
 
@@ -55,14 +58,6 @@
 
       <tr mat-header-row *matHeaderRowDef="['producto','cantidad','subtotal']"></tr>
       <tr mat-row *matRowDef="let row; columns: ['producto','cantidad','subtotal'];"></tr>
-
-      @if (detallesPedido.length === 0) {
-      <tr class="mat-mdc-row">
-        <td class="mat-mdc-cell celdas-centradas" colspan="3" style="padding:16px;">
-          <em>Sin productos</em>
-        </td>
-      </tr>
-      }
     </table>
 
     <div class="total cabecera-derecha" style="margin-top:.5rem;">
@@ -71,8 +66,7 @@
   </div>
   }
 </div>
-}
-@else {
+} @else {
 <div class="pagos-container">
   <h1 class="titulo">Pago Registrado</h1>
 
@@ -89,7 +83,8 @@
 
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Fecha de Pago</mat-label>
-      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" disabled />
+      <input matInput type="datetime-local" name="paymentDate" [(ngModel)]="nuevoPago.paymentDate" disabled
+        autocomplete="off" />
     </mat-form-field>
 
     <button mat-raised-button color="primary" type="button" disabled>
@@ -105,7 +100,7 @@
       <ng-container matColumnDef="producto">
         <th mat-header-cell *matHeaderCellDef class="cabecera-izquierda">Producto</th>
         <td mat-cell *matCellDef="let detalle" class="cabecera-izquierda">
-          {{ obtenerNombreProducto((detalle.idProduct) ?? 0) }}
+          {{ obtenerNombreProducto(detalle.idProduct ?? 0) }}
         </td>
       </ng-container>
 
@@ -133,4 +128,5 @@
   </div>
   }
 </div>
+}
 }

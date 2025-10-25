@@ -1,14 +1,14 @@
 import {
+  BidiModule
+} from "./chunk-BRGVXSCV.js";
+import {
   _CdkPrivateStyleLoader
 } from "./chunk-M6CEXJ5E.js";
 import {
   Platform,
   coerceElement,
   coerceNumberProperty
-} from "./chunk-7UIXWPLT.js";
-import {
-  BidiModule
-} from "./chunk-BRGVXSCV.js";
+} from "./chunk-I6DXRCPU.js";
 import {
   APP_ID,
   CSP_NONCE,
@@ -66,6 +66,11 @@ import {
 import {
   __spreadValues
 } from "./chunk-WDMUDEB6.js";
+
+// node_modules/@angular/cdk/fesm2022/array.mjs
+function coerceArray(value) {
+  return Array.isArray(value) ? value : [value];
+}
 
 // node_modules/@angular/cdk/fesm2022/keycodes2.mjs
 var BACKSPACE = 8;
@@ -663,11 +668,6 @@ var _VisuallyHiddenLoader = class __VisuallyHiddenLoader {
     }]
   }], null, null);
 })();
-
-// node_modules/@angular/cdk/fesm2022/array.mjs
-function coerceArray(value) {
-  return Array.isArray(value) ? value : [value];
-}
 
 // node_modules/@angular/cdk/fesm2022/breakpoints-observer.mjs
 var mediaQueriesForWebkitCompatibility = /* @__PURE__ */ new Set();
@@ -3119,6 +3119,7 @@ var MatCommonModule = class _MatCommonModule {
 })();
 
 export {
+  coerceArray,
   isFakeMousedownFromScreenReader,
   isFakeTouchstartFromScreenReader,
   BACKSPACE,
@@ -3142,7 +3143,6 @@ export {
   FocusMonitor,
   CdkMonitorFocus,
   _VisuallyHiddenLoader,
-  coerceArray,
   MediaMatcher,
   BreakpointObserver,
   CdkObserveContent,
@@ -3162,4 +3162,4 @@ export {
   MATERIAL_SANITY_CHECKS,
   MatCommonModule
 };
-//# sourceMappingURL=chunk-JGDS6YKF.js.map
+//# sourceMappingURL=chunk-QMM2QTDW.js.map

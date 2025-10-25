@@ -1,4 +1,5 @@
-<div class="descuentos-container">
+@if (!contentReady) {
+} @else {<div class="descuentos-container">
   <h1 class="title">Descuentos</h1>
   <ng-template #formDescuentoTpl>
     <div class="form-modal">
@@ -114,4 +115,4 @@
       Añadir Nuevo Descuento
     </button>
   </div>
-</div>
+</div>}

@@ -1,3 +1,5 @@
+@if (!contentReady) {
+} @else {
 <div class="ventas-container">
   <h1>Estadisticas</h1>
 
@@ -43,7 +45,6 @@
       <h2 class="title">Ganancias Semanales</h2>
 
       <table mat-table [dataSource]="gananciasSemanales" class="mat-elevation-z1 ventas-tabla">
-
         <ng-container matColumnDef="semana">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Semana</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.semana }}</td>
@@ -71,3 +72,4 @@
     </div>
   </div>
 </div>
+}

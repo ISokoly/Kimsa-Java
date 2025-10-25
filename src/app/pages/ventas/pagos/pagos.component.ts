@@ -11,6 +11,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
+import { PageLoadingService } from '../../../core/services/page-loading.service';
+import { firstValueFrom } from 'rxjs';
 
 type Detalle = {
   idDetail?: number;
@@ -28,7 +30,7 @@ type Detalle = {
   styleUrls: ['./pagos.component.scss']
 })
 export class PagosComponent implements OnInit {
-
+  contentReady = false;
   yaPagado = false;
 
   pedidoActual: {
@@ -44,102 +46,127 @@ export class PagosComponent implements OnInit {
   nuevoPago = {
     idOrder: null as number | null,
     amount: 0,
-    paymentType: null as string | null,
-    paymentDate: ''
+    paymentType: null as string | null,   // 'Efectivo' | 'Tarjeta' | 'Transferencia'
+    paymentDate: ''                       // YYYY-MM-DDTHH:mm
   };
 
-  constructor(private api: ApiService, private route: ActivatedRoute, private toast: ToastService) { }
+  constructor(
+    private api: ApiService,
+    private route: ActivatedRoute,
+    private toast: ToastService,
+    private pageLoading: PageLoadingService
+  ) { }
 
-  ngOnInit(): void {
+
+
+  async ngOnInit(): Promise<void> {
+    await this.initLoad();
+  }
+
+  private async initLoad(): Promise<void> {
+    this.contentReady = false;
+    this.pageLoading.start();
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) return;
     const id = +idParam;
-
-    this.cargarProductos();
-    this.cargarPagosHechos(id);
-    this.cargarPedidoExistente(id);
+    try {
+      await Promise.all([
+        this.cargarProductos(),
+        this.cargarPagosHechos(id),
+        this.cargarPedidoExistente(id)
+      ]);
+    } finally {
+      this.contentReady = true;
+      this.pageLoading.stop();
+    }
   }
 
-  /* ==================== Carga ==================== */
-  cargarPedidoExistente(id: number): void {
-    this.api.getSaleById(id).subscribe({
-      next: (sale: any) => {
-        this.pedidoActual = {
-          idOrder: Number(sale?.idOrder ?? sale?.id ?? id),
-          total: Number(sale?.total ?? 0),
-          idTable: sale?.idTable ?? sale?.id_mesa ?? null,
-          idClient: sale?.idClient ?? sale?.id_cliente ?? null
+  /* ==================== Carga (Promesas) ==================== */
+
+  private async cargarPedidoExistente(id: number): Promise<void> {
+    try {
+      const sale: any = await firstValueFrom(this.api.getSaleById(id));
+      this.pedidoActual = {
+        idOrder: Number(sale?.idOrder ?? sale?.id ?? id),
+        total: Number(sale?.total ?? 0),
+        idTable: sale?.idTable ?? sale?.id_mesa ?? null,
+        idClient: sale?.idClient ?? sale?.id_cliente ?? null
+      };
+
+      // Si aún no había pagos cargados, inicializa nuevoPago con los datos del pedido
+      if (!this.yaPagado) {
+        this.nuevoPago = {
+          idOrder: this.pedidoActual.idOrder ?? null,
+          amount: this.pedidoActual.total ?? 0,
+          paymentType: null,
+          paymentDate: this.nowAsDatetimeLocal()
         };
+      }
 
-        if (!this.yaPagado) {
-          this.nuevoPago = {
-            idOrder: this.pedidoActual.idOrder ?? null,
-            amount: this.pedidoActual.total ?? 0,
-            paymentType: null,
-            paymentDate: this.nowAsDatetimeLocal()
-          };
-        }
-
-        const idOrder = this.pedidoActual.idOrder;
-        if (idOrder) this.cargarDetallesPedido(idOrder);
-      },
-      error: () => this.toast.mostrarMensaje('❌ Error al cargar el pedido')
-    });
+      if (this.pedidoActual.idOrder) {
+        await this.cargarDetallesPedido(this.pedidoActual.idOrder);
+      }
+    } catch {
+      this.toast.mostrarMensaje('❌ Error al cargar el pedido');
+    }
   }
 
-  cargarPagosHechos(idOrder: number): void {
-    this.api.getPaymentsByOrderId(idOrder).subscribe({
-      next: (pagos: any[]) => {
-        const list = Array.isArray(pagos) ? pagos : (pagos ? [pagos] : []);
-        if (list.length > 0) {
-          const p = list[0];
+  private async cargarPagosHechos(idOrder: number): Promise<void> {
+    try {
+      const pagos: any[] = await firstValueFrom(this.api.getPaymentsByOrderId(idOrder));
+      const list = Array.isArray(pagos) ? pagos : (pagos ? [pagos] : []);
+      if (list.length > 0) {
+        const p = list[0];
 
-          const rawType = p?.paymentType ?? p?.paymentType;
-          const tipoPago =
-            rawType === 'Cash' ? 'Efectivo' :
-              rawType === 'Card' ? 'Tarjeta' :
-                rawType === 'Transfer' ? 'Transferencia' :
-                  String(rawType ?? 'Efectivo');
+        const rawType = p?.paymentType;
+        const tipoPago =
+          rawType === 'Cash' ? 'Efectivo' :
+            rawType === 'Card' ? 'Tarjeta' :
+              rawType === 'Transfer' ? 'Transferencia' :
+                String(rawType ?? 'Efectivo');
 
-          const amount = Number(p?.amount ?? p?.amount ?? 0);
-          const when = p?.paymentDate ?? p?.paymentDate;
+        const amount = Number(p?.amount ?? 0);
+        const when = p?.paymentDate;
 
-          this.yaPagado = true;
-          this.nuevoPago = {
-            idOrder: Number(p?.idOrder ?? p?.idOrder ?? idOrder),
-            amount: amount,
-            paymentType: tipoPago,
-            paymentDate: this.toDatetimeLocal(when || new Date())
-          };
-        } else {
-          this.yaPagado = false;
-        }
-      },
-      error: () => { this.yaPagado = false; }
-    });
+        this.yaPagado = true;
+        this.nuevoPago = {
+          idOrder: Number(p?.idOrder ?? idOrder),
+          amount,
+          paymentType: tipoPago,
+          paymentDate: this.toDatetimeLocal(when || new Date())
+        };
+      } else {
+        this.yaPagado = false;
+      }
+    } catch {
+      this.yaPagado = false;
+      // No mostramos error aquí para no saturar; el usuario puede no tener pagos previos
+    }
   }
 
-  cargarDetallesPedido(idOrder: number): void {
-    if (!idOrder) return;
-    this.api.getOrderDetailsByOrderId(idOrder).subscribe({
-      next: (res: any) => {
-        const list = Array.isArray(res) ? res : (res ? [res] : []);
-        this.detallesPedido = list as Detalle[];
-      },
-      error: () => { this.detallesPedido = []; }
-    });
+  private async cargarDetallesPedido(idOrder: number): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.api.getOrderDetailsByOrderId(idOrder));
+      const list = Array.isArray(res) ? res : (res ? [res] : []);
+      this.detallesPedido = list as Detalle[];
+    } catch {
+      this.detallesPedido = [];
+      // Detalles pueden fallar sin bloquear la vista
+    }
   }
 
-  cargarProductos(): void {
-    this.api.getProductos().subscribe({
-      next: (resp) => { this.productos = Array.isArray(resp) ? resp : (resp ? [resp] : []); },
-      error: () => this.toast.mostrarMensaje('❌ Error al obtener productos')
-    });
+  private async cargarProductos(): Promise<void> {
+    try {
+      const resp = await firstValueFrom(this.api.getProductos());
+      this.productos = Array.isArray(resp) ? resp : (resp ? [resp] : []);
+    } catch {
+      this.productos = [];
+      this.toast.mostrarMensaje('❌ Error al obtener productos');
+    }
   }
 
   /* ==================== Guardar pago ==================== */
   registrarPago(): void {
-    // Validar campos mínimos antes de enviar
     if (!this.pedidoActual.idOrder || !this.nuevoPago.paymentType || !this.nuevoPago.paymentDate) {
       this.toast.mostrarMensaje('⚠️ Complete tipo y fecha de pago.');
       return;
@@ -157,22 +184,28 @@ export class PagosComponent implements OnInit {
       paymentDate: this.nuevoPago.paymentDate ? new Date(this.nuevoPago.paymentDate) : new Date()
     };
 
+    // Opcional: mostrar spinner corto al guardar
+    const flicker = setTimeout(() => this.pageLoading.start(), 120);
+
     this.api.createPayment(payload).subscribe({
       next: () => {
         this.toast.mostrarMensaje('✅ Pago registrado correctamente');
         const updatePayload = { status: 'Confirmed' };
         this.api.updateSale(this.pedidoActual.idOrder!, updatePayload).subscribe({
-          next: () => {
-            this.cargarPagosHechos(this.pedidoActual.idOrder!);
-            this.cargarPedidoExistente(this.pedidoActual.idOrder!);
+          next: async () => {
+            await this.cargarPagosHechos(this.pedidoActual.idOrder!);
+            await this.cargarPedidoExistente(this.pedidoActual.idOrder!);
           },
           error: (err) => {
             console.error(err);
             this.toast.mostrarMensaje('⚠️ Pago guardado, pero no se pudo confirmar el pedido.');
-          }
+          },
+          complete: () => { clearTimeout(flicker); this.pageLoading.stop(); }
         });
       },
       error: (error) => {
+        clearTimeout(flicker);
+        this.pageLoading.stop();
         this.toast.mostrarMensaje('❌ Error al registrar el pago');
         console.error(error);
       }
@@ -199,6 +232,7 @@ export class PagosComponent implements OnInit {
     const tzOffset = d.getTimezoneOffset();
     const local = new Date(d.getTime() - tzOffset * 60000);
     return local.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+    // Nota: si necesitas TZ específica (p.ej. Lima), podrías formatear con Intl y construir el string.
   }
 
   formatNumber(value: number | null | undefined, decimals: number = 2): string {

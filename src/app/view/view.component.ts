@@ -1,18 +1,22 @@
 // view.component.ts
-import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterOutlet, NavigationStart } from '@angular/router';
+import { Component, computed, inject, signal, OnDestroy, AfterViewInit, OnInit } from '@angular/core';
+import { Router, RouterOutlet, NavigationStart, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { ApiService } from '../core/services/api.service';
 import { CommonModule } from '@angular/common';
-import { ToastService } from '../core/services/toast.service';
 import { FormsModule } from '@angular/forms';
-import { MenuComponent } from "../components/menu/menu.component";
+import { MatDialog } from '@angular/material/dialog';
+
+import { ApiService } from '../core/services/api.service';
+import { ToastService } from '../core/services/toast.service';
+import { MenuComponent } from '../components/menu/menu.component';
 import { PageLoadingService } from '../core/services/page-loading.service';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
+
+import { Subject } from 'rxjs';
+import { filter, map, startWith, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-view',
@@ -24,67 +28,91 @@ import { MatDialog } from '@angular/material/dialog';
   templateUrl: './view.component.html',
   styleUrl: './view.component.scss'
 })
-export class ViewComponent {
+export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioNombre = '';
   usuarioRol = '';
   collapsed = signal(false);
   estaSeleccionado = false;
-  ready = false;
   static estaSeleccionado: boolean;
+  ready = false;
   isLoading = false;
 
   sidenavWidth = computed(() => (this.collapsed() ? '65px' : '250px'));
   isUsuariosPage = false;
   isEntering = false;
 
+  private router = inject(Router);
+  private apiService = inject(ApiService);
+  private toastService = inject(ToastService);
+  private dialog = inject(MatDialog);
   public pageLoading = inject(PageLoadingService);
+
+  private destroy$ = new Subject<void>();
 
   get usuarioAutenticado() {
     return this.apiService.usuarioAutenticado;
   }
 
-  constructor(private router: Router, private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog) {
-    this.router.events.subscribe(event => {
-      if (event instanceof NavigationStart) {
-        this.pageLoading.start();
-
-        if (!event.url.startsWith('/view/usuarios')) {
-          this.estaSeleccionado = false;
-        }
-      }
-    });
+  constructor() {
     const saved = localStorage.getItem('collapsed');
     if (saved != null) this.collapsed.set(saved === 'true');
   }
 
-  ngAfterViewInit() {
-    setTimeout(() => (this.ready = true));
-  }
-
-  ngOnInit() {
+  ngOnInit(): void {
     const usuario = this.apiService.usuarioAutenticado;
     if (usuario) {
       this.usuarioNombre = `${usuario.name} ${usuario.lastName}`;
       this.usuarioRol = usuario.rol;
     }
-    this.router.events.subscribe(e => {
-      if (e instanceof NavigationStart) {
+    this.router.events
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(e => e instanceof NavigationStart)
+      )
+      .subscribe((e: any) => {
         this.pageLoading.start();
-      }
-    });
-
-    this.pageLoading.loading$.subscribe(loading => {
-      if (!loading) {
-        this.isEntering = false;
-        requestAnimationFrame(() => {
-          this.isEntering = true;
-          setTimeout(() => (this.isEntering = false), 260); // 250ms + margen
-        });
-      }
-    });
+        if (!e.url.startsWith('/view/usuarios')) this.estaSeleccionado = false;
+      });
+    this.router.events
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(e => e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError),
+        map(() => this.router.url),
+        startWith(this.router.url)
+      )
+      .subscribe(url => {
+        this.isUsuariosPage = url.startsWith('/view/usuarios');
+      });
+    this.pageLoading.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(loading => {
+        if (!loading) {
+          this.isEntering = false;
+          requestAnimationFrame(() => {
+            this.isEntering = true;
+            setTimeout(() => (this.isEntering = false), 260);
+          });
+        }
+      });
   }
 
-  cambiarRol(nuevoRol: string) {
+  ngAfterViewInit(): void {
+    setTimeout(() => (this.ready = true));
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // === acciones UI ===
+  toggleCollapse(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    localStorage.setItem('collapsed', String(next));
+  }
+
+  cambiarRol(nuevoRol: string): void {
     const usuario = this.apiService.usuarioAutenticado;
     if (!usuario) return;
 
@@ -93,18 +121,12 @@ export class ViewComponent {
       maxWidth: '95vw',
       panelClass: 'custom-confirm-dialog',
       disableClose: true,
-      data: {
-        title: 'Cambiar de rol',
-        message: `¿Seguro que deseas cambiar el rol a ${nuevoRol}?`
-      }
+      data: { title: 'Cambiar de rol', message: `¿Seguro que deseas cambiar el rol a ${nuevoRol}?` }
     });
 
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
-      const usuarioActual = this.apiService.getUsuarioActual();
-      const idActual = usuarioActual?.idUser ?? usuarioActual?.id;
       this.isLoading = true;
-
       this.apiService.updateUsuario(usuario.idUser || usuario.id_user, { rol: nuevoRol }).subscribe({
         next: () => {
           this.toastService.mostrarMensaje(`✅ Rol cambiado a ${nuevoRol}`);

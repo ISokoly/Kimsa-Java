@@ -1,6 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
+import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -9,6 +9,8 @@ import { MatOptionModule } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
+
+import { forkJoin } from 'rxjs';
 
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -43,13 +45,17 @@ export interface Discount {
   styleUrls: ['./descuentos.component.scss'],
 })
 export class DescuentosComponent implements OnInit {
-  /* ==================== PROPIEDADES ==================== */
+
+  contentReady = false;
+
   descuentos: Discount[] = [];
   productos: any[] = [];
   productosFiltrados: any[] = [];
   productoSeleccionado: any = null;
 
-  descuento: Discount = { idDiscount: null, idProduct: null, percentage: null, disabled: false, typeDay: '', nombreProducto: '' };
+  descuento: Discount = {
+    idDiscount: null, idProduct: null, percentage: null, disabled: false, typeDay: '', nombreProducto: ''
+  };
 
   diasSemana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
   editando = false;
@@ -60,27 +66,75 @@ export class DescuentosComponent implements OnInit {
   private overlay = inject(OverlayPortalService);
   private formRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
+  constructor(
+    private api: ApiService,
+    private toastService: ToastService,
+    private pageLoading: PageLoadingService
+  ) { }
 
+  /* ==================== CICLO DE VIDA ==================== */
   ngOnInit() {
-    this.pageLoading.start();
-    this.cargarProductos(() => this.obtenerDescuentos());
+    this.initLoad();
   }
 
-  /* ==================== CARGA DE DATOS ==================== */
-  obtenerDescuentos() {
-    this.api.getDescuentos().subscribe(res => {
-      this.descuentos = res;
-      this.pageLoading.stop();
+  private initLoad(): void {
+    this.contentReady = false;
+    this.pageLoading.start();
+
+    forkJoin({
+      productos: this.api.getProductos(),
+      descuentos: this.api.getDescuentos()
+    }).subscribe({
+      next: ({ productos, descuentos }) => {
+        const arrProd = Array.isArray(productos) ? productos : (productos ? [productos] : []);
+        this.productos = arrProd;
+        this.productosFiltrados = arrProd.filter(p => !p?.disabled);
+
+        // Enriquecer descuentos con el nombre del producto
+        const mapIdToName: Record<number, string> = Object.fromEntries(
+          (arrProd || []).map(p => [Number(p.idProduct), String(p.name ?? '')])
+        );
+
+        this.descuentos = (descuentos || []).map((d: any) => ({
+          idDiscount: Number(d.idDiscount ?? d.id ?? null),
+          idProduct: Number(d.idProduct ?? null),
+          percentage: d.percentage != null ? Number(d.percentage) : null,
+          disabled: !!d.disabled,
+          typeDay: String(d.typeDay ?? ''),
+          nombreProducto: mapIdToName[Number(d.idProduct ?? -1)] ?? ''
+        }));
+
+        this.contentReady = true;
+        this.pageLoading.stop();
+      },
+      error: () => {
+        this.productos = [];
+        this.productosFiltrados = [];
+        this.descuentos = [];
+        this.contentReady = true;
+        this.pageLoading.stop();
+        this.toastService.mostrarMensaje('❌ Error al cargar descuentos');
+      }
     });
   }
 
-  cargarProductos(done?: () => void) {
-    this.api.getProductos().subscribe(res => {
-      this.productos = res || [];
-      this.productosFiltrados = this.productos.filter(p => !p.disabled);
-      done?.();
-      this.pageLoading.stop();
+  /* ==================== REFRESCOS PARCIALES ==================== */
+  private refrescarDescuentos(): void {
+    this.api.getDescuentos().subscribe({
+      next: (res) => {
+        const mapIdToName: Record<number, string> = Object.fromEntries(
+          (this.productos || []).map(p => [Number(p.idProduct), String(p.name ?? '')])
+        );
+        this.descuentos = (res || []).map((d: any) => ({
+          idDiscount: Number(d.idDiscount ?? d.id ?? null),
+          idProduct: Number(d.idProduct ?? null),
+          percentage: d.percentage != null ? Number(d.percentage) : null,
+          disabled: !!d.disabled,
+          typeDay: String(d.typeDay ?? ''),
+          nombreProducto: mapIdToName[Number(d.idProduct ?? -1)] ?? ''
+        }));
+      },
+      error: () => this.toastService.mostrarMensaje('❌ Error al refrescar descuentos')
     });
   }
 
@@ -124,7 +178,7 @@ export class DescuentosComponent implements OnInit {
 
     this.productosFiltrados = (this.productos || [])
       .filter(p => !p.disabled)
-      .filter(p => p.name?.toLowerCase().includes(termino));
+      .filter(p => (p.name ?? '').toLowerCase().includes(termino));
   }
 
   seleccionarProducto(producto: any) {
@@ -140,20 +194,35 @@ export class DescuentosComponent implements OnInit {
       this.toastService.mostrarMensaje('⚠️ Complete todos los campos.');
       return;
     }
+    const pct = Number(this.descuento.percentage);
+    if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+      this.toastService.mostrarMensaje('⚠️ El porcentaje debe estar entre 0 y 100.');
+      return;
+    }
+
     const data = {
       idProduct: this.descuento.idProduct,
-      percentage: this.descuento.percentage,
+      percentage: pct,
       disabled: this.descuento.disabled,
       typeDay: this.descuento.typeDay
     };
+
     const after = () => {
-      this.obtenerDescuentos();
+      this.refrescarDescuentos();
       this.cancelarEdicion();
+      this.toastService.mostrarMensaje(this.editando ? '✅ Descuento actualizado' : '✅ Descuento creado');
     };
+
     if (this.editando && this.descuento.idDiscount !== null) {
-      this.api.updateDescuento(this.descuento.idDiscount, data).subscribe(after);
+      this.api.updateDescuento(this.descuento.idDiscount, data).subscribe({
+        next: after,
+        error: () => this.toastService.mostrarMensaje('❌ Error al actualizar descuento')
+      });
     } else {
-      this.api.createDescuento(data).subscribe(after);
+      this.api.createDescuento(data).subscribe({
+        next: after,
+        error: () => this.toastService.mostrarMensaje('❌ Error al crear descuento')
+      });
     }
   }
 
@@ -167,7 +236,10 @@ export class DescuentosComponent implements OnInit {
       disabled: true,
       typeDay: desc.typeDay
     };
-    this.api.updateDescuento(idDiscount, data).subscribe(() => this.obtenerDescuentos());
+    this.api.updateDescuento(idDiscount, data).subscribe({
+      next: () => this.refrescarDescuentos(),
+      error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar descuento')
+    });
   }
 
   habilitarDescuento(idDiscount: number) {
@@ -179,7 +251,10 @@ export class DescuentosComponent implements OnInit {
       disabled: false,
       typeDay: desc.typeDay
     };
-    this.api.updateDescuento(idDiscount, data).subscribe(() => this.obtenerDescuentos());
+    this.api.updateDescuento(idDiscount, data).subscribe({
+      next: () => this.refrescarDescuentos(),
+      error: () => this.toastService.mostrarMensaje('❌ Error al habilitar descuento')
+    });
   }
 
   obtenerNombreProducto(idProduct: number): string {

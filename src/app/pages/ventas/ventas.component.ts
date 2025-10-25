@@ -14,6 +14,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerInputEvent } from '@angular/material/datepicker';
+import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
 import { PageLoadingService } from '../../core/services/page-loading.service';
@@ -59,8 +60,7 @@ interface ProductLite { idProduct: number; name: string; }
   styleUrls: ['./ventas.component.scss']
 })
 export class VentasComponent implements OnInit {
-
-  /* === Estado UI === */
+  contentReady = false;
   displayedColumns: string[] = ['number', 'producto', 'hora', 'estado', 'ganancia', 'opciones'];
 
   sales: Order[] = [];
@@ -91,102 +91,123 @@ export class VentasComponent implements OnInit {
 
   constructor(private api: ApiService, private router: Router, private pageLoading: PageLoadingService) { }
 
-  ngOnInit(): void {
-    this.pageLoading.start();
-    this.loadProducts();
-    this.loadSales();
+  async ngOnInit(): Promise<void> {
+    await this.initLoad();
   }
 
-  /* === Carga de datos === */
-  loadSales(): void {
+  private async initLoad(): Promise<void> {
+    this.contentReady = false;
+    this.pageLoading.start();
+    try {
+      await Promise.all([
+        this.loadProducts(),
+        this.loadSales()
+      ]);
+    } finally {
+      this.contentReady = true;
+      this.pageLoading.stop();
+    }
+  }
+
+  /* === Carga de datos (async, sin parpadeo) === */
+  private async loadSales(): Promise<void> {
     const targetIso = this.toIsoYYYYMMDD(this.fechaSeleccionada);
 
-    this.api.getSales().subscribe({
-      next: (raw: any[]) => {
-        const base: Order[] = (raw || []).map(v => ({
-          idOrder: Number(v.idOrder ?? v.id),
-          status: String(v.status ?? 'Pending') as OrderStatus,
-          total: Number(v.total ?? 0),
-          orderDate: String(v.orderDate ?? v.fecha_pedido ?? targetIso).slice(0, 10),
-          orderTime: String(v.orderTime ?? v.hora_pedido ?? '00:00:00'),
-          details: []
-        }));
+    try {
+      const raw = await firstValueFrom(this.api.getSales()) as any[];
+      const base: Order[] = (raw || []).map(v => ({
+        idOrder: Number(v.idOrder ?? v.id),
+        status: String(v.status ?? 'Pending') as OrderStatus,
+        total: Number(v.total ?? 0),
+        orderDate: String(v.orderDate ?? v.fecha_pedido ?? targetIso).slice(0, 10),
+        orderTime: String(v.orderTime ?? v.hora_pedido ?? '00:00:00'),
+        details: []
+      }));
 
-        this.sales = base
-          .filter(v => v.orderDate === targetIso)
-          .sort((a, b) => this.localMillis(b.orderDate, b.orderTime) - this.localMillis(a.orderDate, a.orderTime));
+      this.sales = base
+        .filter(v => v.orderDate === targetIso)
+        .sort((a, b) => this.localMillis(b.orderDate, b.orderTime) - this.localMillis(a.orderDate, a.orderTime));
+      await Promise.all(this.sales.map(async sale => {
+        try {
+          const [details, payments] = await Promise.allSettled([
+            firstValueFrom(this.api.getOrderDetailsByOrderId(sale.idOrder)),
+            firstValueFrom(this.api.getPaymentsByOrderId(sale.idOrder))
+          ]);
 
-        this.sales.forEach(sale => {
-          this.api.getOrderDetailsByOrderId(sale.idOrder).subscribe({
-            next: (details: any[]) => {
-              sale.details = (details || []).map(d => ({
-                idDetail: Number(d.idDetail ?? d.id_detalle ?? 0),
-                idOrder: Number(d.idOrder ?? d.id_pedido ?? sale.idOrder),
-                idProduct: Number(d.idProduct ?? d.id_producto ?? 0),
-                quantity: Number(d.quantity ?? d.cantidad ?? 0),
-                subtotal: Number(d.subtotal ?? 0)
-              }));
-              this.applyFilters();
-            },
-            error: () => { sale.details = []; this.applyFilters(); }
-          });
+          if (details.status === 'fulfilled') {
+            const det = (details.value || []) as any[];
+            sale.details = det.map(d => ({
+              idDetail: Number(d.idDetail ?? d.id_detalle ?? 0),
+              idOrder: Number(d.idOrder ?? d.id_pedido ?? sale.idOrder),
+              idProduct: Number(d.idProduct ?? d.id_producto ?? 0),
+              quantity: Number(d.quantity ?? d.cantidad ?? 0),
+              subtotal: Number(d.subtotal ?? 0)
+            }));
+          } else {
+            sale.details = [];
+          }
 
-          this.api.getPaymentsByOrderId(sale.idOrder).subscribe({
-            next: (p: any[]) => { sale.alreadyPaid = !!p && p.length > 0; this.applyFilters(); },
-            error: () => { sale.alreadyPaid = false; this.applyFilters(); }
-          });
-        });
+          if (payments.status === 'fulfilled') {
+            const p = payments.value as any[];
+            sale.alreadyPaid = !!p && p.length > 0;
+          } else {
+            sale.alreadyPaid = false;
+          }
+        } catch {
+          sale.details = [];
+          sale.alreadyPaid = false;
+        }
+      }));
 
-        this.pageIndex = 0;
-        this.applyFilters();
-        this.pageLoading.stop();
-      },
-      error: () => {
-        this.sales = []; this.applyFilters();
-        this.pageLoading.stop();
-      }
-    });
+      this.pageIndex = 0;
+      this.applyFilters();
+    } catch {
+      this.sales = [];
+      this.applyFilters();
+    }
   }
 
-  loadProducts(): void {
-    this.api.getProductos().subscribe({
-      next: (resp: any[]) => {
-        const arr = Array.isArray(resp) ? resp : (resp ? [resp] : []);
-        const enabled: ProductLite[] = [];
-        this.productNameById = {};
+  private async loadProducts(): Promise<void> {
+    try {
+      const resp = await firstValueFrom(this.api.getProductos()) as any[];
+      const arr = Array.isArray(resp) ? resp : (resp ? [resp] : []);
+      const enabled: ProductLite[] = [];
+      this.productNameById = {};
 
-        arr.forEach(raw => {
-          const id = Number(raw?.idProduct ?? raw?.id ?? raw?.idProduct);
-          const name = String(raw?.name ?? raw?.nombre ?? '');
-          const disabled = !!raw?.disabled;
+      arr.forEach(raw => {
+        const id = Number(raw?.idProduct ?? raw?.id ?? raw?.idProduct);
+        const name = String(raw?.name ?? raw?.nombre ?? '');
+        const disabled = !!raw?.disabled;
 
-          if (id) this.productNameById[id] = name;
-          if (!disabled && id && name) enabled.push({ idProduct: id, name });
-        });
+        if (id) this.productNameById[id] = name;
+        if (!disabled && id && name) enabled.push({ idProduct: id, name });
+      });
 
-        this.products = enabled;
-        this.recomputeSuggestions();
-        this.pageLoading.stop();
-      },
-      error: () => {
-        this.products = [];
-        this.productNameById = {};
-        this.recomputeSuggestions();
-        this.pageLoading.stop();
-      }
-    });
+      this.products = enabled;
+      this.recomputeSuggestions();
+    } catch {
+      this.products = [];
+      this.productNameById = {};
+      this.recomputeSuggestions();
+    }
   }
 
-  /* === Filtros & paginación === */
   onStatusChange(): void {
     this.pageIndex = 0;
     this.applyFilters();
   }
 
-  onDateChange(ev: MatDatepickerInputEvent<Date>): void {
+  async onDateChange(ev: MatDatepickerInputEvent<Date>): Promise<void> {
     this.fechaSeleccionada = ev.value ?? new Date();
     this.pageIndex = 0;
-    this.loadSales();
+    this.contentReady = false;
+    this.pageLoading.start();
+    try {
+      await this.loadSales();
+    } finally {
+      this.contentReady = true;
+      this.pageLoading.stop();
+    }
   }
 
   onProductFilterInput(val: any): void {
@@ -229,7 +250,7 @@ export class VentasComponent implements OnInit {
   goToPage(i: number): void {
     if (i < 0 || i >= this.totalPages) return;
     this.pageIndex = i;
-    this.sliceToPage(); // 👈 actualizar visibleSales
+    this.sliceToPage();
   }
   nextPage(): void { this.goToPage(this.pageIndex + 1); }
   prevPage(): void { this.goToPage(this.pageIndex - 1); }
@@ -248,7 +269,6 @@ export class VentasComponent implements OnInit {
 
     this.filteredSales = arr;
 
-    // Si al filtrar la página actual queda fuera de rango, ajusta
     if (this.pageIndex >= this.totalPages) this.pageIndex = Math.max(0, this.totalPages - 1);
     this.sliceToPage();
   }

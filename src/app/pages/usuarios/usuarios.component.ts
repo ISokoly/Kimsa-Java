@@ -1,18 +1,19 @@
 import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { ApiService } from '../../core/services/api.service';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ViewComponent } from '../../view/view.component';
-import { ToastService } from '../../core/services/toast.service';
 
 import { MatInputModule } from '@angular/material/input';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from "@angular/material/card";
-import { MatListModule } from "@angular/material/list";
+import { MatCardModule } from '@angular/material/card';
+import { MatListModule } from '@angular/material/list';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatDialog } from '@angular/material/dialog';
+
+import { ApiService } from '../../core/services/api.service';
+import { ToastService } from '../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../core/services/overlay-portal.service';
 import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
 import { PageLoadingService } from '../../core/services/page-loading.service';
 
 @Component({
@@ -25,13 +26,15 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
     MatButtonModule,
     MatCardModule,
     MatListModule,
+    MatDividerModule, // ← se usa <mat-divider> en el template
   ],
   templateUrl: './usuarios.component.html',
   styleUrls: ['./usuarios.component.scss']
 })
 export class UsuariosComponent implements OnInit {
+  contentReady = false;
 
-  /* ==================== DATOS ==================== */
+  // ===== Datos =====
   usuario: any;
   empleados: any[] = [];
   administradores: any[] = [];
@@ -49,56 +52,65 @@ export class UsuariosComponent implements OnInit {
   @ViewChild('formPasswordTpl') formPasswordTpl!: TemplateRef<any>;
 
   private overlay = inject(OverlayPortalService);
-
   private userFormRef?: OverlayHandle;
   private passFormRef?: OverlayHandle;
-  /* ==================== CONSTRUCTOR ==================== */
-  constructor(private apiService: ApiService, private router: Router, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
 
-  /* ==================== CICLO DE VIDA ==================== */
+  constructor(
+    private apiService: ApiService,
+    private router: Router,
+    private toastService: ToastService,
+    private dialog: MatDialog,
+    private pageLoading: PageLoadingService
+  ) {}
+
+  // ===== Ciclo de vida =====
   ngOnInit(): void {
+    // ÚNICO ciclo de carga para evitar parpadeos
+    this.contentReady = false;
     this.pageLoading.start();
-    this.refrescarDatos();
-  }
 
-  /* ==================== CARGA DE DATOS ==================== */
-  refrescarDatos(): void {
+    // obtenerUsuario es síncrono (lee del storage/session),
+    // no hace llamadas HTTP, así que no encadena más cargas.
     this.obtenerUsuario();
+
+    this.contentReady = true;
     this.pageLoading.stop();
   }
 
-  obtenerUsuario(): void {
-    const usuario = this.apiService.getUsuarioActual();
-    if (!usuario) {
+  // ===== Carga de datos =====
+  private obtenerUsuario(): void {
+    const u = this.apiService.getUsuarioActual();
+    if (!u) {
       this.toastService.mostrarMensaje('❌ No se encontró un usuario autenticado');
-      this.pageLoading.stop();
+      this.usuario = null;
       return;
     }
-    this.usuario = usuario;
-    this.pageLoading.stop();
+    this.usuario = u;
   }
 
-  /* ==================== NAVEGACIÓN ==================== */
-  verOtros() { this.router.navigate(['/view/usuarios/otros']); ViewComponent.estaSeleccionado = true; }
-  verMesas() { this.router.navigate(['/view/usuarios/mesas']); ViewComponent.estaSeleccionado = true; }
-  verClientes() { this.router.navigate(['/view/usuarios/clientes']); ViewComponent.estaSeleccionado = true; }
-  verDescuentos() { this.router.navigate(['/view/usuarios/descuentos']); ViewComponent.estaSeleccionado = true; }
+  // ===== Navegación =====
+  verOtros()      { this.router.navigate(['/view/usuarios/otros']); }
+  verMesas()      { this.router.navigate(['/view/usuarios/mesas']); }
+  verClientes()   { this.router.navigate(['/view/usuarios/clientes']); }
+  verDescuentos() { this.router.navigate(['/view/usuarios/descuentos']); }
 
-  /* ==================== FORMULARIO ==================== */
+  // ===== Formularios (overlay) =====
   abrirFormulario(usuario: any): void {
     this.userSeleccionado = { ...usuario };
     this.Empleado = { ...usuario, password: '' };
+    this.userFormRef?.close();
     this.userFormRef = this.overlay.open(this.formUsuarioTpl);
   }
 
   cerrarFormulario(): void {
-    this.userFormRef?.close();      // 👈 cierra SOLO el de usuario
+    this.userFormRef?.close();
     this.userFormRef = undefined;
     this.userSeleccionado = null;
     this.resetEmpleado();
   }
 
   abrirCambiarContrasena(): void {
+    this.passFormRef?.close();
     this.passFormRef = this.overlay.open(this.formPasswordTpl);
   }
 
@@ -117,7 +129,7 @@ export class UsuariosComponent implements OnInit {
     };
   }
 
-  /* ==================== GUARDAR USUARIO ==================== */
+  // ===== Guardar usuario =====
   guardarEmpleado(): void {
     if (!this.userSeleccionado) {
       this.toastService.mostrarMensaje('❌ Solo se puede actualizar usuarios existentes');
@@ -125,14 +137,16 @@ export class UsuariosComponent implements OnInit {
     }
 
     if (!/^\d{8}$/.test(this.Empleado.dni || '')) {
-      return this.toastService.mostrarMensaje('❌ El DNI debe tener 8 números');
+      this.toastService.mostrarMensaje('❌ El DNI debe tener 8 números');
+      return;
     }
     if (!/^\d{9}$/.test(this.Empleado.numberPhone || '')) {
-      return this.toastService.mostrarMensaje('❌ El teléfono debe tener 9 números');
+      this.toastService.mostrarMensaje('❌ El teléfono debe tener 9 números');
+      return;
     }
 
     const id = this.userSeleccionado.idUser;
-    const usuarioBackend: any = {
+    const body: any = {
       username: this.Empleado.username,
       name: this.Empleado.name,
       lastName: this.Empleado.lastName,
@@ -142,14 +156,13 @@ export class UsuariosComponent implements OnInit {
       rol: this.Empleado.rol,
       disabled: this.Empleado.disabled
     };
-
-    if (this.Empleado.password) usuarioBackend.password = this.Empleado.password;
+    if (this.Empleado.password) body.password = this.Empleado.password;
 
     this.isLoading = true;
-    this.apiService.updateUsuario(id, usuarioBackend).subscribe({
+    this.apiService.updateUsuario(id, body).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario actualizado correctamente');
-        this.refrescarDatos();
+        this.obtenerUsuario(); // refresca datos en memoria sin tocar contentReady
         this.cerrarFormulario();
         this.isLoading = false;
       },
@@ -160,26 +173,19 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  /* ==================== DESHABILITAR USUARIO ==================== */
+  // ===== Habilitar/Deshabilitar =====
   deshabilitarUsuario(id: number | undefined): void {
-    if (!id) {
-      console.error('ID inválido al intentar deshabilitar:', id);
-      return;
-    }
+    if (!id) return;
 
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '420px',
-      maxWidth: '95vw',
-      panelClass: 'custom-confirm-dialog',
+      width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog',
       disableClose: true,
-      data: {
-        title: 'Deshabilitar usuario',
-        message: '¿Seguro que deseas deshabilitar tu usuario?'
-      }
+      data: { title: 'Deshabilitar usuario', message: '¿Seguro que deseas deshabilitar tu usuario?' }
     });
 
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
+
       const usuarioActual = this.apiService.getUsuarioActual();
       const idActual = usuarioActual?.idUser ?? usuarioActual?.id;
       this.isLoading = true;
@@ -191,7 +197,7 @@ export class UsuariosComponent implements OnInit {
             setTimeout(() => this.logout(), 1500);
           } else {
             this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
-            this.refrescarDatos();
+            this.obtenerUsuario();
             this.isLoading = false;
           }
         },
@@ -202,19 +208,22 @@ export class UsuariosComponent implements OnInit {
       });
     });
   }
-  /* ==================== CONTRASEÑA ==================== */
+
+  // ===== Contraseña =====
   guardarNuevaContrasena(): void {
     if (!this.userSeleccionado) {
-      return this.toastService.mostrarMensaje('❌ Debe seleccionar un usuario primero');
+      this.toastService.mostrarMensaje('❌ Debe seleccionar un usuario primero');
+      return;
     }
     if (!this.Empleado.passwordActual || !this.Empleado.nuevaPassword) {
-      return this.toastService.mostrarMensaje('❌ Debe ingresar ambas contraseñas');
+      this.toastService.mostrarMensaje('❌ Debe ingresar ambas contraseñas');
+      return;
     }
 
     const id = this.userSeleccionado.idUser;
     const payload = { actual: this.Empleado.passwordActual, nueva: this.Empleado.nuevaPassword };
-    this.isLoading = true;
 
+    this.isLoading = true;
     this.apiService.cambiarPassword(id, payload).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Contraseña actualizada correctamente');
@@ -231,10 +240,10 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  /* ==================== UTILIDADES ==================== */
+  // ===== Util =====
   soloNumeros(event: KeyboardEvent): void {
-    const charCode = event.which ? event.which : event.keyCode;
-    if (charCode < 48 || charCode > 57) event.preventDefault();
+    const code = event.which ? event.which : (event as any).keyCode;
+    if (code < 48 || code > 57) event.preventDefault();
   }
 
   logout(): void {

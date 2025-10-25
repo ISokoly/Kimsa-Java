@@ -1,18 +1,20 @@
-<div [class.no-anim]="!ready" [class.anim]="ready">
+<div [class.no-anim]="!ready" [class.anim]="ready" [attr.aria-busy]="(pageLoading.loading$ | async) ? 'true' : 'false'">
   <mat-toolbar>
-    <button mat-icon-button (click)="collapsed.set(!collapsed())">
+    <button mat-icon-button (click)="toggleCollapse()" [disabled]="isLoading">
       <mat-icon>menu</mat-icon>
     </button>
 
     <span class="example-spacer"></span>
 
-    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': estaSeleccionado }" (click)="irAUsuarios()">
+    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': estaSeleccionado }" (click)="irAUsuarios()"
+      [disabled]="isLoading" aria-label="Ir a perfil de usuario">
       <mat-icon>account_circle</mat-icon>
-      Bienvenido: {{ usuarioNombre }}
+      Bienvenido: {{ usuarioNombre || '—' }}
     </button>
 
     @if (usuarioAutenticado?.administratorPermissions) {
-    <select class="rol-select" [(ngModel)]="usuarioRol" (ngModelChange)="cambiarRol($event)">
+    <select class="rol-select" [(ngModel)]="usuarioRol" (ngModelChange)="cambiarRol($event)" [disabled]="isLoading"
+      aria-label="Cambiar rol">
       <option value="Administrator">Administrador</option>
       <option value="Employee">Empleado</option>
     </select>
@@ -20,25 +22,26 @@
 
     <span class="example-spacer"></span>
 
-    <button mat-icon-button (click)="logout()">
+    <button mat-icon-button (click)="logout()" [disabled]="isLoading" aria-label="Cerrar sesión">
       <mat-icon>logout</mat-icon>
     </button>
   </mat-toolbar>
 
   <mat-sidenav-container>
-    <mat-sidenav opened mode="side" [style.width]="sidenavWidth()">
+    <mat-sidenav [opened]="true" mode="side" [style.width]="sidenavWidth()">
       <app-menu [collapsed]="collapsed()" />
     </mat-sidenav>
 
     <mat-sidenav-content class="content view-content" [style.margin-left]="sidenavWidth()">
       <div class="route-shell" [class.fade-in]="isEntering">
-        <router-outlet />
+        <router-outlet></router-outlet>
       </div>
     </mat-sidenav-content>
   </mat-sidenav-container>
+
   @if (pageLoading.loading$ | async) {
   <div class="page-spinner">
-    <div class="spinner"></div>
+    <div class="spinner" role="progressbar" aria-label="Cargando página"></div>
   </div>
   }
 </div>

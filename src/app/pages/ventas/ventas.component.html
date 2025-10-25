@@ -1,4 +1,7 @@
-<div class="ventas-container">
+@if (!contentReady) {
+
+} @else {
+<div class="ventas-container route-shell fade-in">
   <h1 class="title">Ventas</h1>
 
   <div class="filtros-row">
@@ -34,7 +37,6 @@
         <mat-option [value]="p">{{ p }}</mat-option>
         }
       </mat-autocomplete>
-
     </mat-form-field>
 
     <div class="boton-limpiar">
@@ -156,3 +158,4 @@
     </div>
   </div>
 </div>
+}

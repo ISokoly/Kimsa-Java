@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+
 import { ApiService } from '../../core/services/api.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -26,7 +28,8 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
     MatInputModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatTableModule
+    MatTableModule,
+    DecimalPipe
   ],
   templateUrl: './estadisticas.component.html',
   styleUrls: ['./estadisticas.component.scss']
@@ -49,40 +52,74 @@ export class EstadisticasComponent implements OnInit {
   productosCargados = false;
   fechaSeleccionada: Date = new Date();
 
-  constructor(private apiService: ApiService, private router: Router, private pageLoading: PageLoadingService) { }
+  // Control de UI / loader
+  contentReady = false;
+  private pendingLoads = 0;
+  private started = false;
+
+  constructor(
+    private apiService: ApiService,
+    private router: Router,
+    private pageLoading: PageLoadingService
+  ) { }
 
   ngOnInit(): void {
-    this.pageLoading.start();
+    this.initLoad();
+  }
+
+  private initLoad(): void {
+    // Arrancamos grupo de 3 cargas y deshabilitamos contenido
+    this.contentReady = false;
+    this.startLoadingGroup(3);
+
     this.cargarVentas();
     this.cargarDetallesPedido();
     this.cargarProductos();
   }
 
-  /* =================== CARGA =================== */
+  // =================== CARGA ===================
   cargarVentas() {
-    this.apiService.getSales().subscribe((response: any[]) => {
-      this.ventas = Array.isArray(response) ? response : (response ? [response] : []);
-      this.ventasCargadas = true;
-      this.intentarGenerarEstadisticas();
-      this.pageLoading.stop();
+    this.apiService.getSales().subscribe({
+      next: (response: any[]) => {
+        this.ventas = Array.isArray(response) ? response : (response ? [response] : []);
+        this.ventasCargadas = true;
+        this.intentarGenerarEstadisticas();
+      },
+      error: () => {
+        this.ventas = [];
+        this.ventasCargadas = true;
+      },
+      complete: () => this.finishOneLoad()
     });
   }
 
   cargarDetallesPedido() {
-    this.apiService.getOrderDetails().subscribe((response: any[]) => {
-      this.detallesPedido = Array.isArray(response) ? response : (response ? [response] : []);
-      this.detallesCargados = true;
-      this.intentarGenerarEstadisticas();
-      this.pageLoading.stop();
+    this.apiService.getOrderDetails().subscribe({
+      next: (response: any[]) => {
+        this.detallesPedido = Array.isArray(response) ? response : (response ? [response] : []);
+        this.detallesCargados = true;
+        this.intentarGenerarEstadisticas();
+      },
+      error: () => {
+        this.detallesPedido = [];
+        this.detallesCargados = true;
+      },
+      complete: () => this.finishOneLoad()
     });
   }
 
   cargarProductos() {
-    this.apiService.getProductos().subscribe((response: any[]) => {
-      this.productos = Array.isArray(response) ? response : (response ? [response] : []);
-      this.productosCargados = true;
-      this.intentarGenerarEstadisticas();
-      this.pageLoading.stop();
+    this.apiService.getProductos().subscribe({
+      next: (response: any[]) => {
+        this.productos = Array.isArray(response) ? response : (response ? [response] : []);
+        this.productosCargados = true;
+        this.intentarGenerarEstadisticas();
+      },
+      error: () => {
+        this.productos = [];
+        this.productosCargados = true;
+      },
+      complete: () => this.finishOneLoad()
     });
   }
 
@@ -223,7 +260,6 @@ export class EstadisticasComponent implements OnInit {
       .reduce((acc, s) => acc + Number(s.ganancia || 0), 0);
   }
 
-
   obtenerNombreProducto(idProducto: number): string {
     return this.pNameById(idProducto);
   }
@@ -231,5 +267,22 @@ export class EstadisticasComponent implements OnInit {
   private isConfirmed(v: any): boolean {
     const s = this.vStatus(v);
     return s === 'Confirmed';
+  }
+
+  // ====== Helpers de pageLoading en grupo ======
+  private startLoadingGroup(n: number) {
+    this.pendingLoads = n;
+    this.started = true;
+    this.pageLoading.start();
+  }
+
+  private finishOneLoad() {
+    if (!this.started) return;
+    this.pendingLoads = Math.max(0, this.pendingLoads - 1);
+    if (this.pendingLoads === 0) {
+      this.started = false;
+      this.pageLoading.stop();
+      this.contentReady = true;
+    }
   }
 }

@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatCheckboxModule } from '@angular/material/checkbox'; // ✅ módulo correcto
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 
 import { ApiService } from '../../../core/services/api.service';
@@ -29,12 +29,28 @@ type Discount = { idProduct: number; percentage: number; typeDay: DayWeek; disab
   imports: [
     FormsModule, RouterModule,
     MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule, MatIconModule,
-    MatFormFieldModule, MatAutocompleteModule, MatCheckboxModule, // ✅
+    MatFormFieldModule, MatAutocompleteModule, MatCheckboxModule,
   ],
   templateUrl: './registrar-venta.component.html',
   styleUrls: ['./registrar-venta.component.scss']
 })
 export class RegistrarVentaComponent implements OnInit {
+
+  /* ==================== ESTADO DE CARGA ==================== */
+  contentReady = false;
+  private pendingLoads = 0;
+
+  private groupStart() {
+    if (this.pendingLoads === 0) this.pageLoading.start();
+    this.pendingLoads++;
+  }
+  private groupEnd() {
+    this.pendingLoads = Math.max(0, this.pendingLoads - 1);
+    if (this.pendingLoads === 0) {
+      this.pageLoading.stop();
+      this.contentReady = true;
+    }
+  }
 
   /* ==================== DATOS ==================== */
   saleId: number | null = null;
@@ -71,30 +87,41 @@ export class RegistrarVentaComponent implements OnInit {
 
   get total(): number { return this.cart.reduce((a, i) => a + (i.subtotal || 0), 0); }
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private router: Router, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private dialog: MatDialog,
+    private pageLoading: PageLoadingService
+  ) {}
 
+  /* ==================== INICIO ==================== */
   ngOnInit(): void {
-    this.pageLoading.start();
+    this.contentReady = false;
+
     this.route.paramMap.subscribe(p => {
       this.saleId = p.get('id') ? +p.get('id')! : null;
       this.init();
       this.onDniChange();
     });
-    this.filteredProducts = this.products.slice(0, 10);
   }
 
   private init(): void {
-    this.loadProducts();
-    this.loadDiscounts();
+    // Arrancamos las cargas principales con el spinner
+    this.groupStart(); this.loadProducts();
+    this.groupStart(); this.loadDiscounts();
 
     if (this.saleId) {
-      this.loadExistingSale(this.saleId, () => this.loadTables(this.selectedTableId));
+      this.groupStart();
+      this.loadExistingSale(this.saleId, () => {
+        this.groupStart(); this.loadTables(this.selectedTableId);
+      });
     } else {
       this.setGenericCustomer();
       this.saleRefDate = new Date();
-      this.loadTables(null);
+      this.groupStart(); this.loadTables(null);
     }
-    this.pageLoading.stop();
   }
 
   /* ==================== NAVEGACIÓN ==================== */
@@ -113,13 +140,12 @@ export class RegistrarVentaComponent implements OnInit {
       next: (res: any[]) => {
         const mesas = (Array.isArray(res) ? res : []).map(this.mapMesa);
         const allowedId = keepId ?? this.selectedTableId ?? null;
-        this.tables = mesas.filter(m => !m.active || (allowedId != null && m.idTable === allowedId)).filter(m => !m.disabled);
-        this.pageLoading.stop();
+        this.tables = mesas
+          .filter(m => !m.active || (allowedId != null && m.idTable === allowedId))
+          .filter(m => !m.disabled);
       },
-      error: () => {
-        this.toast.mostrarMensaje('❌ Error al cargar mesas');
-        this.pageLoading.stop();
-      },
+      error: () => this.toast.mostrarMensaje('❌ Error al cargar mesas'),
+      complete: () => this.groupEnd()
     });
   }
 
@@ -129,11 +155,14 @@ export class RegistrarVentaComponent implements OnInit {
         const mapped = arr(res).map(this.mapProduct);
         this.allProducts = mapped;
         this.products = mapped.filter(p => !p.disabled);
-        this.pageLoading.stop();
+        this.filteredProducts = this.products.slice(0, 10);
       },
       error: () => {
-        this.allProducts = []; this.products = []; this.toast.mostrarMensaje('❌ Error al cargar productos'); this.pageLoading.stop();
-      }
+        this.allProducts = [];
+        this.products = [];
+        this.toast.mostrarMensaje('❌ Error al cargar productos');
+      },
+      complete: () => this.groupEnd()
     });
   }
 
@@ -142,11 +171,9 @@ export class RegistrarVentaComponent implements OnInit {
       next: (list: any[]) => {
         this.discounts = arr(list).map(this.mapDiscount).filter(d => d.idProduct);
         this.refreshCartPricing();
-        this.pageLoading.stop();
       },
-      error: () => {
-        this.discounts = []; this.pageLoading.stop();
-      }
+      error: () => { this.discounts = []; },
+      complete: () => this.groupEnd()
     });
   }
 
@@ -161,32 +188,34 @@ export class RegistrarVentaComponent implements OnInit {
 
         const idClient = sale?.idClient ?? null;
         if (idClient) {
+          this.groupStart();
           this.api.getClientesById(idClient).subscribe({
             next: (c: any) => this.applyLoadedClient(c),
-            error: () => this.setGenericCustomer()
+            error: () => this.setGenericCustomer(),
+            complete: () => this.groupEnd()
           });
         } else {
           this.setGenericCustomer();
         }
 
+        this.groupStart();
         this.api.getOrderDetailsByOrderId(id).subscribe({
           next: (details: any[]) => {
             this.cart = arr(details).map(this.mapDetailToCart, this);
             this.refreshCartPricing();
           },
-          error: () => this.cart = []
+          error: () => { this.cart = []; },
+          complete: () => this.groupEnd()
         });
 
         after?.();
-        this.pageLoading.stop();
       },
-      error: () => {
-        this.toast.mostrarMensaje('❌ No se pudo cargar la venta'); this.pageLoading.stop();
-      }
+      error: () => this.toast.mostrarMensaje('❌ No se pudo cargar la venta'),
+      complete: () => this.groupEnd()
     });
   }
 
-  /* ==================== CREAR / ACTUALIZAR ==================== */
+  /* ==================== GUARDAR ==================== */
   async saveSale(): Promise<void> {
     if (!this.isDelivery && !this.selectedTableId) {
       return this.toast.mostrarMensaje('⚠️ Seleccione una mesa o marque Delivery');
@@ -216,11 +245,11 @@ export class RegistrarVentaComponent implements OnInit {
         error: () => {
           this.toast.mostrarMensaje(this.saleId ? '❌ Error al actualizar la venta' : '❌ Error al registrar la venta');
           if (this.saleId != null) this.loadExistingSale(this.saleId, () => this.loadTables(this.selectedTableId));
-        }
+        },
+        complete: () => (this.isSaving = false)
       });
     } catch (e: any) {
       this.toast.mostrarMensaje('❌ ' + (e?.toString?.() ?? 'Error al validar cliente'));
-    } finally {
       this.isSaving = false;
     }
   }
@@ -230,12 +259,7 @@ export class RegistrarVentaComponent implements OnInit {
     this.isGeneric = !this.isGeneric;
     this.isGeneric ? this.setGenericCustomer() : this.clearCustomer();
   }
-
-  onToggleDelivery(): void {
-    if (this.isDelivery) {
-      this.selectedTableId = null;
-    }
-  }
+  onToggleDelivery(): void { if (this.isDelivery) this.selectedTableId = null; }
 
   onDniChange(): void {
     const dni = (this.customerDni || '').trim();
@@ -246,9 +270,7 @@ export class RegistrarVentaComponent implements OnInit {
         if (c?.idClient) {
           this.isExistingClient = true;
           this.applyLoadedClient(c);
-        } else {
-          this.isExistingClient = false;
-        }
+        } else this.isExistingClient = false;
       },
       error: () => { this.isExistingClient = false; }
     });
@@ -256,23 +278,19 @@ export class RegistrarVentaComponent implements OnInit {
 
   filtrarProductos(): void {
     const q = this.productSearch.toLowerCase().trim();
-    if (!q) {
-      this.filteredProducts = this.products.slice(0, 10); // muestra los primeros
-    } else {
-      this.filteredProducts = this.products
-        .filter(p => p.name.toLowerCase().includes(q))
-        .slice(0, 10);
-    }
+    this.filteredProducts = !q
+      ? this.products.slice(0, 10)
+      : this.products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 10);
   }
 
   onProductoSeleccionado(producto: Product): void {
-    this.selectedProductId = producto.idProduct; this.productSearch = `${producto.name} — S/${producto.price}`;
+    this.selectedProductId = producto.idProduct;
+    this.productSearch = `${producto.name} — S/${producto.price}`;
   }
 
   ensureCustomer(): Promise<{ idClient: number; name: string; dni: string }> {
     return new Promise((resolve, reject) => {
-      if (this.isGeneric && this.currentCustomer?.idClient)
-        return resolve(this.currentCustomer);
+      if (this.isGeneric && this.currentCustomer?.idClient) return resolve(this.currentCustomer);
 
       const dni = (this.isGeneric ? GENERIC_DNI : (this.customerDni || '').trim());
       const name = (this.isGeneric ? 'Cliente Genérico' : (this.customerName || '').trim());
@@ -286,7 +304,7 @@ export class RegistrarVentaComponent implements OnInit {
           if (c?.idClient) {
             this.currentCustomer = { idClient: c.idClient, name: c.name, dni: c.dni };
             resolve(this.currentCustomer);
-          } else reject('❌ Respuesta inválida del servidor al asegurar cliente.');
+          } else reject('❌ Respuesta inválida del servidor.');
         },
         error: () => reject('❌ No se pudo asegurar/obtener el cliente.')
       });
@@ -295,16 +313,15 @@ export class RegistrarVentaComponent implements OnInit {
 
   private recalcItemPricing(i: CartItem): void {
     const pct = this.getDiscountPct(i.idProduct);
-    i.discountPct = pct; i.subtotal = subTotal(i.unitPrice, i.quantity, pct);
+    i.discountPct = pct;
+    i.subtotal = subTotal(i.unitPrice, i.quantity, pct);
   }
-
-  private refreshCartPricing(): void {
-    this.cart.forEach(i => this.recalcItemPricing(i));
-  }
+  private refreshCartPricing(): void { this.cart.forEach(i => this.recalcItemPricing(i)); }
 
   cancelSale(): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true, data: { title: 'Cancelar venta', message: '¿Seguro que deseas cancelar esta venta?' }
+      width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true,
+      data: { title: 'Cancelar venta', message: '¿Seguro que deseas cancelar esta venta?' }
     });
 
     dialogRef.afterClosed().subscribe(ok => {
@@ -312,10 +329,7 @@ export class RegistrarVentaComponent implements OnInit {
 
       this.isSaving = true;
       this.api.updateSale(this.saleId, { status: 'Cancelled' }).subscribe({
-        next: () => {
-          this.toast.mostrarMensaje('✅ Venta cancelada correctamente');
-          this.goBack();
-        },
+        next: () => { this.toast.mostrarMensaje('✅ Venta cancelada correctamente'); this.goBack(); },
         error: () => this.toast.mostrarMensaje('❌ Error al cancelar la venta'),
         complete: () => (this.isSaving = false)
       });
@@ -323,19 +337,30 @@ export class RegistrarVentaComponent implements OnInit {
   }
 
   private setGenericCustomer(): void {
-    this.isGeneric = true; this.isExistingClient = true; this.customerName = 'Cliente Genérico'; this.customerDni = GENERIC_DNI;
-    this.customerBirthdate = '2000-01-01'; this.currentCustomer = null;
+    this.isGeneric = true;
+    this.isExistingClient = true;
+    this.customerName = 'Cliente Genérico';
+    this.customerDni = GENERIC_DNI;
+    this.customerBirthdate = '2000-01-01';
+    this.currentCustomer = null;
   }
-
   private clearCustomer(): void {
-    this.isExistingClient = false; this.customerName = ''; this.customerDni = ''; this.customerBirthdate = '2000-01-01'; this.currentCustomer = null;
+    this.isExistingClient = false;
+    this.customerName = '';
+    this.customerDni = '';
+    this.customerBirthdate = '2000-01-01';
+    this.currentCustomer = null;
   }
 
   private applyLoadedClient(c: any): void {
     if (!c) return this.setGenericCustomer();
     const isGeneric = String(c?.dni) === GENERIC_DNI;
-    this.isGeneric = isGeneric; this.isExistingClient = true; this.currentCustomer = { idClient: toNum(c.idClient), name: String(c.name ?? ''), dni: String(c.dni ?? '') };
-    this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name; this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni; this.customerBirthdate = c?.birthdate ?? '2000-01-01';
+    this.isGeneric = isGeneric;
+    this.isExistingClient = true;
+    this.currentCustomer = { idClient: toNum(c.idClient), name: String(c.name ?? ''), dni: String(c.dni ?? '') };
+    this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name;
+    this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni;
+    this.customerBirthdate = c?.birthdate ?? '2000-01-01';
   }
 
   addToCart(): void {
@@ -352,7 +377,12 @@ export class RegistrarVentaComponent implements OnInit {
       existing.subtotal = subTotal(existing.unitPrice, existing.quantity, pct);
     } else {
       this.cart.push({
-        idProduct: prod.idProduct, name: prod.name, unitPrice: prod.price, quantity: this.selectedQty, discountPct: pct, subtotal: subTotal(prod.price, this.selectedQty, pct)
+        idProduct: prod.idProduct,
+        name: prod.name,
+        unitPrice: prod.price,
+        quantity: this.selectedQty,
+        discountPct: pct,
+        subtotal: subTotal(prod.price, this.selectedQty, pct)
       });
     }
 
@@ -378,42 +408,45 @@ export class RegistrarVentaComponent implements OnInit {
   private normalizeNoAccent(s: string): string {
     return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
-
   private limaDayName(date: Date): DayWeek {
     const raw = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', weekday: 'long' }).format(date);
     const key = this.normalizeNoAccent(raw);
     const map: Record<string, DayWeek> = {
-      'lunes': 'Lunes', 'martes': 'Martes', 'miercoles': 'Miercoles', 'jueves': 'Jueves', 'viernes': 'Viernes', 'sabado': 'Sabado', 'domingo': 'Domingo'
+      'lunes': 'Lunes', 'martes': 'Martes', 'miercoles': 'Miercoles', 'jueves': 'Jueves',
+      'viernes': 'Viernes', 'sabado': 'Sabado', 'domingo': 'Domingo'
     };
-    const value = map[key] ?? 'General';
-    return value as DayWeek;
+    return map[key] ?? 'General';
   }
-
   private getDiscountPct(productId: number): number {
     const today = this.limaDayName(this.saleRefDate);
     const active = this.discounts.filter(d => !d.disabled && d.idProduct === productId);
     const pick = active.filter(d => d.typeDay !== 'General' && d.typeDay === today);
     const bag = pick.length ? pick : active.filter(d => d.typeDay === 'General');
-    const pct = bag.length ? Math.max(...bag.map(d => d.percentage || 0)) : 0;
-    return pct;
+    return bag.length ? Math.max(...bag.map(d => d.percentage || 0)) : 0;
   }
 
   private buildLocalDate(orderDate: string, orderTime?: string): Date {
     const [y, m, d] = (orderDate || '').split('-').map(n => parseInt(n, 10));
-    let hh = 0, mm = 0, ss = 0, ms = 0;
+    let hh = 0, mm = 0, ss = 0;
     if (orderTime) {
-      const [hms, msPart] = orderTime.split('.');
-      const [h, m2, s] = (hms || '').split(':').map(n => parseInt(n || '0', 10)); hh = h || 0; mm = m2 || 0; ss = s || 0; ms = msPart ? parseInt(msPart, 10) : 0;
+      const [h, m2, s] = orderTime.split(':').map(n => parseInt(n || '0', 10));
+      hh = h || 0; mm = m2 || 0; ss = s || 0;
     }
-    return new Date(y, (m - 1), d, hh, mm, ss, ms);
+    return new Date(y, (m - 1), d, hh, mm, ss);
   }
 
   private mapProduct = (raw: any): Product => ({
-    idProduct: toNum(raw?.idProduct ?? raw?.id_producto ?? raw?.id), name: String(raw?.name ?? raw?.nombre ?? ''), price: toNum(raw?.price ?? raw?.precio ?? 0), disabled: !!raw?.disabled
+    idProduct: toNum(raw?.idProduct ?? raw?.id_producto ?? raw?.id),
+    name: String(raw?.name ?? raw?.nombre ?? ''),
+    price: toNum(raw?.price ?? raw?.precio ?? 0),
+    disabled: !!raw?.disabled
   });
 
   private mapDiscount = (d: any): Discount => ({
-    idProduct: toNum(d?.idProduct ?? d?.id_producto), percentage: toNum(d?.percentage ?? d?.porcentaje ?? 0), typeDay: String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek, disabled: !!d?.disabled
+    idProduct: toNum(d?.idProduct ?? d?.id_producto),
+    percentage: toNum(d?.percentage ?? d?.porcentaje ?? 0),
+    typeDay: String(d?.typeDay ?? d?.dia_semana ?? 'General') as DayWeek,
+    disabled: !!d?.disabled
   });
 
   private mapDetailToCart(d: any): CartItem {
@@ -434,7 +467,6 @@ export class RegistrarVentaComponent implements OnInit {
     if (this.dniSuggestTimer) clearTimeout(this.dniSuggestTimer);
     this.dniSuggestTimer = setTimeout(() => this.fetchDniSuggestions(q), 200);
   }
-
   onDniSelected(dni: string): void {
     this.customerDni = dni;
     this.onDniChange();
@@ -443,7 +475,9 @@ export class RegistrarVentaComponent implements OnInit {
   private fetchDniSuggestions(prefix: string): void {
     const doFilter = () => {
       const p = prefix.toLowerCase();
-      this.dniSuggestions = this.allClientsCache.filter(c => c.dni?.toLowerCase().startsWith(p)).slice(0, 10);
+      this.dniSuggestions = this.allClientsCache
+        .filter(c => c.dni?.toLowerCase().startsWith(p))
+        .slice(0, 10);
     };
 
     if (this.allClientsLoaded) { doFilter(); return; }
@@ -459,7 +493,10 @@ export class RegistrarVentaComponent implements OnInit {
       next: (arr: any[]) => {
         const list = Array.isArray(arr) ? arr : [];
         this.allClientsCache = list.map(c => ({
-          idClient: c?.idClient ?? c?.id_cliente, name: String(c?.name ?? c?.nombre ?? ''), dni: String(c?.dni ?? ''), birthdate: c?.birthdate ?? c?.fecha_nacimiento
+          idClient: c?.idClient ?? c?.id_cliente,
+          name: String(c?.name ?? c?.nombre ?? ''),
+          dni: String(c?.dni ?? ''),
+          birthdate: c?.birthdate ?? c?.fecha_nacimiento
         })).filter(c => !!c.dni);
         this.allClientsLoaded = true;
         doFilter();

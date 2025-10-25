@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatCardModule } from '@angular/material/card';
 
+import { firstValueFrom } from 'rxjs';
+
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
@@ -24,7 +26,8 @@ type Mesa = {
   styleUrls: ['./mesas.component.scss']
 })
 export class MesasComponent implements OnInit {
-  // ======= Estado =======
+  contentReady = false;
+
   cantidadMesas = 0;
   cantidadActual = 0;
   mesas: Mesa[] = [];
@@ -35,50 +38,61 @@ export class MesasComponent implements OnInit {
 
   private snapshotDisabled = new Map<number, boolean>();
 
-  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
+  constructor(
+    private api: ApiService,
+    private toastService: ToastService,
+    private pageLoading: PageLoadingService
+  ) { }
 
-  ngOnInit() {
+  async ngOnInit(): Promise<void> {
+    await this.initLoad();
+  }
+
+  private async initLoad(): Promise<void> {
+    this.contentReady = false;
     this.pageLoading.start();
-    this.refrescarMesas();
+    try {
+      await this.refrescarMesas();
+    } finally {
+      this.contentReady = true;
+      this.pageLoading.stop();
+    }
   }
 
   // ======= Carga de datos =======
-  refrescarMesas() {
-    this.api.getMesas().subscribe({
-      next: (data: Mesa[]) => {
-        const sinDelivery = (data || []).filter(m => m.number !== 'delivery');
-        this.mesas = sinDelivery.sort((a, b) => Number(a.number) - Number(b.number));
-        this.cantidadActual = this.mesas.length;
+  private async refrescarMesas(): Promise<void> {
+    try {
+      const [mesasResp, activasResp] = await Promise.all([
+        firstValueFrom(this.api.getMesas()),
+        firstValueFrom(this.api.getMesasActivas())
+      ]);
 
-        if (this.cantidadMesas === 0) this.cantidadMesas = this.cantidadActual;
+      const sinDelivery: Mesa[] = (mesasResp || []).filter((m: Mesa) => m.number !== 'delivery');
+      this.mesas = sinDelivery.sort((a, b) => Number(a.number) - Number(b.number));
+      this.cantidadActual = this.mesas.length;
 
-        this.snapshotDisabled.clear();
-        for (const m of this.mesas) this.snapshotDisabled.set(m.idTable, !!m.disabled);
-        this.pageLoading.stop();
-      },
-      error: () => {
-        this.toastService.mostrarMensaje('❌ Error al cargar mesas'); this.pageLoading.stop();
+      if (this.cantidadMesas === 0) this.cantidadMesas = this.cantidadActual;
+
+      this.snapshotDisabled.clear();
+      for (const m of this.mesas) this.snapshotDisabled.set(m.idTable, !!m.disabled);
+
+      const activesSinDelivery: Mesa[] = (activasResp || []).filter((m: Mesa) => m.number !== 'delivery');
+      this.mesasActivas = activesSinDelivery.length;
+
+      if (this.cantidadMesas < this.mesasActivas) {
+        this.cantidadMesas = this.mesasActivas;
       }
-    });
-
-    this.api.getMesasActivas().subscribe({
-      next: actives => {
-        const sinDelivery = (actives || []).filter((m: Mesa) => m.number !== 'delivery');
-        this.mesasActivas = sinDelivery.length;
-        if (this.cantidadMesas < this.mesasActivas) {
-          this.cantidadMesas = this.mesasActivas;
-        }
-      },
-      error: () => {
-        this.toastService.mostrarMensaje('❌ Error al obtener mesas activas'); this.pageLoading.stop();
-      }
-    });
+    } catch {
+      this.toastService.mostrarMensaje('❌ Error al cargar mesas');
+    }
   }
 
   // ======= Utilidades UI =======
-  clampCantidad() {
+  clampCantidad(): void {
     if (this.cantidadMesas < this.mesasActivas) this.cantidadMesas = this.mesasActivas;
-    if (!Number.isFinite(this.cantidadMesas) || this.cantidadMesas < 0) this.cantidadMesas = this.cantidadActual;
+    if (!Number.isFinite(this.cantidadMesas) || this.cantidadMesas < 0) {
+      this.cantidadMesas = this.cantidadActual;
+    }
   }
 
   get mesasDirty(): boolean {
@@ -91,17 +105,15 @@ export class MesasComponent implements OnInit {
   trackMesa = (_: number, m: Mesa) => m.idTable;
 
   // ======= Crear / Actualizar =======
-  actualizarCantidad() {
+  actualizarCantidad(): void {
     this.clampCantidad();
-
     if (this.cantidadMesas === this.cantidadActual) return;
 
     this.isUpdatingCantidad = true;
     this.api.actualizarCantidadMesas(this.cantidadMesas).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Cantidad actualizada correctamente');
-        this.refrescarMesas();
-        this.isUpdatingCantidad = false;
+        this.refrescarMesas().finally(() => (this.isUpdatingCantidad = false));
       },
       error: () => {
         this.toastService.mostrarMensaje('❌ Error al actualizar la cantidad');
@@ -110,7 +122,7 @@ export class MesasComponent implements OnInit {
     });
   }
 
-  guardarCambios() {
+  guardarCambios(): void {
     if (!this.mesasDirty) return;
 
     const cambios = this.mesas
@@ -123,8 +135,7 @@ export class MesasComponent implements OnInit {
     this.api.actualizarEstadosMesas(cambios).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Cambios guardados correctamente');
-        this.refrescarMesas();
-        this.isSavingEstados = false;
+        this.refrescarMesas().finally(() => (this.isSavingEstados = false));
       },
       error: () => {
         this.toastService.mostrarMensaje('❌ Error al guardar los cambios');

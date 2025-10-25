@@ -40,6 +40,8 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
   styleUrls: ['./producto.component.scss']
 })
 export class ProductoComponent implements OnInit {
+  contentReady = false;
+
   productos: Product[] = [];
   marcas: Brand[] = [];
   marcaMap: Record<number, string> = {};
@@ -77,7 +79,10 @@ export class ProductoComponent implements OnInit {
     const p = this.selectedProducto;
     if (!p) return [];
     return [
-      { prop: 'Nombre', value: p.name }, { prop: 'Precio', value: `S/. ${p.price}` }, { prop: 'Marca', value: p.brand?.name || '—' }, { prop: 'Estado', value: p.disabled ? 'Deshabilitado' : 'Habilitado' },
+      { prop: 'Nombre', value: p.name },
+      { prop: 'Precio', value: `S/. ${p.price}` },
+      { prop: 'Marca', value: p.brand?.name || '—' },
+      { prop: 'Estado', value: p.disabled ? 'Deshabilitado' : 'Habilitado' },
     ];
   }
 
@@ -120,16 +125,27 @@ export class ProductoComponent implements OnInit {
   private crearMarcaRef?: OverlayHandle;
   private prodCaractRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog, private featuresSvc: FeatureFilterService, private cd: ChangeDetectorRef, private pageLoading: PageLoadingService) { }
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    private route: ActivatedRoute,
+    private dialog: MatDialog,
+    private featuresSvc: FeatureFilterService,
+    private cd: ChangeDetectorRef,
+    private pageLoading: PageLoadingService
+  ) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async params => {
       const nombreCategoria = params.get('nombreCategoria');
       if (!nombreCategoria) return;
+
       this.categoriaNombre = decodeURIComponent(nombreCategoria);
+      this.contentReady = false;
+      this.pageLoading.start();
+
       await this.loadCategoriaYProductos(this.categoriaNombre);
     });
-    this.pageLoading.start();
   }
 
   private async refreshProductNow(idProduct: number): Promise<void> {
@@ -166,19 +182,43 @@ export class ProductoComponent implements OnInit {
     try {
       const categoria = await firstValueFrom(this.api.getCategoriaByNombre(nombre)) as Category;
       this.categoriaId = categoria.idCategory;
+
       await this.loadMarcasPorCategoria(this.categoriaId);
       await this.loadProductosPorCategoria(this.categoriaId);
+      const ids = this.productos.map(p => p.idImage).filter((id): id is number => !!id);
+      await this.preloadImages(ids);
+
+      this.contentReady = true;
       this.pageLoading.stop();
+      this.cd.detectChanges();
     } catch {
       this.toast.mostrarMensaje('❌ No se encontró la categoría');
+      this.contentReady = true;
       this.pageLoading.stop();
+      this.cd.detectChanges();
     }
+  }
+
+  private async preloadImages(ids: number[]): Promise<void> {
+    if (!ids || ids.length === 0) return;
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const res = await firstValueFrom(this.api.getImagenById(id)) as ImageResp;
+          const imgId = res.idImage ?? res.id ?? id;
+          this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
+          this.imgLoaded[imgId] = true;
+        } catch {
+          this.imagenesCache[id] = '/img/no-image.png';
+          this.imgLoaded[id] = true;
+        }
+      })
+    );
   }
 
   async loadProductFeaturesTable(productId: number): Promise<void> {
     try {
       const list = await firstValueFrom(this.api.getProductFeaturesByProduct(productId)) as any[];
-
       this.productFeatureRows = (list || []).map(pf => ({
         base: String(pf?.feature?.featureName ?? pf?.featureName ?? '').trim(),
         value: String(pf?.featureValue ?? '').trim()
@@ -191,9 +231,6 @@ export class ProductoComponent implements OnInit {
   async loadProductosPorCategoria(idCategory: number): Promise<void> {
     const data = await firstValueFrom(this.api.getProductos());
     this.productos = mapProductos(data, idCategory, this.marcaMap);
-
-    await Promise.all(this.productos.filter(p => !!p.idImage).map(p => this.loadImagen(p.idImage!)));
-
     this.namePool = uniq(this.productos.map(p => norm(p.name)).filter(Boolean));
     this.brandPool = uniq(
       this.productos
@@ -284,12 +321,12 @@ export class ProductoComponent implements OnInit {
       const res = await firstValueFrom(this.api.getImagenById(idImage)) as ImageResp;
       const imgId = res.idImage ?? res.id ?? idImage;
       this.imagenesCache[imgId] = `${res.url}?t=${Date.now()}`;
-      this.pageLoading.stop();
-
+      this.imgLoaded[imgId] = true;
     } catch {
       this.imagenesCache[idImage] = '/img/no-image.png';
-      this.pageLoading.stop();
+      this.imgLoaded[idImage] = true;
     }
+    // ⚠️ ya NO hacemos pageLoading.stop() aquí
   }
 
   getUrlImagen(idImage?: number | null): string {
@@ -352,6 +389,9 @@ export class ProductoComponent implements OnInit {
       this.toast.mostrarMensaje('✅ Producto creado correctamente');
       this.cerrarFormulario();
       await this.loadProductosPorCategoria(this.categoriaId);
+      // precarga de nuevas imágenes (si aplica)
+      const ids = this.productos.map(p => p.idImage).filter((id): id is number => !!id);
+      await this.preloadImages(ids);
     } catch {
       this.toast.mostrarMensaje('❌ Error al crear producto');
     } finally { this.isLoading = false; }

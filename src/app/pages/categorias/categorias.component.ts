@@ -14,6 +14,7 @@ import { OverlayPortalService, OverlayHandle } from '../../core/services/overlay
 import { MatIconModule } from '@angular/material/icon';
 import { ToastService } from '../../core/services/toast.service';
 import { PageLoadingService } from '../../core/services/page-loading.service';
+import { catchError, firstValueFrom, forkJoin, map, of } from 'rxjs';
 
 @Component({
   selector: 'app-categorias',
@@ -29,7 +30,6 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
 })
 export class CategoriasComponent implements OnInit {
   categorias: any[] = [];
-  marcas: any[] = [];
   imagenesCache: Record<number, string> = {};
   marcaMap: Record<number, string> = {};
   imgLoaded: Record<number, boolean> = {};
@@ -42,9 +42,8 @@ export class CategoriasComponent implements OnInit {
   caracteresRestantes = 100;
   nombreArchivo: string | null = null;
   isLoading = false;
-  mostrarMasOpciones = false;
+  contentReady = false;
 
-  // Overlays
   @ViewChild('formCategoriaTpl') formCategoriaTpl!: TemplateRef<any>;
   @ViewChild('categoryDetailTpl') categoryDetailTpl!: TemplateRef<any>;
 
@@ -65,32 +64,43 @@ export class CategoriasComponent implements OnInit {
 
   constructor(private router: Router, private apiService: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.pageLoading.start();
-    this.loadCategorias();
+    try {
+      await this.loadCategoriasYImagenes();
+      this.contentReady = true;
+    } finally {
+      this.pageLoading.stop();
+    }
   }
 
   /* === Datos === */
-  loadCategorias(): void {
-    this.apiService.getCategorias().subscribe({
-      next: data => {
-        this.categorias = data.filter((c: any) => !c.disabled);
-        this.categorias.forEach(cat => {
-          if (cat.idImage && !this.imagenesCache[cat.idImage]) this.loadImagen(cat.idImage);
-        });
-        this.pageLoading.stop();
-      },
-      error: _ => {
-        this.pageLoading.stop();
-      }
-    });
-  }
+  private async loadCategoriasYImagenes(): Promise<void> {
+    // 1) Categorías
+    const data = await firstValueFrom(this.apiService.getCategorias());
+    this.categorias = (data || []).filter((c: any) => !c.disabled);
 
-  /* === Imágenes === */
-  loadImagen(idImage: number) {
-    this.apiService.getImagenById(idImage).subscribe({
-      next: res => this.imagenesCache[idImage] = `${res.url}?t=${Date.now()}`,
-      error: () => this.imagenesCache[idImage] = '/img/no-image.png'
+    // 2) Construir observables de imágenes (solo las que no estén en cache)
+    const ids = this.categorias
+      .map(c => c.idImage)
+      .filter((id): id is number => !!id && !this.imagenesCache[id]);
+
+    if (ids.length === 0) return;
+
+    // 3) Esperar TODAS las imágenes
+    await firstValueFrom(
+      forkJoin(
+        ids.map(id =>
+          this.apiService.getImagenById(id).pipe(
+            map((res: any) => ({ id, url: `${res.url}?t=${Date.now()}` })),
+            catchError(() => of({ id, url: '/img/no-image.png' }))
+          )
+        )
+      )
+    ).then(results => {
+      for (const { id, url } of results) {
+        this.imagenesCache[id] = url;
+      }
     });
   }
 
@@ -163,7 +173,7 @@ export class CategoriasComponent implements OnInit {
       await this.apiService.createCategoria({ name, description: this.formData.description, idImage }).toPromise();
       this.toastService.mostrarMensaje('✅ Categoría creada correctamente');
       this.cerrarFormulario();
-      this.loadCategorias();
+      this.loadCategoriasYImagenes();
     } catch {
       this.toastService.mostrarMensaje('❌ Error al crear la categoría');
     } finally { this.isLoading = false; }
@@ -194,7 +204,7 @@ export class CategoriasComponent implements OnInit {
       await this.apiService.updateCategoria(this.selectedCategoria.idCategory, { name, description, idImage }).toPromise();
       this.toastService.mostrarMensaje('✅ Categoría actualizada correctamente');
       this.cerrarFormulario();
-      this.loadCategorias();
+      this.loadCategoriasYImagenes();
     } catch {
       this.toastService.mostrarMensaje('❌ Error al actualizar la categoría');
     } finally { this.isLoading = false; }
@@ -203,14 +213,14 @@ export class CategoriasComponent implements OnInit {
   deshabilitar(id: number): void {
     if (!confirm('¿Seguro que deseas deshabilitar esta categoría?')) return;
     this.apiService.disableCategoriaYProductos(id).subscribe({
-      next: () => { this.toastService.mostrarMensaje('✅ Categoría deshabilitada'); this.loadCategorias(); this.closeCategoryDetail(); },
+      next: () => { this.toastService.mostrarMensaje('✅ Categoría deshabilitada'); this.loadCategoriasYImagenes(); this.closeCategoryDetail(); },
       error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar')
     });
   }
 
   habilitar(id: number): void {
     this.apiService.updateCategoria(id, { disabled: false }).subscribe({
-      next: () => { this.toastService.mostrarMensaje('✅ Categoría habilitada'); this.loadCategorias(); this.closeCategoryDetail(); },
+      next: () => { this.toastService.mostrarMensaje('✅ Categoría habilitada'); this.loadCategoriasYImagenes(); this.closeCategoryDetail(); },
       error: () => this.toastService.mostrarMensaje('❌ Error al habilitar')
     });
   }

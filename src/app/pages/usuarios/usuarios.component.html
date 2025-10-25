@@ -1,11 +1,14 @@
+@if (!contentReady) {
+} @else {
 <div class="contenedor">
   <div class="tabla-scroll">
     <div class="usuarios-container">
-      @if(usuario?.rol === 'Administrator'){
-      <h1 class="title">Perfil del Administrador</h1>
-      } @else if(usuario?.rol === 'Employee'){
-      <h1 class="title">Perfil del Empleado</h1>
-      }
+
+      <h1 class="title">
+        @if (usuario?.rol === 'Administrator') { Perfil del Administrador }
+        @else if (usuario?.rol === 'Employee') { Perfil del Empleado }
+        @else { Perfil de Usuario }
+      </h1>
 
       <div class="info-admin">
         <mat-list>
@@ -45,87 +48,87 @@
         </mat-list>
 
         <div class="acciones">
-          <button mat-raised-button class="btn-verde" (click)="abrirFormulario(usuario)">Editar usuario</button>
-          <button mat-raised-button class="btn-rojo" (click)="deshabilitarUsuario(usuario.idUser)">Deshabilitar usuario</button>
+          <button mat-raised-button class="btn-verde" (click)="abrirFormulario(usuario)">
+            Editar usuario
+          </button>
+          <button mat-raised-button class="btn-rojo" (click)="deshabilitarUsuario(usuario.idUser)">
+            Deshabilitar usuario
+          </button>
         </div>
       </div>
 
-
       <h2 class="title">Aspectos de la Pizzería</h2>
       <div class="info-admin">
-        @if(usuario?.rol === 'Administrator'){
-        <button mat-raised-button class="btn-azul" (click)="verOtros()">Ver otros usuarios</button>
-        <button mat-raised-button class="btn-azul" (click)="verMesas()">Administrar Mesas</button>
-        }
-        @else {
-        <button mat-raised-button class="btn-azul" (click)="verClientes()">Administrar Clientes</button>
-        <button mat-raised-button class="btn-azul" (click)="verDescuentos()">Administrar Descuentos</button>
+        @if (usuario?.rol === 'Administrator') {
+          <button mat-raised-button class="btn-azul" (click)="verOtros()">Ver otros usuarios</button>
+          <button mat-raised-button class="btn-azul" (click)="verMesas()">Administrar Mesas</button>
+        } @else {
+          <button mat-raised-button class="btn-azul" (click)="verClientes()">Administrar Clientes</button>
+          <button mat-raised-button class="btn-azul" (click)="verDescuentos()">Administrar Descuentos</button>
         }
       </div>
+
     </div>
   </div>
 </div>
+
+<!-- ========= Overlays ========= -->
 <ng-template #formUsuarioTpl>
   <div class="form-modal">
-    @if(userSeleccionado){
-    <h2 class="title form-title">Editar Usuario</h2>
+    @if (userSeleccionado) {
+      <h2 class="title form-title">Editar Usuario</h2>
     }
-
     <div class="form-container">
       <div class="form-grid">
         <mat-form-field appearance="fill">
           <mat-label>Usuario</mat-label>
-          <input matInput placeholder="Escriba el Usuario" [(ngModel)]="Empleado.username" autocomplete="off"
-            [disabled]="isLoading">
+          <input matInput placeholder="Escriba el Usuario" [(ngModel)]="Empleado.username" autocomplete="off" [disabled]="isLoading">
         </mat-form-field>
 
         <mat-form-field appearance="fill">
           <mat-label>Nombre</mat-label>
-          <input matInput placeholder="Escriba los nombres del Usuario" [(ngModel)]="Empleado.name" autocomplete="off"
-            [disabled]="isLoading">
+          <input matInput placeholder="Escriba los nombres del Usuario" [(ngModel)]="Empleado.name" autocomplete="off" [disabled]="isLoading">
         </mat-form-field>
 
         <mat-form-field appearance="fill">
           <mat-label>Apellido</mat-label>
-          <input matInput placeholder="Escriba los apellidos del Usuario" [(ngModel)]="Empleado.lastName"
-            autocomplete="off" [disabled]="isLoading">
+          <input matInput placeholder="Escriba los apellidos del Usuario" [(ngModel)]="Empleado.lastName" autocomplete="off" [disabled]="isLoading">
         </mat-form-field>
 
         <mat-form-field appearance="fill">
           <mat-label>DNI</mat-label>
-          <input matInput type="text" maxlength="8" placeholder="Escriba el DNI Usuario" [(ngModel)]="Empleado.dni"
-            autocomplete="off" pattern="\d*" (keypress)="soloNumeros($event)" [disabled]="isLoading">
+          <input matInput type="text" maxlength="8" placeholder="Escriba el DNI Usuario" [(ngModel)]="Empleado.dni" autocomplete="off" pattern="\d*" (keypress)="soloNumeros($event)" [disabled]="isLoading">
         </mat-form-field>
 
         <mat-form-field appearance="fill">
           <mat-label>Dirección</mat-label>
-          <input matInput placeholder="Escriba la dirección del Usuario" [(ngModel)]="Empleado.direction"
-            autocomplete="off" [disabled]="isLoading">
+          <input matInput placeholder="Escriba la dirección del Usuario" [(ngModel)]="Empleado.direction" autocomplete="off" [disabled]="isLoading">
         </mat-form-field>
 
         <mat-form-field appearance="fill">
           <mat-label>Teléfono</mat-label>
-          <input matInput type="text" maxlength="9" placeholder="Escriba el teléfono del Usuario"
-            [(ngModel)]="Empleado.numberPhone" autocomplete="off" pattern="\d*" (keypress)="soloNumeros($event)"
-            [disabled]="isLoading">
+          <input matInput type="text" maxlength="9" placeholder="Escriba el teléfono del Usuario" [(ngModel)]="Empleado.numberPhone" autocomplete="off" pattern="\d*" (keypress)="soloNumeros($event)" [disabled]="isLoading">
         </mat-form-field>
 
         <div class="full-width">
           <div class="editar-contrasena">
-            <label (click)="abrirCambiarContrasena()">
-              ¿Quieres editar tu contraseña?
-            </label>
+            <label (click)="abrirCambiarContrasena()">¿Quieres editar tu contraseña?</label>
           </div>
         </div>
       </div>
 
       <div class="botones">
-        <button mat-raised-button class="form-btn-verde" (click)="guardarEmpleado()" [disabled]="isLoading">Guardar</button>
-        <button mat-raised-button class="form-btn-gris" (click)="cerrarFormulario()" [disabled]="isLoading">Cancelar</button>
+        <button mat-raised-button class="form-btn-verde" (click)="guardarEmpleado()" [disabled]="isLoading">
+          Guardar
+        </button>
+        <button mat-raised-button class="form-btn-gris" (click)="cerrarFormulario()" [disabled]="isLoading">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
 </ng-template>
+
 <ng-template #formPasswordTpl>
   <div class="form-modal">
     <h2 class="title form-title">Cambiar Contraseña</h2>
@@ -139,15 +142,19 @@
 
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Nueva Contraseña</mat-label>
-          <input matInput type="password" [(ngModel)]="Empleado.nuevaPassword" placeholder="********"
-                 autocomplete="off" [disabled]="isLoading">
+          <input matInput type="password" [(ngModel)]="Empleado.nuevaPassword" placeholder="********" autocomplete="off" [disabled]="isLoading">
         </mat-form-field>
       </div>
 
       <div class="botones">
-        <button mat-raised-button class="form-btn-verde" (click)="guardarNuevaContrasena()" [disabled]="isLoading">Guardar</button>
-        <button mat-raised-button class="form-btn-gris" (click)="cerrarCambiarContrasena()" [disabled]="isLoading">Cancelar</button>
+        <button mat-raised-button class="form-btn-verde" (click)="guardarNuevaContrasena()" [disabled]="isLoading">
+          Guardar
+        </button>
+        <button mat-raised-button class="form-btn-gris" (click)="cerrarCambiarContrasena()" [disabled]="isLoading">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
 </ng-template>
+}

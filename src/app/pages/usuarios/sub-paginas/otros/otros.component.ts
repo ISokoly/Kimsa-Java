@@ -7,6 +7,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { MatTableModule } from '@angular/material/table';
 
+import { firstValueFrom } from 'rxjs';
+
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
@@ -25,6 +27,7 @@ import { PageLoadingService } from '../../../../core/services/page-loading.servi
   styleUrls: ['./otros.component.scss']
 })
 export class OtrosComponent implements OnInit {
+  contentReady = false;
 
   usuario: any;
   listaUsuarios: any[] = [];
@@ -40,7 +43,8 @@ export class OtrosComponent implements OnInit {
   ];
 
   Empleado = {
-    username: '', name: '', lastName: '', dni: '', direction: '', numberPhone: '', password: '', rol: '', disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
+    username: '', name: '', lastName: '', dni: '', direction: '', numberPhone: '',
+    password: '', rol: '', disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
   };
 
   userSeleccionado: any = null;
@@ -54,34 +58,53 @@ export class OtrosComponent implements OnInit {
   private createRef?: OverlayHandle;
   private passRef?: OverlayHandle;
 
-  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
+  constructor(
+    private apiService: ApiService,
+    private toastService: ToastService,
+    private dialog: MatDialog,
+    private pageLoading: PageLoadingService
+  ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    await this.initLoad();
+  }
+
+  private async initLoad(): Promise<void> {
+    this.contentReady = false;
     this.pageLoading.start();
-    this.cargarOtrosUsuarios();
-    this.listaFiltrada = [...this.listaUsuarios];
+    try {
+      await this.cargarOtrosUsuariosAsync();
+    } finally {
+      this.contentReady = true;
+      this.pageLoading.stop();
+    }
   }
 
   /* ====== Datos ====== */
-  private cargarOtrosUsuarios(): void {
-    this.obtenerUsuario();
-    this.apiService.getUsuarios().subscribe(data => {
-      this.listaUsuarios = data || [];
-      const actual = this.apiService.getUsuarioActual();
-      this.listaFiltrada = this.listaUsuarios.filter(u => u.idUser !== actual?.idUser);
-      this.aplicarFiltro();
-    });
-    this.pageLoading.stop();
-  }
-
-  obtenerUsuario(): void {
-    const usuario = this.apiService.getUsuarioActual();
-    if (!usuario) {
+  private async cargarOtrosUsuariosAsync(): Promise<void> {
+    this.usuario = this.apiService.getUsuarioActual();
+    if (!this.usuario) {
       this.toastService.mostrarMensaje('❌ No se encontró un usuario autenticado');
+      this.listaUsuarios = [];
+      this.listaFiltrada = [];
       return;
     }
-    this.usuario = usuario;
-    this.pageLoading.stop();
+
+    try {
+      const data = await firstValueFrom(this.apiService.getUsuarios());
+      this.listaUsuarios = data || [];
+      const actual = this.usuario;
+      this.listaFiltrada = this.listaUsuarios.filter(u => u.idUser !== actual?.idUser);
+      this.aplicarFiltro();
+    } catch {
+      this.listaUsuarios = [];
+      this.listaFiltrada = [];
+      this.toastService.mostrarMensaje('❌ Error al cargar usuarios');
+    }
+  }
+
+  private recargarListado(): void {
+    this.cargarOtrosUsuariosAsync().catch(() => {});
   }
 
   /* ====== Formularios (overlay) ====== */
@@ -139,14 +162,14 @@ export class OtrosComponent implements OnInit {
       return;
     }
     const id = this.userSeleccionado.idUser;
-    this.apiService.updateUsuario(id, this.Empleado).subscribe(
-      () => {
+    this.apiService.updateUsuario(id, this.Empleado).subscribe({
+      next: () => {
         this.toastService.mostrarMensaje('✅ Usuario actualizado correctamente');
-        this.cargarOtrosUsuarios();
         this.cerrarFormulario();
+        this.recargarListado();
       },
-      () => this.toastService.mostrarMensaje('❌ Error al actualizar usuario')
-    );
+      error: () => this.toastService.mostrarMensaje('❌ Error al actualizar usuario')
+    });
   }
 
   guardarNuevoEmpleado(): void {
@@ -168,12 +191,9 @@ export class OtrosComponent implements OnInit {
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario creado correctamente');
         this.cerrarFormulario();
-        this.cargarOtrosUsuarios();
+        this.recargarListado();
       },
-      error: (err) => {
-        this.toastService.mostrarMensaje('❌ Error al crear el usuario');
-        console.error(err);
-      }
+      error: () => this.toastService.mostrarMensaje('❌ Error al crear el usuario')
     });
   }
 
@@ -220,6 +240,7 @@ export class OtrosComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
+
       const body = usuario ? {
         username: usuario.username,
         name: usuario.name,
@@ -234,7 +255,7 @@ export class OtrosComponent implements OnInit {
       this.apiService.updateUsuario(id, body).subscribe({
         next: () => {
           this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
-          this.cargarOtrosUsuarios();
+          this.recargarListado();
         },
         error: () => this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario')
       });
@@ -257,14 +278,14 @@ export class OtrosComponent implements OnInit {
     this.apiService.updateUsuario(id, body).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario habilitado correctamente');
-        this.cargarOtrosUsuarios();
+        this.recargarListado();
       },
       error: () => this.toastService.mostrarMensaje('❌ Error al habilitar usuario')
     });
   }
 
   /* ====== Filtros ====== */
-  aplicarFiltro() {
+  aplicarFiltro(): void {
     const actualId = this.apiService.getUsuarioActual()?.idUser;
     const texto = (this.filtroTexto || '').toString().toLowerCase().trim();
 

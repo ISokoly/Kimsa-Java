@@ -1,3 +1,5 @@
+@if (!contentReady) {
+} @else {
 <div class="contenedor">
     <div class="tabla-scroll">
         <h1>Mesas de la Pizzería</h1>
@@ -35,8 +37,7 @@
                 </div>
 
                 <div class="mesa-check">
-                    <mat-checkbox [(ngModel)]="mesa.disabled"
-                        aria-label="Deshabilitar mesa {{ mesa.number }}">
+                    <mat-checkbox [(ngModel)]="mesa.disabled" aria-label="Deshabilitar mesa {{ mesa.number }}">
                         ¿Deshabilitada?
                     </mat-checkbox>
                 </div>
@@ -52,4 +53,4 @@
             </button>
         </div>
     </div>
-</div>
+</div>}

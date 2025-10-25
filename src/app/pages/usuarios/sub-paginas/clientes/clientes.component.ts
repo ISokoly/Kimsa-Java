@@ -6,11 +6,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
+import { MatTableModule } from '@angular/material/table';
 
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
-import { MatTableModule } from "@angular/material/table";
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
 
 interface Client {
@@ -33,6 +33,8 @@ interface Client {
   styleUrls: ['./clientes.component.scss']
 })
 export class ClientesComponent implements OnInit {
+  contentReady = false;
+
   clients: Client[] = [];
   selectedClient: Client = { name: '', dni: '', birthdate: '' };
   nuevoClient: Client = { name: '', dni: '', birthdate: '' };
@@ -52,9 +54,14 @@ export class ClientesComponent implements OnInit {
   private editFormRef?: OverlayHandle;
   private newFormRef?: OverlayHandle;
 
-  constructor(private api: ApiService, private toastService: ToastService, private pageLoading: PageLoadingService) { }
+  constructor(
+    private api: ApiService,
+    private toastService: ToastService,
+    private pageLoading: PageLoadingService
+  ) {}
 
   ngOnInit(): void {
+    this.contentReady = false;
     this.pageLoading.start();
     this.getClients();
   }
@@ -64,11 +71,14 @@ export class ClientesComponent implements OnInit {
       next: (data) => {
         this.clients = data || [];
         this.pageIndex = 0;
-        this.pageLoading.stop();
-
+        this.contentReady = true;     // 👈 habilita el render
+        this.pageLoading.stop();      // 👈 quita spinner global
       },
       error: () => {
         this.toastService.mostrarMensaje('❌ Error al obtener clientes');
+        this.clients = [];
+        this.pageIndex = 0;
+        this.contentReady = true;
         this.pageLoading.stop();
       }
     });

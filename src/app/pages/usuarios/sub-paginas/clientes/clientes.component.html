@@ -1,4 +1,5 @@
-<div class="contenedor">
+@if (!contentReady) {
+} @else {<div class="contenedor">
   <h1 class="title">Clientes</h1>
 
   <div class="filtros-clientes">
@@ -17,13 +18,13 @@
     </mat-form-field>
   </div>
 
-@if (clients.length === 0) {
+  @if (clients.length === 0) {
   <p style="margin-top:12px;">No hay clientes registrados.</p>
-}
-@else if (clients.length > 0 && clientsFiltrados.length === 0) {
+  }
+  @else if (clients.length > 0 && clientsFiltrados.length === 0) {
   <p style="margin-top:12px;">No hay clientes con el filtro actual.</p>
-}
-@else {
+  }
+  @else {
   <div class="tabla-scroll">
     <table mat-table [dataSource]="pagedClients" class="mat-elevation-z2 full-width-table">
 
@@ -55,21 +56,21 @@
   </div>
 
   @if (totalPages > 1) {
-    <div class="paginador">
-      <button mat-stroked-button (click)="prevPage()" [disabled]="pageIndex === 0">Anterior</button>
+  <div class="paginador">
+    <button mat-stroked-button (click)="prevPage()" [disabled]="pageIndex === 0">Anterior</button>
 
-      <div class="paginas">
-        @for (p of pagesArray; track p) {
-          <button mat-button [disabled]="p === pageIndex" (click)="goToPage(p)">
-            {{ p + 1 }}
-          </button>
-        }
-      </div>
-
-      <button mat-stroked-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
+    <div class="paginas">
+      @for (p of pagesArray; track p) {
+      <button mat-button [disabled]="p === pageIndex" (click)="goToPage(p)">
+        {{ p + 1 }}
+      </button>
+      }
     </div>
+
+    <button mat-stroked-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
+  </div>
   }
-}
+  }
 
   <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
     <button class="btn-azul" style="width: 200px; height: 50px;" (click)="abrirFormularioNuevoCliente()">
@@ -132,4 +133,4 @@
       </div>
     </div>
   </div>
-</ng-template>
+</ng-template>}

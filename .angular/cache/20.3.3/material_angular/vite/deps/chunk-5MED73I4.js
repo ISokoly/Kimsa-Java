@@ -1,6 +1,6 @@
 import {
   MatCommonModule
-} from "./chunk-JGDS6YKF.js";
+} from "./chunk-QMM2QTDW.js";
 import {
   Directive,
   NgModule,
@@ -80,4 +80,4 @@ export {
   setLines,
   MatLineModule
 };
-//# sourceMappingURL=chunk-O7IZD26J.js.map
+//# sourceMappingURL=chunk-5MED73I4.js.map
