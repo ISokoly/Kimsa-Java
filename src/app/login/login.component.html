@@ -1,31 +1,28 @@
-<div class="login-container">
+<!-- src/app/login/login.component.html -->
+<div class="login-container" [attr.aria-busy]="isLoading ? 'true' : 'false'">
   <form (ngSubmit)="login()" class="login-form" #loginForm="ngForm">
-    <img src="kimsa_black.png" alt="Logo" class="logo">
-
+    <img src="kimsa_black.png" alt="Logo" class="logo" />
     <h1>Iniciar Sesión</h1>
 
-    <!-- Usuario -->
     <mat-form-field appearance="outline">
       <mat-label>Usuario</mat-label>
       <mat-icon matPrefix>person</mat-icon>
-      <input matInput type="text" [(ngModel)]="usuario" name="usuario" placeholder="Ingrese su usuario" required>
+      <input matInput type="text" [(ngModel)]="usuario" name="usuario" required autocomplete="username" />
     </mat-form-field>
 
-    <!-- Contraseña -->
     <mat-form-field appearance="outline">
       <mat-label>Contraseña</mat-label>
       <mat-icon matPrefix>lock</mat-icon>
-      <input matInput type="password" [(ngModel)]="contrasena" name="contrasena" placeholder="Ingrese su contraseña"
-        required>
+      <input matInput [type]="hide ? 'password' : 'text'" [(ngModel)]="contrasena" name="contrasena" required autocomplete="current-password" />
+      <button mat-icon-button matSuffix type="button" (click)="hide = !hide" [attr.aria-label]="hide ? 'Mostrar' : 'Ocultar'">
+        <mat-icon>{{ hide ? 'visibility' : 'visibility_off' }}</mat-icon>
+      </button>
     </mat-form-field>
 
-    @if (error) {
-    <div class="error-message">
-      {{ error }}
-    </div>
-    }
+    @if (error) { <div class="error-message">{{ error }}</div> }
 
-    <!-- Botón de login -->
-    <button type="submit" class="login-btn" [disabled]="loginForm.invalid">Login</button>
+    <button type="submit" class="login-btn" [disabled]="loginForm.invalid || isLoading">
+      {{ isLoading ? 'Ingresando…' : 'Login' }}
+    </button>
   </form>
 </div>

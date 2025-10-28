@@ -29,6 +29,8 @@ export class ApiService {
   public url = 'http://localhost:8080';
   private apiUrl = `${this.url}/api`;
 
+  private SESSION_FLAG = 'kimsa_has_session';   // <— NUEVO
+
   // === Estado de sesión ===
   private usuarioActualSubject = new BehaviorSubject<UsuarioLigero | null>(null);
   public usuarioActual = this.usuarioActualSubject.asObservable();
@@ -77,6 +79,11 @@ export class ApiService {
   }
 
   // ========= AUTH =========
+
+  hasSession(): boolean {
+    return localStorage.getItem(this.SESSION_FLAG) === '1';
+  }
+
   login(username: string, password: string): Observable<UsuarioLigero> {
     return this.http
       .post<UsuarioLigero>(
@@ -87,6 +94,7 @@ export class ApiService {
       .pipe(
         tap((user) => {
           if (!user) throw new Error('Respuesta inválida del login');
+          localStorage.setItem(this.SESSION_FLAG, '1');
           this.setUsuario(user);
         }),
         catchError((err) => {
@@ -97,17 +105,22 @@ export class ApiService {
         })
       );
   }
-
-  /** Llama al inicio de tu app para hidratar usuario desde cookie HttpOnly */
+  
   async ensureUserReady(): Promise<void> {
-    if (this.getUsuarioActual()) return;
+    if (!this.hasSession()) {
+      this.setUsuario(null);
+      return;
+    }
     try {
       const me = await firstValueFrom(
         this.http.get<UsuarioLigero>(`${this.apiUrl}/auth/me`, this.withCred())
+          .pipe(catchError(() => [null] as any)) // 401 -> null silencioso
       );
-      this.setUsuario(me);
+      this.setUsuario(me || null);
+      if (!me) localStorage.removeItem(this.SESSION_FLAG);
     } catch {
       this.setUsuario(null);
+      localStorage.removeItem(this.SESSION_FLAG);
     }
   }
 
@@ -115,8 +128,9 @@ export class ApiService {
     this.http.post(`${this.apiUrl}/auth/logout`, {}, this.withCred()).subscribe({
       complete: () => {
         localStorage.removeItem('usuario');
+        localStorage.removeItem(this.SESSION_FLAG);
         this.usuarioActualSubject.next(null);
-      },
+      }
     });
   }
 

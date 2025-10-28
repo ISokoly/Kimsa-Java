@@ -1,47 +1,47 @@
+// src/app/login/login.component.ts
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-
-// Material Modules
+import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
-
 import { ApiService } from '../core/services/api.service';
 import { ToastService } from '../core/services/toast.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    FormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule
-  ],
+  imports: [CommonModule, FormsModule, MatFormFieldModule, MatInputModule, MatIconModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
-  usuario: string = '';
-  contrasena: string = '';
-  error: string = '';
+  usuario = '';
+  contrasena = '';
+  error = '';
+  isLoading = false;
+  hide = true;
 
-  constructor(private apiService: ApiService, private router: Router, private toastService: ToastService) { }
+  constructor(private api: ApiService, private router: Router, private toast: ToastService) {}
 
   login() {
-    this.apiService.login(this.usuario, this.contrasena).subscribe({
+    if (this.isLoading) return;
+    this.error = '';
+    this.isLoading = true;
+
+    this.api.login(this.usuario, this.contrasena).subscribe({
       next: () => {
-        this.toastService.mostrarMensaje('✅ Sesión iniciada con éxito');
-        this.router.navigate(['/view']);
+        // ✅ Ya tenemos usuario en memoria (setUsuario en el service)
+        this.toast.mostrarMensaje('✅ Sesión iniciada con éxito');
+        this.isLoading = false;
+        this.router.navigate(['/view']); // sin ensureUserReady()
       },
       error: (err) => {
-        let mensaje = err.error?.message || err.message || 'Usuario o contraseña incorrectos';
-        if (!mensaje.startsWith('❌')) {
-          mensaje = `❌ ${mensaje}`;
-        }
-        this.toastService.mostrarMensaje(mensaje);
+        this.error = `❌ ${err?.message || 'Usuario o contraseña incorrectos'}`;
+        this.toast.mostrarMensaje(this.error);
         this.contrasena = '';
+        this.isLoading = false;
       }
     });
   }
