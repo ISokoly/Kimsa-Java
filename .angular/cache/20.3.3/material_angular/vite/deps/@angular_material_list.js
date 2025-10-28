@@ -1,13 +1,10 @@
 import {
-  MatDivider,
-  MatDividerModule
-} from "./chunk-KAF5KLZH.js";
-import {
   SelectionModel
 } from "./chunk-TQAD7LQE.js";
 import {
-  NG_VALUE_ACCESSOR
-} from "./chunk-AHVWMHDC.js";
+  MatDivider,
+  MatDividerModule
+} from "./chunk-KAF5KLZH.js";
 import {
   MatPseudoCheckboxModule
 } from "./chunk-DQ4GLH22.js";
@@ -19,10 +16,10 @@ import {
   RippleRenderer,
   _StructuralStylesLoader
 } from "./chunk-4DURZ7VL.js";
-import "./chunk-6CFF66EY.js";
 import {
   _animationsDisabled
 } from "./chunk-QFXFQPJB.js";
+import "./chunk-6CFF66EY.js";
 import "./chunk-VENV3F3G.js";
 import {
   coerceBooleanProperty
@@ -38,6 +35,9 @@ import {
   _getFocusedElementPierceShadowDom,
   hasModifierKey
 } from "./chunk-KYR4SNMN.js";
+import {
+  NG_VALUE_ACCESSOR
+} from "./chunk-AHVWMHDC.js";
 import {
   _CdkPrivateStyleLoader
 } from "./chunk-2WBYOXEK.js";

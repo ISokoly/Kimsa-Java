@@ -1,4 +1,9 @@
 import {
+  MatLine,
+  MatLineModule,
+  setLines
+} from "./chunk-IXLLSIW4.js";
+import {
   DateAdapter,
   MAT_DATE_FORMATS,
   MAT_DATE_LOCALE,
@@ -12,6 +17,9 @@ import {
 import {
   MatRippleLoader
 } from "./chunk-T23MBZAI.js";
+import {
+  _MatInternalFormField
+} from "./chunk-VNSINEXB.js";
 import {
   MAT_OPTGROUP,
   MAT_OPTION_PARENT_COMPONENT,
@@ -30,9 +38,6 @@ import {
   MatRippleModule
 } from "./chunk-WPI75KC5.js";
 import {
-  _MatInternalFormField
-} from "./chunk-VNSINEXB.js";
-import {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   MatRipple,
   RippleRef,
@@ -41,7 +46,6 @@ import {
   _StructuralStylesLoader,
   defaultRippleAnimationConfig
 } from "./chunk-4DURZ7VL.js";
-import "./chunk-6CFF66EY.js";
 import {
   AnimationCurves,
   AnimationDurations,
@@ -49,12 +53,8 @@ import {
   _animationsDisabled,
   _getAnimationsState
 } from "./chunk-QFXFQPJB.js";
+import "./chunk-6CFF66EY.js";
 import "./chunk-VENV3F3G.js";
-import {
-  MatLine,
-  MatLineModule,
-  setLines
-} from "./chunk-IXLLSIW4.js";
 import "./chunk-GWFLKVBH.js";
 import {
   MATERIAL_SANITY_CHECKS,
