@@ -1,4 +1,9 @@
-<div [class.no-anim]="!ready" [class.anim]="ready" [attr.aria-busy]="(pageLoading.loading$ | async) ? 'true' : 'false'">
+
+<div
+  [class.no-anim]="!ready"
+  [class.anim]="ready"
+  [attr.aria-busy]="loadingSig() ? 'true' : 'false'">
+
   <mat-toolbar>
     <button mat-icon-button (click)="toggleCollapse()" [disabled]="isLoading">
       <mat-icon>menu</mat-icon>
@@ -6,18 +11,19 @@
 
     <span class="example-spacer"></span>
 
-    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': estaSeleccionado }" (click)="irAUsuarios()"
-      [disabled]="isLoading" aria-label="Ir a perfil de usuario">
+    <button mat-button class="usuario-btn" [ngClass]="{ 'selected-button': estaSeleccionado }"
+            (click)="irAUsuarios()" [disabled]="isLoading" aria-label="Ir a perfil de usuario">
       <mat-icon>account_circle</mat-icon>
       Bienvenido: {{ usuarioNombre || '—' }}
     </button>
 
     @if (usuarioAutenticado?.administratorPermissions) {
-    <select class="rol-select" [(ngModel)]="usuarioRol" (ngModelChange)="cambiarRol($event)" [disabled]="isLoading"
-      aria-label="Cambiar rol">
-      <option value="Administrator">Administrador</option>
-      <option value="Employee">Empleado</option>
-    </select>
+      <select class="rol-select" [(ngModel)]="usuarioRol"
+              (ngModelChange)="cambiarRol($event)"
+              [disabled]="isLoading" aria-label="Cambiar rol">
+        <option value="Administrator">Administrador</option>
+        <option value="Employee">Empleado</option>
+      </select>
     }
 
     <span class="example-spacer"></span>
@@ -39,9 +45,9 @@
     </mat-sidenav-content>
   </mat-sidenav-container>
 
-  @if (pageLoading.loading$ | async) {
-  <div class="page-spinner">
-    <div class="spinner" role="progressbar" aria-label="Cargando página"></div>
-  </div>
+  @if (loadingSig()) {
+    <div class="page-spinner">
+      <div class="spinner" role="progressbar" aria-label="Cargando página"></div>
+    </div>
   }
 </div>

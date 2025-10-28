@@ -1,25 +1,27 @@
+// src/app/core/guard/employee.guard.ts
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
-import { Observable } from 'rxjs';
-import { ApiService } from '../services/api.service';
-@Injectable({
-  providedIn: 'root'
-})
+import { CanActivate, Router, UrlTree } from '@angular/router';
+import { ApiService, UsuarioLigero } from '../services/api.service';
+
+@Injectable({ providedIn: 'root' })
 export class EmployeeGuard implements CanActivate {
+  constructor(private router: Router, private api: ApiService) {}
 
-  constructor(private router: Router, private apiService: ApiService) { }
+  private async resolveUser(): Promise<UsuarioLigero | null> {
+    const u = this.api.usuarioAutenticado;
+    if (u) return u;
+    await this.api.ensureUserReady();
+    return this.api.usuarioAutenticado;
+  }
 
-  canActivate(
-    next: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot
-  ): Observable<boolean> | Promise<boolean> | boolean {
-    const usuario = this.apiService.usuarioAutenticado;
+  async canActivate(): Promise<boolean | UrlTree> {
+    const user = await this.resolveUser();
+    if (!user) return this.router.parseUrl('/login');
 
-    if (usuario && usuario.rol === 'Employee') {
-      return true;
-    }
+    const rol = (user.rol || '').toString();
+    // Permite Employee y Administrator
+    if (rol === 'Employee' || rol === 'Administrator') return true;
 
-    this.router.navigate(['/view/usuarios']);
-    return false;
+    return this.router.parseUrl('/view/usuarios');
   }
 }

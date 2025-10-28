@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-expressions
 import { ChangeDetectorRef, Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
@@ -125,15 +126,7 @@ export class ProductoComponent implements OnInit {
   private crearMarcaRef?: OverlayHandle;
   private prodCaractRef?: OverlayHandle;
 
-  constructor(
-    private api: ApiService,
-    private toast: ToastService,
-    private route: ActivatedRoute,
-    private dialog: MatDialog,
-    private featuresSvc: FeatureFilterService,
-    private cd: ChangeDetectorRef,
-    private pageLoading: PageLoadingService
-  ) { }
+  constructor(private api: ApiService, private toast: ToastService, private route: ActivatedRoute, private dialog: MatDialog, private featuresSvc: FeatureFilterService, private cd: ChangeDetectorRef, private pageLoading: PageLoadingService) { }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(async params => {
@@ -157,14 +150,12 @@ export class ProductoComponent implements OnInit {
       idProduct,
       marcaMap: this.marcaMap,
       setSelected: (p: Product) => { this.selectedProducto = p; },
-
       setFeatureRows: (rows: Array<{ base: string; value?: string; detail?: string }>) => {
         this.productFeatureRows = rows.map(r => ({
           base: r.base,
           value: r.value ?? r.detail ?? ''
         }));
       },
-
       reloadImage: async (idImage: number) => { await this.loadImagen(idImage); }
     });
     this.cd.detectChanges();

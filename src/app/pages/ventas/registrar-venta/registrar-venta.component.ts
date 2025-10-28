@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-expressions
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -94,7 +95,7 @@ export class RegistrarVentaComponent implements OnInit {
     private router: Router,
     private dialog: MatDialog,
     private pageLoading: PageLoadingService
-  ) {}
+  ) { }
 
   /* ==================== INICIO ==================== */
   ngOnInit(): void {
@@ -225,8 +226,8 @@ export class RegistrarVentaComponent implements OnInit {
     this.isSaving = true;
     try {
       const customer = await this.ensureCustomer();
-      const user = this.api.getUsuarioActual?.();
-      const idUser = toNum(user?.idUser ?? user?.id_usuario ?? 1);
+      const user = this.api.getUsuarioActual(); // <--- correcto, sin "?.()"
+      const idUser = Number(user?.idUser ?? 1); // <--- normaliza a idUser
 
       const payload = {
         idClient: customer.idClient,

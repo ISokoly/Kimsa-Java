@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -26,20 +26,15 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
     MatButtonModule,
     MatCardModule,
     MatListModule,
-    MatDividerModule, // ← se usa <mat-divider> en el template
+    MatDividerModule,
   ],
   templateUrl: './usuarios.component.html',
   styleUrls: ['./usuarios.component.scss']
 })
-export class UsuariosComponent implements OnInit {
+export class UsuariosComponent implements OnInit, AfterViewInit {
   contentReady = false;
 
-  // ===== Datos =====
   usuario: any;
-  empleados: any[] = [];
-  administradores: any[] = [];
-  mostrarFormularioContrasena = false;
-
   Empleado = {
     username: '', name: '', lastName: '', dni: '', direction: '', numberPhone: '',
     password: '', rol: '', disabled: false, passwordActual: '', nuevaPassword: ''
@@ -60,32 +55,25 @@ export class UsuariosComponent implements OnInit {
     private router: Router,
     private toastService: ToastService,
     private dialog: MatDialog,
-    private pageLoading: PageLoadingService
+    private pageLoading: PageLoadingService,           // 👈 inyectado
   ) {}
 
-  // ===== Ciclo de vida =====
   ngOnInit(): void {
-    // ÚNICO ciclo de carga para evitar parpadeos
-    this.contentReady = false;
-    this.pageLoading.start();
+    // Carga síncrona de usuario desde localStorage / BehaviorSubject
+    const u = this.apiService.getUsuarioActual() ?? this.apiService.usuarioAutenticado;
+    this.usuario = u || null;
 
-    // obtenerUsuario es síncrono (lee del storage/session),
-    // no hace llamadas HTTP, así que no encadena más cargas.
-    this.obtenerUsuario();
-
+    // Marca el contenido como listo; el DOM se pinta en el siguiente microtask
     this.contentReady = true;
-    this.pageLoading.stop();
+
+    // ✅ Apaga el spinner global del layout inmediatamente después de marcar listo
+    // (encolar en microtask evita condiciones de carrera con el render)
+    queueMicrotask(() => this.pageLoading.stop());
   }
 
-  // ===== Carga de datos =====
-  private obtenerUsuario(): void {
-    const u = this.apiService.getUsuarioActual();
-    if (!u) {
-      this.toastService.mostrarMensaje('❌ No se encontró un usuario autenticado');
-      this.usuario = null;
-      return;
-    }
-    this.usuario = u;
+  ngAfterViewInit(): void {
+    // ✅ “seguro adicional” por si el padre encendió el spinner con un leve retraso
+    setTimeout(() => this.pageLoading.stop(), 0);
   }
 
   // ===== Navegación =====
@@ -97,7 +85,7 @@ export class UsuariosComponent implements OnInit {
   // ===== Formularios (overlay) =====
   abrirFormulario(usuario: any): void {
     this.userSeleccionado = { ...usuario };
-    this.Empleado = { ...usuario, password: '' };
+    this.Empleado = { ...usuario, password: '', passwordActual: '', nuevaPassword: '' };
     this.userFormRef?.close();
     this.userFormRef = this.overlay.open(this.formUsuarioTpl);
   }
@@ -117,7 +105,6 @@ export class UsuariosComponent implements OnInit {
   cerrarCambiarContrasena(): void {
     this.passFormRef?.close();
     this.passFormRef = undefined;
-    this.mostrarFormularioContrasena = false;
     this.Empleado.passwordActual = '';
     this.Empleado.nuevaPassword = '';
   }
@@ -159,16 +146,22 @@ export class UsuariosComponent implements OnInit {
     if (this.Empleado.password) body.password = this.Empleado.password;
 
     this.isLoading = true;
+    this.pageLoading.start();                               // 🔹 opcional: mostrar spinner global durante PUT
     this.apiService.updateUsuario(id, body).subscribe({
-      next: () => {
-        this.toastService.mostrarMensaje('✅ Usuario actualizado correctamente');
-        this.obtenerUsuario(); // refresca datos en memoria sin tocar contentReady
+      next: (usuarioActualizado) => {
+        // refresca persona en memoria si es el mismo usuario
+        if (usuarioActualizado?.idUser === (this.usuario?.idUser ?? this.usuario?.id_user)) {
+          this.usuario = usuarioActualizado;
+          localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+        }
         this.cerrarFormulario();
         this.isLoading = false;
+        this.pageLoading.stop();                            // 🔹 apaga spinner global
       },
       error: () => {
         this.toastService.mostrarMensaje('❌ Error al actualizar usuario');
         this.isLoading = false;
+        this.pageLoading.stop();                            // 🔹 apaga spinner global aunque haya error
       }
     });
   }
@@ -186,24 +179,25 @@ export class UsuariosComponent implements OnInit {
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
 
-      const usuarioActual = this.apiService.getUsuarioActual();
-      const idActual = usuarioActual?.idUser ?? usuarioActual?.id;
+      const idActual = this.usuario?.idUser ?? this.usuario?.id;
       this.isLoading = true;
+      this.pageLoading.start();                             // 🔹 opcional
 
       this.apiService.updateUsuario(id, { disabled: true }).subscribe({
         next: () => {
           if (idActual === id) {
             this.toastService.mostrarMensaje('✅ Tu cuenta fue deshabilitada. Cerrando sesión...');
-            setTimeout(() => this.logout(), 1500);
+            setTimeout(() => this.logout(), 1200);
           } else {
             this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
-            this.obtenerUsuario();
             this.isLoading = false;
+            this.pageLoading.stop();                        // 🔹 apaga spinner si sigue en esta vista
           }
         },
         error: () => {
           this.toastService.mostrarMensaje('❌ Error al deshabilitar usuario');
           this.isLoading = false;
+          this.pageLoading.stop();
         }
       });
     });
@@ -224,18 +218,20 @@ export class UsuariosComponent implements OnInit {
     const payload = { actual: this.Empleado.passwordActual, nueva: this.Empleado.nuevaPassword };
 
     this.isLoading = true;
+    this.pageLoading.start();                               // 🔹 opcional
+
     this.apiService.cambiarPassword(id, payload).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Contraseña actualizada correctamente');
-        this.mostrarFormularioContrasena = false;
-        this.Empleado.passwordActual = '';
-        this.Empleado.nuevaPassword = '';
+        this.cerrarCambiarContrasena();
         this.isLoading = false;
+        this.pageLoading.stop();
       },
       error: (error) => {
         if (error.status === 400) this.toastService.mostrarMensaje('❌ Contraseña actual incorrecta');
         else this.toastService.mostrarMensaje('❌ Error al actualizar la contraseña');
         this.isLoading = false;
+        this.pageLoading.stop();
       }
     });
   }

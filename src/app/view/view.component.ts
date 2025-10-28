@@ -14,9 +14,10 @@ import { ToastService } from '../core/services/toast.service';
 import { MenuComponent } from '../components/menu/menu.component';
 import { PageLoadingService } from '../core/services/page-loading.service';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { Subject } from 'rxjs';
-import { filter, map, startWith, takeUntil } from 'rxjs/operators';
+import { filter, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-view',
@@ -48,6 +49,7 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public pageLoading = inject(PageLoadingService);
 
   private destroy$ = new Subject<void>();
+  public loadingSig = toSignal(this.pageLoading.loading$, { initialValue: false });
 
   get usuarioAutenticado() {
     return this.apiService.usuarioAutenticado;
@@ -62,27 +64,28 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
     const usuario = this.apiService.usuarioAutenticado;
     if (usuario) {
       this.usuarioNombre = `${usuario.name} ${usuario.lastName}`;
-      this.usuarioRol = usuario.rol;
+      this.usuarioRol = (usuario.rol as 'Administrator' | 'Employee') ?? '';
     }
+
+    // Enciende spinner al iniciar navegación
     this.router.events
-      .pipe(
-        takeUntil(this.destroy$),
-        filter(e => e instanceof NavigationStart)
-      )
+      .pipe(takeUntil(this.destroy$), filter(e => e instanceof NavigationStart))
       .subscribe((e: any) => {
         this.pageLoading.start();
         if (!e.url.startsWith('/view/usuarios')) this.estaSeleccionado = false;
       });
+
+    // ✅ Apaga spinner cuando la navegación termina, se cancela o falla
     this.router.events
       .pipe(
         takeUntil(this.destroy$),
-        filter(e => e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError),
-        map(() => this.router.url),
-        startWith(this.router.url)
+        filter(e => e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError)
       )
-      .subscribe(url => {
-        this.isUsuariosPage = url.startsWith('/view/usuarios');
+      .subscribe(() => {
+        this.pageLoading.stop();                  // ✅ APAGA AQUÍ
       });
+
+    // animación de entrada cuando el spinner pasa a false (puedes dejarlo)
     this.pageLoading.loading$
       .pipe(takeUntil(this.destroy$))
       .subscribe(loading => {
@@ -101,6 +104,7 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.pageLoading.stop();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -127,7 +131,7 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
     dialogRef.afterClosed().subscribe(ok => {
       if (!ok) return;
       this.isLoading = true;
-      this.apiService.updateUsuario(usuario.idUser || usuario.id_user, { rol: nuevoRol }).subscribe({
+      this.apiService.updateUsuario(usuario.idUser!, { rol: nuevoRol }).subscribe({
         next: () => {
           this.toastService.mostrarMensaje(`✅ Rol cambiado a ${nuevoRol}`);
           this.usuarioRol = nuevoRol;
@@ -142,6 +146,7 @@ export class ViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   logout(): void {
+    this.pageLoading.stop();
     this.apiService.logout();
     this.toastService.mostrarMensaje('✅ Sesión cerrada con éxito');
     this.usuarioNombre = '';

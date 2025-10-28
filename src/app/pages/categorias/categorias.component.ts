@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { MatInputModule } from '@angular/material/input';
@@ -33,6 +33,7 @@ export class CategoriasComponent implements OnInit {
   imagenesCache: Record<number, string> = {};
   marcaMap: Record<number, string> = {};
   imgLoaded: Record<number, boolean> = {};
+  private cd = inject(ChangeDetectorRef);
 
   formData = { name: '', description: '', idImage: null as number | null, disabled: false };
 
@@ -76,32 +77,28 @@ export class CategoriasComponent implements OnInit {
 
   /* === Datos === */
   private async loadCategoriasYImagenes(): Promise<void> {
-    // 1) Categorías
     const data = await firstValueFrom(this.apiService.getCategorias());
     this.categorias = (data || []).filter((c: any) => !c.disabled);
 
-    // 2) Construir observables de imágenes (solo las que no estén en cache)
     const ids = this.categorias
       .map(c => c.idImage)
       .filter((id): id is number => !!id && !this.imagenesCache[id]);
 
-    if (ids.length === 0) return;
-
-    // 3) Esperar TODAS las imágenes
-    await firstValueFrom(
-      forkJoin(
-        ids.map(id =>
+    if (ids.length) {
+      const results = await firstValueFrom(
+        forkJoin(ids.map(id =>
           this.apiService.getImagenById(id).pipe(
             map((res: any) => ({ id, url: `${res.url}?t=${Date.now()}` })),
             catchError(() => of({ id, url: '/img/no-image.png' }))
           )
-        )
-      )
-    ).then(results => {
-      for (const { id, url } of results) {
-        this.imagenesCache[id] = url;
-      }
-    });
+        ))
+      );
+      for (const { id, url } of results) this.imagenesCache[id] = url;
+    }
+
+    if (this.categoryDetailRef && this.selectedCategoria) {
+      this.rebindSelectedCategoria();
+    }
   }
 
   getUrlImagen(idImage?: number | null): string {
@@ -144,8 +141,10 @@ export class CategoriasComponent implements OnInit {
   }
 
   openCategoryDetail(cat: any): void {
-    this.selectedCategoria = cat;
+    this.selectedCategoria = { ...cat };
+    this.categoryDetailRef?.close();
     this.categoryDetailRef = this.overlay.open(this.categoryDetailTpl);
+    this.cd.detectChanges();
   }
 
   closeCategoryDetail(): void {
@@ -227,6 +226,17 @@ export class CategoriasComponent implements OnInit {
 
   verProductos(nombre: string) {
     this.router.navigate([`/view/categoria/producto/${encodeURIComponent(nombre)}`]);
+  }
+
+  private rebindSelectedCategoria(): void {
+    const id = this.selectedCategoria?.idCategory;
+    if (!id) return;
+
+    const fresh = this.categorias.find(c => c.idCategory === id);
+    if (fresh) {
+      this.selectedCategoria = { ...fresh };
+    }
+    this.cd.detectChanges();
   }
 
   limitarCaracteres() {

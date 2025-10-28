@@ -36,26 +36,25 @@ export const routes: Routes = [
         canActivate: [HomeRedirectGuard],
         component: CategoriasComponent
       },
-       { path: 'categoria', component: CategoriasComponent, canActivate: [EmployeeGuard] },
+      { path: 'categoria', component: CategoriasComponent, canActivate: [EmployeeGuard] },
       { path: 'categoria/producto/:nombreCategoria', component: ProductoComponent, canActivate: [EmployeeGuard] },
       { path: 'ventas', component: VentasComponent, canActivate: [EmployeeGuard] },
       { path: 'ventas/registrar-venta', component: RegistrarVentaComponent, canActivate: [EmployeeGuard] },
       { path: 'ventas/pagos/:id', component: PagosComponent, canActivate: [EmployeeGuard] },
-
-      {
-        path: 'ventas/editar/:id',
-        component: RegistrarVentaComponent
-      },
+      { path: 'ventas/editar/:id', component: RegistrarVentaComponent },
       { path: 'estadisticas', component: EstadisticasComponent, canActivate: [AdminGuard] },
       { path: 'usuarios', component: UsuariosComponent },
       { path: 'usuarios/otros', component: OtrosComponent, canActivate: [AdminGuard] },
       { path: 'usuarios/mesas', component: MesasComponent, canActivate: [AdminGuard] },
       { path: 'usuarios/clientes', component: ClientesComponent, canActivate: [EmployeeGuard] },
       { path: 'usuarios/descuentos', component: DescuentosComponent, canActivate: [EmployeeGuard] },
+
+      { path: '**', redirectTo: 'categoria', pathMatch: 'full' },
     ]
   },
   {
     path: 'login',
     component: LoginComponent
-  }
+  },
+  { path: '**', redirectTo: 'view/categoria', pathMatch: 'full' }
 ];
