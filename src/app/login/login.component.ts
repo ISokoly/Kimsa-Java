@@ -1,4 +1,3 @@
-// src/app/login/login.component.ts
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -32,10 +31,9 @@ export class LoginComponent {
 
     this.api.login(this.usuario, this.contrasena).subscribe({
       next: () => {
-        // ✅ Ya tenemos usuario en memoria (setUsuario en el service)
         this.toast.mostrarMensaje('✅ Sesión iniciada con éxito');
         this.isLoading = false;
-        this.router.navigate(['/view']); // sin ensureUserReady()
+        this.router.navigate(['/view']);
       },
       error: (err) => {
         this.error = `❌ ${err?.message || 'Usuario o contraseña incorrectos'}`;

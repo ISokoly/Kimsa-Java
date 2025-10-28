@@ -50,7 +50,6 @@ $color-accent: #98fadb;
       text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
     }
 
-    /* Estilos para los mat-form-field */
     .mat-form-field {
       width: 100%;
       margin-bottom: 1.25rem;
@@ -64,8 +63,20 @@ $color-accent: #98fadb;
         font-weight: 600;
       }
 
+      .mat-input-element {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
       input.mat-input-element {
         color: #333;
+
+      }
+
+      .mat-form-field-prefix,
+      .mat-form-field-suffix {
+        align-items: center;
+        display: flex;
       }
 
       .mat-form-field-ripple {
@@ -74,6 +85,11 @@ $color-accent: #98fadb;
 
       &.mat-focused .mat-form-field-outline {
         border-color: $color-accent !important;
+      }
+
+      &:has(input[type="password"]),
+      &:has(input[type="text"]) {
+        min-height: 56px;
       }
     }
 
@@ -103,4 +119,33 @@ $color-accent: #98fadb;
   text-align: center;
   font-weight: bold;
   font-size: 0.95rem;
+}
+
+.toggle-password-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-primary;
+  opacity: 0.7;
+  transition: 0.3s ease;
+
+  &:hover {
+    opacity: 1;
+    color: color.scale($color-primary, $lightness: -10%);
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+    background: none;
+  }
+
+  mat-icon {
+    font-size: 22px;
+  }
 }

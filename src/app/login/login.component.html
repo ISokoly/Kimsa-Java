@@ -1,4 +1,3 @@
-<!-- src/app/login/login.component.html -->
 <div class="login-container" [attr.aria-busy]="isLoading ? 'true' : 'false'">
   <form (ngSubmit)="login()" class="login-form" #loginForm="ngForm">
     <img src="kimsa_black.png" alt="Logo" class="logo" />
@@ -13,13 +12,17 @@
     <mat-form-field appearance="outline">
       <mat-label>Contraseña</mat-label>
       <mat-icon matPrefix>lock</mat-icon>
-      <input matInput [type]="hide ? 'password' : 'text'" [(ngModel)]="contrasena" name="contrasena" required autocomplete="current-password" />
-      <button mat-icon-button matSuffix type="button" (click)="hide = !hide" [attr.aria-label]="hide ? 'Mostrar' : 'Ocultar'">
+      <input matInput [type]="hide ? 'password' : 'text'" [(ngModel)]="contrasena" name="contrasena" required
+        autocomplete="current-password" />
+      <button mat-icon-button matSuffix type="button" (click)="hide = !hide"
+        [attr.aria-label]="hide ? 'Mostrar contraseña' : 'Ocultar contraseña'" class="toggle-password-btn">
         <mat-icon>{{ hide ? 'visibility' : 'visibility_off' }}</mat-icon>
       </button>
     </mat-form-field>
 
-    @if (error) { <div class="error-message">{{ error }}</div> }
+    @if (error) {
+    <div class="error-message">{{ error }}</div>
+    }
 
     <button type="submit" class="login-btn" [disabled]="loginForm.invalid || isLoading">
       {{ isLoading ? 'Ingresando…' : 'Login' }}

@@ -19,7 +19,6 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { PageLoadingService } from '../../core/services/page-loading.service';
 
-/* === Modelos front === */
 interface OrderDetail {
   idDetail: number;
   idOrder: number;
