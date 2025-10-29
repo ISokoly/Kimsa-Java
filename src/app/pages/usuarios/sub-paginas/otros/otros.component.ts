@@ -15,19 +15,21 @@ import { OverlayHandle, OverlayPortalService } from '../../../../core/services/o
 import { ConfirmDialogComponent } from '../../../../view/confirm-dialog/confirm-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-otros',
   standalone: true,
   imports: [
     FormsModule, MatInputModule, MatGridListModule,
-    MatButtonModule, MatSelectModule, MatOptionModule, MatTableModule
+    MatButtonModule, MatSelectModule, MatOptionModule, MatTableModule, MatCheckboxModule
   ],
   templateUrl: './otros.component.html',
   styleUrls: ['./otros.component.scss']
 })
 export class OtrosComponent implements OnInit {
   contentReady = false;
+  lockAdminPerm = false;
 
   usuario: any;
   listaUsuarios: any[] = [];
@@ -44,7 +46,9 @@ export class OtrosComponent implements OnInit {
 
   Empleado = {
     username: '', name: '', lastName: '', dni: '', direction: '', numberPhone: '',
-    password: '', rol: '', disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
+    password: '', rol: '', disabled: false,
+    confirmarPassword: '', passwordActual: '', nuevaPassword: '',
+    administratorPermissions: false,
   };
 
   userSeleccionado: any = null;
@@ -58,12 +62,7 @@ export class OtrosComponent implements OnInit {
   private createRef?: OverlayHandle;
   private passRef?: OverlayHandle;
 
-  constructor(
-    private apiService: ApiService,
-    private toastService: ToastService,
-    private dialog: MatDialog,
-    private pageLoading: PageLoadingService
-  ) {}
+  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
 
   async ngOnInit(): Promise<void> {
     await this.initLoad();
@@ -104,13 +103,18 @@ export class OtrosComponent implements OnInit {
   }
 
   private recargarListado(): void {
-    this.cargarOtrosUsuariosAsync().catch(() => {});
+    this.cargarOtrosUsuariosAsync().catch(() => { });
   }
 
   /* ====== Formularios (overlay) ====== */
   abrirFormulario(usuario: any): void {
     this.userSeleccionado = { ...usuario };
-    this.Empleado = { ...usuario, password: '' };
+    this.lockAdminPerm = this.isLastAdminWithPerms(this.userSeleccionado.idUser);
+    this.Empleado = {
+      ...usuario,
+      password: '',
+      administratorPermissions: !!usuario.administratorPermissions,
+    };
     this.editRef?.close();
     this.editRef = this.overlay.open(this.formEditarTpl);
   }
@@ -120,7 +124,7 @@ export class OtrosComponent implements OnInit {
     this.Empleado = {
       username: '', name: '', lastName: '', dni: '', direction: '',
       numberPhone: '', password: '', rol: '', disabled: false,
-      confirmarPassword: '', passwordActual: '', nuevaPassword: ''
+      confirmarPassword: '', passwordActual: '', nuevaPassword: '', administratorPermissions: false
     };
     this.createRef?.close();
     this.createRef = this.overlay.open(this.formCrearTpl);
@@ -138,6 +142,7 @@ export class OtrosComponent implements OnInit {
     this.editRef?.close(); this.editRef = undefined;
     this.createRef?.close(); this.createRef = undefined;
     this.resetEmpleado();
+    this.lockAdminPerm = false;
   }
 
   cerrarFormularioContrasena(): void {
@@ -150,7 +155,7 @@ export class OtrosComponent implements OnInit {
     this.Empleado = {
       username: '', name: '', lastName: '', dni: '',
       direction: '', numberPhone: '', password: '', rol: '',
-      disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: ''
+      disabled: false, confirmarPassword: '', passwordActual: '', nuevaPassword: '', administratorPermissions: false
     };
     this.userSeleccionado = null;
   }
@@ -161,8 +166,26 @@ export class OtrosComponent implements OnInit {
       this.toastService.mostrarMensaje('❌ Solo se puede actualizar usuarios existentes');
       return;
     }
+    if (this.lockAdminPerm && this.Empleado.administratorPermissions === false) {
+      this.toastService.mostrarMensaje('⚠️ Debe existir al menos un usuario con permisos de administrador.');
+      return;
+    }
+
     const id = this.userSeleccionado.idUser;
-    this.apiService.updateUsuario(id, this.Empleado).subscribe({
+    const body: any = {
+      username: this.Empleado.username,
+      name: this.Empleado.name,
+      lastName: this.Empleado.lastName,
+      dni: this.Empleado.dni,
+      direction: this.Empleado.direction,
+      numberPhone: this.Empleado.numberPhone,
+      rol: this.Empleado.rol,
+      disabled: this.Empleado.disabled,
+      administratorPermissions: !!this.Empleado.administratorPermissions,
+    };
+    if (this.Empleado.password) body.password = this.Empleado.password;
+
+    this.apiService.updateUsuario(id, body).subscribe({
       next: () => {
         this.toastService.mostrarMensaje('✅ Usuario actualizado correctamente');
         this.cerrarFormulario();
@@ -223,6 +246,20 @@ export class OtrosComponent implements OnInit {
     });
   }
 
+  onRolChange(_valor: 'Administrator' | 'Employee') {
+    if (this.lockAdminPerm && !this.Empleado.administratorPermissions) {
+      this.Empleado.administratorPermissions = true;
+    }
+  }
+
+  onAdminPermChange(checked: boolean) {
+    if (this.lockAdminPerm && !checked) {
+      this.Empleado.administratorPermissions = true;
+      this.toastService.mostrarMensaje('⚠️ No puedes quitar permisos de administrador al único administrador con permisos.');
+      return;
+    }
+    this.Empleado.administratorPermissions = checked;
+  }
   /* ====== Habilitar / Deshabilitar ====== */
   deshabilitarUsuario(id: number): void {
     const usuario = this.listaUsuarios.find(u => u.idUser === id);
@@ -310,5 +347,12 @@ export class OtrosComponent implements OnInit {
   soloNumeros(event: KeyboardEvent): void {
     const charCode = event.which ? event.which : event.keyCode;
     if (charCode < 48 || charCode > 57) event.preventDefault();
+  }
+
+  private isLastAdminWithPerms(targetId: number): boolean {
+    const activos = this.listaUsuarios.filter(u => !u.disabled);
+    const adminsConPerm = activos.filter(u => u.rol === 'Administrator' && !!u.administratorPermissions);
+    if (adminsConPerm.length !== 1) return false;
+    return adminsConPerm[0]?.idUser === targetId;
   }
 }

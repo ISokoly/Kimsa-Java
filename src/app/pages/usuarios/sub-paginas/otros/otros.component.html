@@ -126,11 +126,20 @@
 
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Rol</mat-label>
-          <mat-select [(ngModel)]="Empleado.rol">
+          <mat-select [(ngModel)]="Empleado.rol" name="rol" (selectionChange)="onRolChange($event.value)">
             <mat-option value="Administrator">Administrador</mat-option>
             <mat-option value="Employee">Empleado</mat-option>
           </mat-select>
         </mat-form-field>
+
+        @if (userSeleccionado && Empleado.rol === 'Employee' && userSeleccionado.administratorPermissions == true) {
+        <div class="full-width" style="display:flex;align-items:center;gap:.5rem">
+          <mat-checkbox [(ngModel)]="Empleado.administratorPermissions" name="administratorPermissions"
+            [disabled]="lockAdminPerm" (change)="onAdminPermChange($event.checked)">
+            Permisos de administrador
+          </mat-checkbox>
+        </div>
+        }
 
         <div class="full-width">
           <div class="editar-contrasena">

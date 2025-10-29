@@ -9,6 +9,6 @@ export class EmployeeGuard implements CanActivate {
 
   async canActivate(): Promise<boolean | UrlTree> {
     const u = this.api.usuarioAutenticado ?? (await this.api.ensureUserReady(), this.api.usuarioAutenticado);
-    return (u?.rol === 'Employee' || u?.rol === 'Administrator') ? true : this.router.parseUrl('/view/usuarios');
+    return (u?.rol === 'Employee') ? true : this.router.parseUrl('/view/usuarios');
   }
 }

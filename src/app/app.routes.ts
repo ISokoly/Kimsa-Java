@@ -16,6 +16,8 @@ import { MesasComponent } from "./pages/usuarios/sub-paginas/mesas/mesas.compone
 import { ClientesComponent } from "./pages/usuarios/sub-paginas/clientes/clientes.component";
 import { DescuentosComponent } from "./pages/usuarios/sub-paginas/descuentos/descuentos.component";
 import { NoAuthGuard } from "./core/guard/no-auth.guard";
+import { PendingSalesGuard } from "./core/guard/pending-sales.guard";
+import { PaymentAccessGuard } from "./core/guard/payment-access.guard";
 
 export const routes: Routes = [
   { path: "", pathMatch: "full", redirectTo: "view" },
@@ -49,9 +51,12 @@ export const routes: Routes = [
       {
         path: "ventas/pagos/:id",
         component: PagosComponent,
-        canActivate: [EmployeeGuard],
+        canActivate: [EmployeeGuard, PaymentAccessGuard],
       },
-      { path: "ventas/editar/:id", component: RegistrarVentaComponent },
+      {
+        path: "ventas/editar/:id", component: RegistrarVentaComponent,
+        canActivate: [EmployeeGuard, PendingSalesGuard]
+      },
       {
         path: "estadisticas",
         component: EstadisticasComponent,
