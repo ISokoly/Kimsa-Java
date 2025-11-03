@@ -18,6 +18,9 @@ import { DescuentosComponent } from "./pages/usuarios/sub-paginas/descuentos/des
 import { NoAuthGuard } from "./core/guard/no-auth.guard";
 import { PendingSalesGuard } from "./core/guard/pending-sales.guard";
 import { PaymentAccessGuard } from "./core/guard/payment-access.guard";
+import { ComprasComponent } from "./pages/inventario/compras/compras.component";
+import { InsumosComponent } from "./pages/inventario/insumos/insumos.component";
+import { RecetasComponent } from "./pages/inventario/recetas/recetas.component";
 
 export const routes: Routes = [
   { path: "", pathMatch: "full", redirectTo: "view" },
@@ -82,6 +85,22 @@ export const routes: Routes = [
         path: "usuarios/descuentos",
         component: DescuentosComponent,
         canActivate: [EmployeeGuard],
+      },
+
+      {
+        path: 'inventario/insumos',
+        component: InsumosComponent,
+        canActivate: [AdminGuard],
+      },
+      {
+        path: 'inventario/compras',
+        component: ComprasComponent,
+        canActivate: [AdminGuard],
+      },
+            {
+        path: 'inventario/recetas',
+        component: RecetasComponent,
+        canActivate: [AdminGuard],
       },
       { path: "**", redirectTo: "categoria" },
     ],

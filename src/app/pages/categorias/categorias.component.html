@@ -4,6 +4,15 @@
   <div class="categoria-container">
     <h1 class="title">Productos de la pizzería</h1>
 
+    <div class="toolbar">
+      <div class="full-width" style="display: flex;">
+        <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px; letter-spacing: .3px;" (click)="abrirFormulario()"
+          [disabled]="isLoading">
+          Añadir Nueva Categoría
+        </button>
+      </div>
+    </div>
+
     <div class="products-grid">
       @for (categoria of categorias; track $index) {
       <div class="category-item">
@@ -40,13 +49,6 @@
         </div>
       </div>
       }
-    </div>
-
-    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-      <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()"
-        [disabled]="isLoading">
-        Añadir Nueva Categoría
-      </button>
     </div>
   </div>
 </div>

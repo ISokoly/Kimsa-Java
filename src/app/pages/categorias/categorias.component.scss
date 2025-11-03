@@ -9,6 +9,12 @@ $bg-color: #f9f9f9;
   padding: 2rem;
   border-radius: 10px;
   background-color: $bg-color;
+
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+  }
 }
 
 .products-grid {
@@ -167,7 +173,7 @@ button {
   &.btn-azul {
     background: $secondary-color;
     color: #fff;
-    font-weight: bold;
+    font-weight: 600;
 
     &:hover {
       background: color.scale($secondary-color, $lightness: -30%);
@@ -272,7 +278,6 @@ button {
   }
 }
 
-/* ===== INPUTS DISABLED ===== */
 input[disabled],
 textarea[disabled],
 select[disabled] {
@@ -280,7 +285,6 @@ select[disabled] {
   cursor: not-allowed;
 }
 
-/* ===== FULL-WIDTH helper (fila de archivo) ===== */
 .full-width {
   display: flex;
   align-items: center;
@@ -340,19 +344,6 @@ select[disabled] {
   .bad {
     color: $danger-color;
     font-weight: 600;
-  }
-}
-
-/* ===== ANIMACIONES ===== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -55%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
   }
 }
 
@@ -417,5 +408,17 @@ select[disabled] {
   .img-container {
     max-width: 240px;
     padding: 6px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -55%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
   }
 }

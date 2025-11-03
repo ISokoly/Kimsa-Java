@@ -55,7 +55,7 @@ export class ApiService {
       try {
         this.usuarioActualSubject.next(JSON.parse(saved));
         return;
-      } catch {}
+      } catch { }
     }
     this.usuarioActualSubject.next(null);
   }
@@ -756,6 +756,126 @@ export class ApiService {
   deleteDescuento(id: number): Observable<any> {
     return this.http.delete(
       `${this.apiUrl}/discounts/${id}`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  // ========= SUPPLIES (INSUMOS) =========
+  getSupplies(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/supplies`, this.withCred({ headers: this.authHeaders() }));
+  }
+
+  createSupply(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/supplies`, data, this.withCred({ headers: this.authHeaders() }));
+  }
+
+  updateSupply(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/supplies/${id}`, data, this.withCred({ headers: this.authHeaders() }));
+  }
+
+  toggleSupply(id: number): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/supplies/${id}/toggle`, {}, this.withCred({ headers: this.authHeaders() }));
+  }
+
+  // ========= SUPPLIERS (PROVEEDORES) =========
+  getSuppliers(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/suppliers`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  getSupplierById(id: number): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/suppliers/${id}`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  createSupplier(data: { name: string; phone?: string; address?: string; email?: string }): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/suppliers`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  updateSupplier(id: number, data: any): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/suppliers/${id}`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  toggleSupplier(id: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/suppliers/${id}/toggle`,
+      {},
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  // ========= PURCHASES (COMPRAS / ENTRADAS A STOCK) =========
+  getPurchases(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/purchases`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  updatePurchase(id: number, data: { idSupplier: number; items: Array<{ idSupply: number; quantity: number }> }): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/purchases/${id}`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  getPurchaseById(id: number): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/purchases/${id}`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+  createPurchase(data: { idSupplier: number; items: Array<{ idSupply: number; quantity: number }> }): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/purchases`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  // ========= RECIPES (RECETAS DE PRODUCTO) =========
+  getRecipes(): any {
+    return this.http.get(
+      `${this.apiUrl}/recipes`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  getRecipeDetails(idRecipe: number): any {
+    return this.http.get(
+      `${this.apiUrl}/recipes/${idRecipe}/details`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  // payload: { idProduct: number, items: [{ idSupply:number, gramsQuantity:number }] }
+  createRecipe(data: any): any {
+    return this.http.post(
+      `${this.apiUrl}/recipes`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  updateRecipe(id: number, data: any): any {
+    return this.http.put(
+      `${this.apiUrl}/recipes/${id}`,
+      data,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  deleteRecipe(id: number): any {
+    return this.http.delete(
+      `${this.apiUrl}/recipes/${id}`,
       this.withCred({ headers: this.authHeaders() })
     );
   }

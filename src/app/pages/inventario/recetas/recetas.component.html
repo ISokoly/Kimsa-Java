@@ -1,0 +1,209 @@
+@if (!contentReady) { }
+@else {
+<div class="container">
+    <h1 class="title">Recetas</h1>
+
+    <div class="toolbar">
+        <button mat-raised-button color="primary" class="add-btn" type="button" (click)="abrirFormulario()"
+            [disabled]="isSaving  || formLoading">
+            <mat-icon>add</mat-icon> Nueva receta
+        </button>
+    </div>
+
+    <table mat-table [dataSource]="recipes" class="mat-elevation-z8 recipes-table">
+
+        <!-- ID -->
+        <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef class="c-center col-id">ID</th>
+            <td mat-cell *matCellDef="let r" class="c-center col-id">{{ r.idRecipe }}</td>
+        </ng-container>
+
+        <!-- Producto -->
+        <ng-container matColumnDef="product">
+            <th mat-header-cell *matHeaderCellDef class="c-center col-product">Producto</th>
+            <td mat-cell *matCellDef="let r" class="c-center col-product">
+                {{ r.product?.name || r.productName || ('#' + (r.idProduct ?? '')) }}
+            </td>
+        </ng-container>
+        <!-- Insumos (con unidades) -->
+        <ng-container matColumnDef="items">
+            <th mat-header-cell *matHeaderCellDef class="c-center col-items">Insumos</th>
+            <td mat-cell *matCellDef="let r" class="c-center col-items">
+                @if (detailsByRecipe[r.idRecipe]?.length) {
+                <mat-chip-set class="chips-inline" aria-label="Insumos de la receta">
+                    @for (d of detailsByRecipe[r.idRecipe]; track d.idSupply) {
+                    <mat-chip>
+                        {{ d.name }} — {{ d.gramsQuantity | number:'1.0-2' }} {{ unitLabel(d.unit) }}
+                    </mat-chip>
+                    }
+                </mat-chip-set>
+                } @else {
+                <span class="muted">—</span>
+                }
+            </td>
+        </ng-container>
+
+        <!-- Acciones -->
+        <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="c-center col-actions">Acciones</th>
+            <td mat-cell *matCellDef="let r" class="c-center col-actions">
+                <div class="row-actions">
+                    <button mat-stroked-button color="primary" type="button" (click)="abrirFormulario(r)"
+                        [disabled]="isSaving">
+                        <mat-icon>edit</mat-icon> Editar
+                    </button>
+                </div>
+            </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackByRecipe" class="data-row"></tr>
+    </table>
+</div>
+
+<ng-template #recipeFormTpl>
+    <div class="form-modal">
+        <h2 class="title form-title">
+            @if (!selectedRecipe) { Crear receta } @else { Editar receta }
+        </h2>
+
+        <form class="form-container">
+            <section class="section">
+                <h3 class="section-title">Producto</h3>
+                <mat-form-field appearance="fill" class="w-100">
+                    <mat-label>Producto</mat-label>
+                    <mat-select [(ngModel)]="formData.idProduct" name="product" required
+                        [disabled]="availableProducts.length === 0 || isSaving">
+                        <mat-option [value]="null" disabled>Seleccione</mat-option>
+
+                        @if (availableProducts.length === 0) {
+                        <mat-option disabled>— No hay productos disponibles —</mat-option>
+                        } @else {
+                        @for (p of availableProducts; track p.idProduct) {
+                        <mat-option [value]="p.idProduct">{{ p.name }}</mat-option>
+                        }
+                        }
+                    </mat-select>
+
+                    @if (!formData.idProduct) {
+                    <mat-error>Seleccione un producto</mat-error>
+                    }
+                </mat-form-field>
+            </section>
+
+
+            <mat-divider class="divider"></mat-divider>
+
+            <!-- =================== Agregar insumo =================== -->
+            <section class="section">
+                <h3 class="section-title">Agregar insumo</h3>
+
+                <div class="add-row">
+                    <!-- Select de Insumo -->
+                    <mat-form-field appearance="fill" class="grow">
+                        <mat-label>Insumo</mat-label>
+                        <mat-select [(ngModel)]="newItem.idSupply" name="supply"
+                            [disabled]="availableSupplies.length === 0 || isSaving || formLoading"
+                            (selectionChange)="onSelectNewSupply()">
+                            <mat-option [value]="null" disabled>Seleccione</mat-option>
+
+                            @if (availableSupplies.length === 0) {
+                            <mat-option disabled>— Todos los insumos ya fueron añadidos —</mat-option>
+                            } @else {
+                            @for (s of availableSupplies; track s.idSupply) {
+                            <mat-option [value]="s.idSupply">
+                                {{ s.name }} — {{ unitLabel(s.unit) }}
+                            </mat-option>
+                            }
+                            }
+                        </mat-select>
+                        @if (!newItem.idSupply) {
+                        <mat-error>Seleccione un insumo</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <!-- Cantidad -->
+                    <mat-form-field appearance="fill" class="grams">
+                        <mat-label>Cantidad ({{ unitLabelBySupply(newItem.idSupply) }})</mat-label>
+                        <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="newItem.gramsQuantity"
+                            [ngModelOptions]="{ standalone: true }" (blur)="clampNewGrams()" placeholder="0.00"
+                            [disabled]="!newItem.idSupply || availableSupplies.length === 0 || isSaving || formLoading" />
+                        <span matSuffix>{{ unitLabelBySupply(newItem.idSupply) }}&nbsp;</span>
+                        @if (!(newItem.gramsQuantity > 0) && newItem.idSupply) {
+                        <mat-error>Ingrese una cantidad &gt; 0</mat-error>
+                        }
+                    </mat-form-field>
+
+                    <button mat-raised-button color="primary" type="button" class="add-btn" (click)="addItem()"
+                        [disabled]="isSaving|| !formData.idProduct|| !newItem.idSupply || !(newItem.gramsQuantity > 0) || formLoading">
+                        <mat-icon>add</mat-icon>
+                        Agregar
+                    </button>
+
+                </div>
+            </section>
+
+            <mat-divider class="divider"></mat-divider>
+
+            <!-- =================== Detalle (cards) =================== -->
+            <section class="section">
+                <h3 class="section-title with-count">
+                    Detalle de insumos
+                    @if (details.length) {
+                    <span class="count-pill">{{ details.length }}</span>
+                    }
+                </h3>
+
+                @if (details.length) {
+                <div class="cards-grid">
+                    @for (it of details; track it.idSupply) {
+                    <mat-card class="supply-card mat-elevation-z2">
+                        <button mat-icon-button type="button" class="close-card" aria-label="Quitar"
+                            (click)="removeItem(it)">
+                            <mat-icon>close</mat-icon>
+                        </button>
+
+                        <mat-card-header>
+                            <mat-card-title style="margin-bottom: 6px;">{{ it.name }}</mat-card-title>
+                        </mat-card-header>
+
+                        <mat-card-content>
+                            <mat-form-field appearance="fill" class="w-100">
+                                <mat-label>Cantidad ({{ unitLabel(it.unit) }})</mat-label>
+                                <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="it.gramsQuantity"
+                                    [ngModelOptions]="{ standalone: true }" (blur)="clampItemGrams(it)"
+                                    placeholder="0.00" [disabled]="formLoading || isSaving" />
+                                <span matSuffix>{{ unitLabel(it.unit) }}&nbsp;</span>
+                                @if (!(it.gramsQuantity > 0)) {
+                                <mat-error>Ingrese una cantidad &gt; 0</mat-error>
+                                }
+                            </mat-form-field>
+                        </mat-card-content>
+                    </mat-card>
+                    }
+                </div>
+                } @else {
+                <div class="empty">
+                    Aún no has agregado insumos a esta receta.
+                </div>
+                }
+            </section>
+
+            <mat-divider class="divider"></mat-divider>
+
+            <!-- =================== Acciones =================== -->
+            <div class="actions botones">
+                <button mat-raised-button color="primary" class="button-form form-btn-verde" type="button"
+                    (click)="saveRecipe()" [disabled]="isSaving || !canSave() || formLoading">
+                    @if (!selectedRecipe) { Crear } @else { Actualizar }
+                </button>
+
+                <button mat-raised-button class="button-form form-btn-gris" type="button" (click)="cerrarFormulario()"
+                    [disabled]="isSaving">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+}

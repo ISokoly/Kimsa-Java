@@ -151,7 +151,8 @@ export class MenuComponent {
 
     if (rol === 'Administrator') {
       this.menuItems.set([
-        { icon: 'trending_up', label: 'Estadisticas', route: 'estadisticas' }
+        { icon: 'trending_up', label: 'Estadisticas', route: 'estadisticas' },
+        { icon: 'trending_up', label: 'Inventario', route: 'inventario/insumos' }
       ]);
     }
   }
