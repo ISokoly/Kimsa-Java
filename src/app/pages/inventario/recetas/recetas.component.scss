@@ -214,6 +214,13 @@ $bg-color: #f9f9f9;
     margin: 0 0 4px 0;
 }
 
+.empty {
+    margin: 12px 0;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+}
+
 .add-row {
     display: grid;
     grid-template-columns: 1fr 180px 140px;
@@ -350,12 +357,6 @@ $bg-color: #f9f9f9;
 
 .w-100 {
     width: 100%;
-}
-
-.empty {
-    padding: 8px 0 2px;
-    color: #666;
-    font-style: italic;
 }
 
 @media (max-width: 640px) {

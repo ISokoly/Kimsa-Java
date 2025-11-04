@@ -11,19 +11,16 @@
 
     <table mat-table [dataSource]="insumos" class="mat-elevation-z8 insumos-tabla">
 
-      <!-- ID -->
       <ng-container matColumnDef="id">
         <th mat-header-cell *matHeaderCellDef class="celdas-centradas">ID</th>
         <td mat-cell *matCellDef="let s" class="celdas-centradas">{{ s.idSupply }}</td>
       </ng-container>
 
-      <!-- Nombre -->
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Nombre</th>
         <td mat-cell *matCellDef="let s" class="celdas-centradas">{{ s.name }}</td>
       </ng-container>
 
-      <!-- Stock -->
       <ng-container matColumnDef="stock">
         <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Stock</th>
         <td mat-cell *matCellDef="let s" class="celdas-centradas">
@@ -31,7 +28,6 @@
         </td>
       </ng-container>
 
-      <!-- Precio -->
       <ng-container matColumnDef="price">
         <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Precio unit.</th>
         <td mat-cell *matCellDef="let s" class="celdas-centradas">
@@ -39,7 +35,6 @@
         </td>
       </ng-container>
 
-      <!-- Unidad -->
       <ng-container matColumnDef="unit">
         <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Unidad</th>
         <td mat-cell *matCellDef="let s" class="celdas-centradas">
@@ -83,7 +78,6 @@
   </div>
 </div>
 
-<!-- === FORMULARIO (Overlay) === -->
 <ng-template #supplyFormTpl>
   <div class="insumo-form-modal">
     <h2 class="title insumo-form-title">

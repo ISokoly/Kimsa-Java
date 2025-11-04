@@ -1,8 +1,8 @@
 import {
   BrowserModule,
   DomRendererFactory2
-} from "./chunk-6CUNSUQQ.js";
-import "./chunk-QCDBD2C7.js";
+} from "./chunk-RSLCSLRT.js";
+import "./chunk-27WYWNY3.js";
 import "./chunk-4X6VR2I6.js";
 import {
   ANIMATION_MODULE_TYPE,
@@ -14,7 +14,7 @@ import {
   performanceMarkFeature,
   setClassMetadata,
   ɵɵdefineNgModule
-} from "./chunk-SYQEHEBD.js";
+} from "./chunk-HHGS6E5Z.js";
 import {
   DOCUMENT,
   RuntimeError,

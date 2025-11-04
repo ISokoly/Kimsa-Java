@@ -109,7 +109,6 @@ export class RegistrarVentaComponent implements OnInit {
   }
 
   private init(): void {
-    // Arrancamos las cargas principales con el spinner
     this.groupStart(); this.loadProducts();
     this.groupStart(); this.loadDiscounts();
 
@@ -282,6 +281,15 @@ export class RegistrarVentaComponent implements OnInit {
     this.filteredProducts = !q
       ? this.products.slice(0, 10)
       : this.products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 10);
+  }
+
+  get sortedTables() {
+    if (!this.tables) return [];
+    return [...this.tables].sort((a, b) => {
+      if (a.number === 'delivery') return 1;
+      if (b.number === 'delivery') return -1;
+      return Number(a.number) - Number(b.number);
+    });
   }
 
   onProductoSeleccionado(producto: Product): void {

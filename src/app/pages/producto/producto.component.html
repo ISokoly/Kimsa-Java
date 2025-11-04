@@ -80,6 +80,22 @@
         </mat-chip-listbox>
       </div>
       }
+      <div class="toolbar">
+        <div class="full-width" style="display: flex">
+          <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px; letter-spacing: .3px;"
+            (click)="abrirFormulario()" [disabled]="isLoading">
+            <mat-icon>add</mat-icon> Añadir Nuevo Producto
+          </button>
+        </div>
+        @if (marcas && marcas.length > 0) {
+        <div class="full-width" style="display: flex; justify-content: center; margin-left: 20px;">
+          <button mat-raised-button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioMarca()"
+            [disabled]="isLoading">
+            Organizar Marcas
+          </button>
+        </div>
+        }
+      </div>
     </div>
 
     <div class="products-grid">
@@ -100,23 +116,6 @@
       </div>
       }
     </div>
-
-    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-      <button class="btn-azul" style="width: 225px; height: 50px;" (click)="abrirFormulario()" [disabled]="isLoading">
-        Añadir Nuevo Producto
-      </button>
-    </div>
-
-    @if (marcas && marcas.length > 0) {
-    <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-      <button class="btn-celeste" style="width: 200px; height: 50px;" (click)="abrirFormularioMarca()"
-        [disabled]="isLoading">
-        Organizar Marcas
-      </button>
-    </div>
-    }
-
-    <!-- ================= Overlays ================= -->
 
     <ng-template #productDetailTpl>
       @if (selectedProducto) {

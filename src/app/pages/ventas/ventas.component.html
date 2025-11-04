@@ -25,7 +25,6 @@
       </mat-select>
     </mat-form-field>
 
-    <!-- Productos -->
     <mat-form-field appearance="fill" class="filtro-item flex-grow">
       <mat-label>Filtrar por producto(s)</mat-label>
       <input matInput [matAutocomplete]="prodAuto" [ngModel]="productQuery"
@@ -38,10 +37,10 @@
         }
       </mat-autocomplete>
     </mat-form-field>
-
-    <div class="boton-limpiar">
-      <button mat-raised-button color="primary" (click)="clearAllFilters()">Limpiar</button>
-    </div>
+      <div class="toolbar">
+    <button mat-raised-button color="primary" class="btn btn-limpiar" style="letter-spacing: .3px; margin-top: -15px;" 
+    (click)="clearAllFilters()" [disabled]="!selectedProductNames.length">Limpiar</button>
+  </div>
   </div>
 
   <div class="chips-row">
@@ -108,11 +107,11 @@
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Opciones</th>
           <td mat-cell *matCellDef="let row" class="cabecera-derecha">
             <div class="opciones-botones">
-              <button class="edit-btn" (click)="editSale(row)"
+              <button class="btn edit-btn" (click)="editSale(row)"
                 [disabled]="row.status === 'Confirmed' || row.status === 'Cancelled' || row.alreadyPaid">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button class="pay-btn"
+              <button class="btn pay-btn"
                 [ngClass]="{'confirmed': row.status === 'Confirmed','cancelled': row.status === 'Cancelled'}"
                 (click)="paySale(row)" [disabled]="row.status === 'Cancelled'">
                 <mat-icon>attach_money</mat-icon>
@@ -131,17 +130,17 @@
 
       @if (totalPages > 1) {
       <div class="paginador">
-        <button mat-stroked-button (click)="prevPage()" [disabled]="pageIndex === 0">Anterior</button>
+        <button mat-stroked-button class="btn" (click)="prevPage()" [disabled]="pageIndex === 0">Anterior</button>
 
         <div class="paginas">
           @for (p of pagesArray; track p) {
-          <button mat-button [disabled]="p === pageIndex" (click)="goToPage(p)">
+          <button mat-button class="btn" [disabled]="p === pageIndex" (click)="goToPage(p)">
             {{ p + 1 }}
           </button>
           }
         </div>
 
-        <button mat-stroked-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
+        <button mat-stroked-button class="btn" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
       </div>
       }
     </div>

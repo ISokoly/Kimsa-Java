@@ -8,7 +8,6 @@
                 <tr>
                     <th colspan="2" class="cabecera-principal-1">Datos de la venta</th>
                 </tr>
-
                 <tr>
                     <td><strong>Delivery</strong></td>
                     <td>
@@ -25,7 +24,7 @@
                             <mat-label>Selecciona una mesa</mat-label>
                             <mat-select [(ngModel)]="selectedTableId" [disabled]="isDelivery">
                                 <mat-option [value]="null" disabled>Seleccione</mat-option>
-                                @for (mesa of tables; track mesa.idTable) {
+                                @for (mesa of sortedTables; track mesa.idTable) {
                                 <mat-option [value]="mesa.idTable">
                                     {{ mesa.number === 'delivery' ? 'Delivery' : ('Mesa ' + mesa.number) }}
                                     @if (mesa.active) { - (ocupada) }
@@ -97,7 +96,6 @@
                 }
             </table>
 
-            <!-- Carrito -->
             <table mat-table class="ventas-tabla">
                 <tr class="cabecera-principal-2">
                     <th mat-header-cell>Producto</th>
@@ -140,7 +138,6 @@
                     </td>
                 </tr>
 
-                <!-- Ítems -->
                 @for (item of cart; track item.idProduct) {
                 <tr>
                     <td>{{ item.name }}</td>

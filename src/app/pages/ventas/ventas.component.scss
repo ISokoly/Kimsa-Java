@@ -21,6 +21,12 @@ $bg-color: #f9f9f9;
       background: #fff;
     }
   }
+
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+  }
 }
 
 .ventas-grid {
@@ -108,20 +114,16 @@ $bg-color: #f9f9f9;
   }
 }
 
-.boton-limpiar {
-  margin-bottom: 15px;
-  margin-top: -20px;
 
-  button[mat-raised-button] {
-    align-self: flex-end;
-    height: 48px;
-    color: white;
-    font-weight: bold;
-    background: color.scale($primary-color, $lightness: 25%);
+.btn-limpiar {
+  align-self: flex-end;
+  height: 48px;
+  color: white;
+  font-weight: bold;
+  background: color.scale($primary-color, $lightness: 25%);
 
-    &:hover {
-      background: color.scale($primary-color, $lightness: 15%);
-    }
+  &:hover {
+    background: color.scale($primary-color, $lightness: 15%);
   }
 }
 
@@ -132,8 +134,7 @@ mat-paginator {
   box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
 }
 
-
-button {
+.btn {
   padding: 10px 15px;
   border: none;
   border-radius: 8px;
@@ -235,7 +236,7 @@ button {
 }
 
 button:disabled {
-  opacity: 0.6 !important;
+  opacity: 0.7 !important;
   cursor: not-allowed !important;
 }
 

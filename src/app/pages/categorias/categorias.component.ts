@@ -75,7 +75,6 @@ export class CategoriasComponent implements OnInit {
     }
   }
 
-  /* === Datos === */
   private async loadCategoriasYImagenes(): Promise<void> {
     const data = await firstValueFrom(this.apiService.getCategorias());
     this.categorias = (data || []).filter((c: any) => !c.disabled);
@@ -122,7 +121,6 @@ export class CategoriasComponent implements OnInit {
     (event.target as HTMLImageElement).src = '/img/no-image.png';
   }
 
-  /* === Formularios con Overlay === */
   abrirFormulario(categoria: any = null): void {
     this.selectedCategoria = categoria;
     this.formData = {

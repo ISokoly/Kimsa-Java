@@ -268,7 +268,6 @@ export class ProductoComponent implements OnInit {
     else this.onFiltroTyping(val);
   }
 
-  // ======= Sugerencias nombre/marca =======
   onFiltroTyping(val: any): void {
     const q = lower(val);
     this.filtro = val ?? '';
@@ -317,7 +316,6 @@ export class ProductoComponent implements OnInit {
       this.imagenesCache[idImage] = '/img/no-image.png';
       this.imgLoaded[idImage] = true;
     }
-    // ⚠️ ya NO hacemos pageLoading.stop() aquí
   }
 
   getUrlImagen(idImage?: number | null): string {
@@ -372,41 +370,59 @@ export class ProductoComponent implements OnInit {
   }
 
   async crearProducto(): Promise<void> {
-    if (!this.requireCamposBasicos() || !this.categoriaId) return;
+    const name = this.formData.name.trim();
+    if (!name) return this.toast.mostrarMensaje('❌ El nombre del producto no puede estar vacío.');
+    if (!this.categoriaId) return this.toast.mostrarMensaje('❌ Selecciona una categoría.');
+
     this.isLoading = true;
     try {
-      const idImage = await this.ensureImagen(this.selectedFile, this.formData.name.trim(), this.categoriaId, null);
+      const productos = await this.api.getProductos().toPromise();
+      if (productos.some((p: any) => p.name.toLowerCase() === name.toLowerCase())) {
+        return this.toast.mostrarMensaje('❌ Ya existe un producto con este nombre.');
+      }
+
+      const idImage = await this.ensureImagen(this.selectedFile, name, this.categoriaId, null);
       await firstValueFrom(this.api.createProducto(this.buildPayload(idImage)));
       this.toast.mostrarMensaje('✅ Producto creado correctamente');
       this.cerrarFormulario();
       await this.loadProductosPorCategoria(this.categoriaId);
-      // precarga de nuevas imágenes (si aplica)
       const ids = this.productos.map(p => p.idImage).filter((id): id is number => !!id);
       await this.preloadImages(ids);
     } catch {
-      this.toast.mostrarMensaje('❌ Error al crear producto');
-    } finally { this.isLoading = false; }
+      this.toast.mostrarMensaje('❌ Error al crear el producto');
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   async actualizarProducto(): Promise<void> {
-    if (!this.requireCamposBasicos() || !this.categoriaId || !this.selectedProducto) return;
+    const name = this.formData.name.trim();
+    if (!name) return this.toast.mostrarMensaje('❌ El nombre del producto no puede estar vacío.');
+    if (!this.categoriaId || !this.selectedProducto) return;
+
     this.isLoading = true;
     try {
+      const productos = await this.api.getProductos().toPromise();
+      if (productos.some((p: any) => p.name.toLowerCase() === name.toLowerCase() && p.idProduct !== this.selectedProducto?.idProduct)) {
+        return this.toast.mostrarMensaje('❌ Ya existe un producto con este nombre.');
+      }
+
       const currentIdImg = this.selectedProducto.idImage ?? null;
-      const idImage = await this.ensureImagen(this.selectedFile, this.formData.name.trim(), this.categoriaId, currentIdImg);
+      const idImage = await this.ensureImagen(this.selectedFile, name, this.categoriaId, currentIdImg);
       await firstValueFrom(this.api.updateProducto(this.selectedProducto.idProduct, this.buildPayload(idImage)));
       this.toast.mostrarMensaje('✅ Producto actualizado correctamente');
       this.cerrarFormulario();
       await this.loadProductosPorCategoria(this.categoriaId);
       await this.refreshProductNow(this.selectedProducto.idProduct);
     } catch {
-      this.toast.mostrarMensaje('❌ Error al actualizar producto');
-    } finally { this.isLoading = false; }
+      this.toast.mostrarMensaje('❌ Error al actualizar el producto');
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   guardarProducto(): void { this.estaEditando ? this.actualizarProducto() : this.crearProducto(); }
 
-  // ======= Overlays =======
   openProductDetail(p: Product): void {
     this.selectedProducto = p;
     this.productDetailRef = this.overlay.open(this.productDetailTpl);
