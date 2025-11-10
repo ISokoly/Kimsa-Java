@@ -177,4 +177,8 @@ export class InsumosComponent implements OnInit {
     if (fresh) this.selectedSupply = { ...fresh };
     this.cd.detectChanges();
   }
+
+  volverInventario(): void {
+    this.router.navigate([`/view/inventario`]);
+  }
 }

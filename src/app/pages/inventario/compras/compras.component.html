@@ -5,28 +5,52 @@
 
   <div class="compras-grid">
     <div>
-      <table mat-table class="cliente-tabla compras-datos-tabla">
+      <table class="cliente-tabla compras-datos-tabla">
+        <colgroup>
+          <col class="col-label" />
+          <col class="col-content" />
+        </colgroup>
+
         <tr>
           <th colspan="2" class="cabecera-principal-1">Datos de la compra</th>
         </tr>
 
+        <!-- ===== Proveedor ===== -->
         <tr>
-          <td><strong>Proveedor</strong></td>
-          <td>
-            <mat-form-field appearance="outline" style="width:90%;">
+          <td class="label-cell"><strong>Proveedor</strong></td>
+          <td class="content-cell">
+            <mat-form-field appearance="outline" class="field field--wide">
               <mat-label>Selecciona un proveedor</mat-label>
-              <mat-select #supplierSelect [ngModel]="dto.idSupplier"
-                (ngModelChange)="onSupplierSelect($event, supplierSelect)">
-                <mat-option [value]="null" disabled>Seleccione</mat-option>
 
-                @for (prov of suppliers; track prov.idSupplier) {
-                <mat-option [value]="prov.idSupplier">{{ prov.name }}</mat-option>
-                }
+              <!-- Input con AUTOCOMPLETE (cuando NO está bloqueado) -->
+              @if (!supplierLocked) {
+              <input type="text" matInput [matAutocomplete]="supAuto" [(ngModel)]="supplierQuery"
+                placeholder="Buscar proveedor..." (input)="onSupplierInput()" autocomplete="off" />
 
-                <mat-option [value]="'new'" class="nuevo-proveedor-option">
+              <mat-autocomplete #supAuto="matAutocomplete" (optionSelected)="onSupplierOptionSelected($event)"
+                autoActiveFirstOption>
+                <mat-option class="nuevo-proveedor-option" (click)="openNewSupplierForm()">
                   ➕ Añadir nuevo proveedor
                 </mat-option>
-              </mat-select>
+
+                @for (prov of filteredSuppliers; track prov.idSupplier) {
+                <mat-option [value]="prov">{{ prov.name }}</mat-option>
+                }
+
+                @if (supplierQuery && !filteredSuppliers.length) {
+                <mat-option disabled>Sin resultados</mat-option>
+                }
+              </mat-autocomplete>
+              } @else {
+              <!-- Input READONLY (cuando está bloqueado) -->
+              <input type="text" matInput [(ngModel)]="supplierQuery" placeholder="Proveedor seleccionado" readonly />
+              }
+
+              @if (supplierQuery) {
+              <button mat-icon-button matSuffix aria-label="Limpiar proveedor" (click)="onSupplierClear($event)">
+                <mat-icon>close</mat-icon>
+              </button>
+              }
             </mat-form-field>
           </td>
         </tr>
@@ -35,7 +59,6 @@
         <ng-template #newSupplierTpl>
           <div class="form-modal">
             <h2 class="title form-title">Registrar nuevo proveedor</h2>
-
             <form class="form-container">
               <div class="form-grid">
                 <mat-form-field appearance="fill" class="full-width">
@@ -60,11 +83,11 @@
               </div>
 
               <div class="botones">
-                <button mat-raised-button class="form-btn-verde" type="button" (click)="saveNewSupplier()"
+                <button mat-raised-button class="boton form-btn-verde" type="button" (click)="saveNewSupplier()"
                   [disabled]="isSaving">
                   Guardar
                 </button>
-                <button mat-stroked-button class="form-btn-gris" type="button" (click)="closeNewSupplierForm()"
+                <button mat-stroked-button class="boton form-btn-gris" type="button" (click)="closeNewSupplierForm()"
                   [disabled]="isSaving">
                   Cancelar
                 </button>
@@ -73,30 +96,50 @@
           </div>
         </ng-template>
 
-        <!-- Agregar ítem -->
+        <!-- ===== Agregar insumo ===== -->
         <tr>
-          <td><strong>Agregar insumo</strong></td>
-          <td>
-            <div style="width:90%; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <mat-form-field appearance="outline" style="flex:1 1 260px; min-width:240px;">
+          <td class="label-cell"><strong>Agregar insumo</strong></td>
+          <td class="content-cell">
+            <div class="row-controls">
+              <mat-form-field appearance="outline" class="field field--grow">
                 <mat-label>Insumo</mat-label>
-                <mat-select [(ngModel)]="newItem.idSupply" (selectionChange)="syncNewItemPrice()">
-                  <mat-option [value]="null" disabled>Seleccione</mat-option>
-                  @for (ins of supplies; track ins.idSupply) {
-                  <mat-option [value]="ins.idSupply">
+
+                <!-- Input con AUTOCOMPLETE (cuando NO está bloqueado) -->
+                @if (!supplyLocked) {
+                <input matInput placeholder="Escribe para buscar insumo…" [(ngModel)]="supplyQuery"
+                  (input)="onSupplyInput()" [matAutocomplete]="autoSupply" autocomplete="off" />
+
+                <mat-autocomplete #autoSupply="matAutocomplete" (optionSelected)="onSupplyOptionSelected($event)"
+                  autoActiveFirstOption>
+                  @for (ins of filteredSupplies; track ins.idSupply) {
+                  <mat-option [value]="ins">
                     {{ ins.name }} — S/. {{ ins.unitPrice | number:'1.2-2' }}
                   </mat-option>
                   }
-                </mat-select>
+
+                  @if (supplyQuery && !filteredSupplies.length) {
+                  <mat-option disabled>Sin resultados</mat-option>
+                  }
+                </mat-autocomplete>
+                } @else {
+                <!-- Input READONLY (cuando está bloqueado) -->
+                <input matInput [(ngModel)]="supplyQuery" placeholder="Insumo seleccionado" readonly />
+                }
+
+                @if (supplyQuery) {
+                <button mat-icon-button matSuffix aria-label="Limpiar insumo" (click)="onSupplyClear($event)">
+                  <mat-icon>close</mat-icon>
+                </button>
+                }
               </mat-form-field>
 
-              <mat-form-field appearance="outline" style="width:140px;">
+              <mat-form-field appearance="outline" class="field field--qty">
                 <mat-label>Cantidad</mat-label>
                 <input matInput type="number" step="0.01" min="0.01" [(ngModel)]="newItem.quantity"
                   (ngModelChange)="clampNewQty()" />
               </mat-form-field>
 
-              <button mat-raised-button color="primary" class="boton-agregar" (click)="addItem()"
+              <button mat-raised-button color="primary" class="boton boton-agregar" (click)="addItem()"
                 [disabled]="!canAddItem() || isSaving">
                 <mat-icon>add</mat-icon> Agregar
               </button>
@@ -104,21 +147,19 @@
           </td>
         </tr>
 
-        <!-- Total general -->
+        <!-- ===== Total ===== -->
         <tr>
-          <td><strong>Total compra</strong></td>
-          <td>
-            <div style="width:90%; padding: 20px;">
-              S/. {{ grandTotal | number:'1.2-2' }}
-            </div>
+          <td class="label-cell"><strong>Total compra</strong></td>
+          <td class="content-cell">
+            <div class="total-box">S/. {{ grandTotal | number:'1.2-2' }}</div>
           </td>
         </tr>
       </table>
 
-      <!-- ===== Carrito / Ítems agregados a la compra ===== -->
+      <!-- ===== Carrito / Ítems agregados ===== -->
       <table mat-table class="compras-tabla">
         <tr class="cabecera-principal-2">
-          <th mat-header-cell>Insumo</th>
+          <th mat-header-cell style="width:200px;">Insumo</th>
           <th mat-header-cell class="celdas-centradas" style="width:120px;">Cant.</th>
           <th mat-header-cell class="celdas-centradas" style="width:140px;">Precio unit.</th>
           <th mat-header-cell class="celdas-centradas" style="width:140px;">Subtotal</th>
@@ -138,7 +179,7 @@
           <td class="celdas-centradas">S/. {{ it.unitPrice | number:'1.2-2' }}</td>
           <td class="celdas-centradas">S/. {{ it.subtotal | number:'1.2-2' }}</td>
           <td class="celdas-centradas opciones-botones">
-            <button mat-stroked-button class="edit-btn" (click)="removeItem(it)" [disabled]="isSaving">
+            <button mat-stroked-button class="boton edit-btn" (click)="removeItem(it)" [disabled]="isSaving">
               <mat-icon>delete</mat-icon> Quitar
             </button>
           </td>
@@ -159,28 +200,28 @@
       </table>
     </div>
 
-    <!-- ===== Columna derecha (imagen + acciones) ===== -->
+    <!-- ===== Columna derecha ===== -->
     <div>
       <div class="imagen-contenedor">
         <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
       </div>
 
       <div class="contenedor-boton">
-        <button mat-raised-button color="primary" class="boton-agregar" (click)="savePurchase()"
+        <button mat-raised-button color="primary" class="boton boton-agregar" (click)="savePurchase()"
           [disabled]="isSaving || !canSavePurchase()">
           {{ selectedPurchase?.idPurchase ? 'Actualizar compra' : 'Registrar compra' }}
         </button>
       </div>
 
       <div class="contenedor-boton" style="margin-top:10px;">
-        <button mat-raised-button color="warn" class="boton-cancelar" (click)="cancelEdit()"
+        <button mat-raised-button color="warn" class="boton boton-cancelar" (click)="cancelEdit()"
           [disabled]="isSaving || (!selectedPurchase && !items.length)">
           Cancelar
         </button>
       </div>
 
       <div class="contenedor-boton" style="margin-top:10px;">
-        <button mat-raised-button color="accent" class="boton-volver" (click)="goBack()">
+        <button mat-raised-button color="accent" class="boton boton-volver" (click)="goBack()">
           Volver
         </button>
       </div>

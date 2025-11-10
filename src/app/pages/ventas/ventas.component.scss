@@ -120,10 +120,10 @@ $bg-color: #f9f9f9;
   height: 48px;
   color: white;
   font-weight: bold;
-  background: color.scale($primary-color, $lightness: 25%);
+  background: color.scale($pay-color, $lightness: 25%);
 
   &:hover {
-    background: color.scale($primary-color, $lightness: 15%);
+    background: color.scale($pay-color, $lightness: 15%);
   }
 }
 

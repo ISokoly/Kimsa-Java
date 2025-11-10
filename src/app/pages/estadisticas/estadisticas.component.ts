@@ -52,7 +52,6 @@ export class EstadisticasComponent implements OnInit {
   productosCargados = false;
   fechaSeleccionada: Date = new Date();
 
-  // Control de UI / loader
   contentReady = false;
   private pendingLoads = 0;
   private started = false;
@@ -68,7 +67,6 @@ export class EstadisticasComponent implements OnInit {
   }
 
   private initLoad(): void {
-    // Arrancamos grupo de 3 cargas y deshabilitamos contenido
     this.contentReady = false;
     this.startLoadingGroup(3);
 

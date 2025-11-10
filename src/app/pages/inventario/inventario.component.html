@@ -1,0 +1,42 @@
+@if (!contentReady) { }
+@else {
+  <div class="inventario-container intro" [class.ready]="animateIn">
+    <h1 class="title">Inventario</h1>
+    <p class="subtitle">Gestiona insumos, recetas y compras desde un solo lugar.</p>
+
+    <div class="grid">
+      <mat-card class="nav-card" (click)="goToInsumos()" tabindex="0" role="button" aria-label="Ir a Insumos">
+        <div class="card-icon insumos"><mat-icon>inventory_2</mat-icon></div>
+        <mat-card-title>Insumos</mat-card-title>
+        <mat-card-subtitle>Altas, actualización y estado de insumos</mat-card-subtitle>
+        <div class="card-actions">
+          <button mat-raised-button color="primary" (click)="goToInsumos(); $event.stopPropagation()">
+            <mat-icon>open_in_new</mat-icon> Abrir
+          </button>
+        </div>
+      </mat-card>
+
+      <mat-card class="nav-card" (click)="goToRecetas()" tabindex="0" role="button" aria-label="Ir a Recetas">
+        <div class="card-icon recetas"><mat-icon>restaurant_menu</mat-icon></div>
+        <mat-card-title>Recetas</mat-card-title>
+        <mat-card-subtitle>Define recetas y sus insumos por unidad</mat-card-subtitle>
+        <div class="card-actions">
+          <button mat-raised-button color="primary" (click)="goToRecetas(); $event.stopPropagation()">
+            <mat-icon>open_in_new</mat-icon> Abrir
+          </button>
+        </div>
+      </mat-card>
+
+      <mat-card class="nav-card" (click)="goToCompras()" tabindex="0" role="button" aria-label="Ir a Compras">
+        <div class="card-icon compras"><mat-icon>shopping_cart</mat-icon></div>
+        <mat-card-title>Compras</mat-card-title>
+        <mat-card-subtitle>Registra compras multi-ítem de insumos</mat-card-subtitle>
+        <div class="card-actions">
+          <button mat-raised-button color="primary" (click)="goToCompras(); $event.stopPropagation()">
+            <mat-icon>open_in_new</mat-icon> Abrir
+          </button>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+}

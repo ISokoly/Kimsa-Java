@@ -1,6 +1,6 @@
 @if (contentReady && usuario) {
   <div class="tabla-scroll">
-    <div class="usuarios-container">
+    <div #root class="usuarios-container intro">
 
       <h1 class="title">
         @if (usuario?.rol === 'Administrator') { Perfil del Administrador }

@@ -21,6 +21,7 @@ import { PaymentAccessGuard } from "./core/guard/payment-access.guard";
 import { ComprasComponent } from "./pages/inventario/compras/compras.component";
 import { InsumosComponent } from "./pages/inventario/insumos/insumos.component";
 import { RecetasComponent } from "./pages/inventario/recetas/recetas.component";
+import { InventarioComponent } from "./pages/inventario/inventario.component";
 
 export const routes: Routes = [
   { path: "", pathMatch: "full", redirectTo: "view" },
@@ -30,7 +31,7 @@ export const routes: Routes = [
     component: ViewComponent,
     canActivate: [AuthGuard],
     children: [
-      { path: "", pathMatch: "full", redirectTo: "categoria" },
+      { path: "", pathMatch: "full", redirectTo: "usuarios" },
       {
         path: "categoria",
         component: CategoriasComponent,
@@ -88,6 +89,11 @@ export const routes: Routes = [
       },
 
       {
+        path: 'inventario',
+        component: InventarioComponent,
+        canActivate: [AdminGuard],
+      },
+      {
         path: 'inventario/insumos',
         component: InsumosComponent,
         canActivate: [AdminGuard],
@@ -97,7 +103,7 @@ export const routes: Routes = [
         component: ComprasComponent,
         canActivate: [AdminGuard],
       },
-            {
+      {
         path: 'inventario/recetas',
         component: RecetasComponent,
         canActivate: [AdminGuard],

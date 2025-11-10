@@ -1,0 +1,158 @@
+@use "sass:color";
+
+$primary-color: #0b6e4f;
+$secondary-color: #007acc;
+$danger-color: #e74c3c;
+$bg-color: #f9f9f9;
+
+.inventario-container {
+  padding: 2rem;
+  border-radius: 10px;
+  background: $bg-color;
+
+  .subtitle {
+    margin: 0 0 1.25rem 0;
+    text-align: center;
+    color: #555;
+  }
+
+  &.intro {
+    opacity: 0;
+    transform: translateY(-20px); // 🔹 viene desde arriba
+    filter: saturate(.9);
+    transition:
+      opacity 0.35s ease,
+      transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.3s ease;
+    will-change: opacity, transform, filter;
+  }
+
+  &.ready {
+    opacity: 1;
+    transform: translateY(0);
+    filter: none;
+  }
+}
+
+/* Accesibilidad: si el usuario prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+
+  .inventario-container.intro,
+  .inventario-container.ready {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 1440px) {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+
+  @media (max-width: 920px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nav-card {
+  position: relative;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+  padding: 14px;
+  opacity: 0;
+  transform: translateY(8px);
+
+  .ready & {
+    opacity: 1;
+    transform: none;
+  }
+
+  &:nth-child(1) {
+    transition: opacity .28s ease .04s, transform .28s ease .04s, box-shadow .12s ease, transform .12s ease;
+  }
+
+  &:nth-child(2) {
+    transition: opacity .28s ease .09s, transform .28s ease .09s, box-shadow .12s ease, transform .12s ease;
+  }
+
+  &:nth-child(3) {
+    transition: opacity .28s ease .14s, transform .28s ease .14s, box-shadow .12s ease, transform .12s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .12);
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    margin: 8px 0 4px;
+    background: color.scale($primary-color, $lightness: 82%);
+    color: $primary-color;
+
+    &.recetas {
+      background: color.scale($secondary-color, $lightness: 82%);
+      color: $secondary-color;
+    }
+
+    &.compras {
+      background: color.scale($danger-color, $lightness: 82%);
+      color: $danger-color;
+    }
+
+    mat-icon {
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+  }
+
+  mat-card-title {
+    margin-top: 4px;
+    font-weight: 800;
+    color: #222;
+  }
+
+  mat-card-subtitle {
+    margin-top: 2px;
+    color: #666;
+  }
+
+  .card-actions {
+    margin-top: 12px;
+
+    button[mat-raised-button][color="primary"] {
+      background: $secondary-color;
+      color: #fff;
+      font-weight: 700;
+      border-radius: 10px;
+
+      &:hover {
+        background: color.scale($secondary-color, $lightness: -12%);
+      }
+    }
+  }
+}
+
+/* Respeto preferencias del usuario: reduce motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .inventario-container.intro,
+  .nav-card {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

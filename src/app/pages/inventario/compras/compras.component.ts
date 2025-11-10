@@ -1,20 +1,22 @@
 // oxlint-disable no-unused-expressions
-import { Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
-import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatOptionModule } from '@angular/material/core';
+import { DecimalPipe } from '@angular/common';
+
+import { firstValueFrom } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageLoadingService } from '../../../core/services/page-loading.service';
-import { firstValueFrom } from 'rxjs';
-import { DecimalPipe } from '@angular/common';
 import { OverlayHandle, OverlayPortalService } from '../../../core/services/overlay-portal.service';
 
 @Component({
@@ -22,8 +24,9 @@ import { OverlayHandle, OverlayPortalService } from '../../../core/services/over
   standalone: true,
   imports: [
     FormsModule, RouterModule,
-    MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule, MatIconModule,
-    MatFormFieldModule, DecimalPipe
+    MatInputModule, MatGridListModule, MatButtonModule, MatIconModule,
+    MatFormFieldModule, MatAutocompleteModule, MatOptionModule,
+    DecimalPipe
   ],
   templateUrl: './compras.component.html',
   styleUrls: ['./compras.component.scss']
@@ -37,11 +40,22 @@ export class ComprasComponent implements OnInit {
   suppliers: any[] = [];
   supplies: any[] = [];
 
-  selectedPurchase: any = null;
-  dto: { idSupplier: number | null } = { idSupplier: null };
-  newItem: any = { idSupply: null, quantity: 1 };
+  supplierQuery = '';
+  supplyQuery = '';
 
-  items: any[] = [];
+  filteredSuppliers: any[] = [];
+  filteredSupplies: any[] = [];
+
+  // 🔒 bloqueo después de seleccionar
+  supplierLocked = false;
+  supplyLocked = false;
+
+  selectedPurchase: any = null;
+
+  dto: { idSupplier: number | null } = { idSupplier: null };
+  newItem: { idSupply: number | null, quantity: number } = { idSupply: null, quantity: 1 };
+
+  items: Array<{ idSupply: number, name: string, unitPrice: number, quantity: number, subtotal: number }> = [];
 
   grandTotal = 0;
 
@@ -58,12 +72,15 @@ export class ComprasComponent implements OnInit {
     private router: Router
   ) { }
 
+  /* ====== loading agrupado ====== */
   private groupStart() { if (this.pendingLoads === 0) this.pageLoading.start(); this.pendingLoads++; }
   private groupEnd() { this.pendingLoads = Math.max(0, this.pendingLoads - 1); if (this.pendingLoads === 0) { this.pageLoading.stop(); this.contentReady = true; } }
 
   async ngOnInit(): Promise<void> {
     this.contentReady = false;
-    this.groupStart(); await this.loadCatalogs();
+    this.groupStart();
+    await this.loadCatalogs();
+    this.refreshFilters();
   }
 
   private async loadCatalogs(): Promise<void> {
@@ -73,7 +90,7 @@ export class ComprasComponent implements OnInit {
         firstValueFrom(this.api.getSupplies())
       ]);
       this.suppliers = Array.isArray(prov) ? prov : [];
-      this.supplies = Array.isArray(ins) ? ins : [];
+      this.supplies  = Array.isArray(ins)  ? ins  : [];
     } catch {
       this.suppliers = []; this.supplies = [];
       this.toast.mostrarMensaje('❌ Error al cargar catálogos');
@@ -82,9 +99,79 @@ export class ComprasComponent implements OnInit {
     }
   }
 
-  /* ======== Add item flow ======== */
+  /* ========== Helpers ========== */
+  private norm(v: any): string { return (v ?? '').toString().trim().toLowerCase(); }
+
+  private refreshFilters(): void {
+    this.filteredSuppliers = this.suppliers.slice(0, 30);
+    this.filteredSupplies  = this.supplies.slice(0, 30);
+  }
+
+  /* ========== Proveedor (autocomplete) ========== */
+  onSupplierInput(): void {
+    if (this.supplierLocked) return; // no filtrar si está bloqueado
+    const q = this.norm(this.supplierQuery);
+    this.filteredSuppliers = !q
+      ? this.suppliers.slice(0, 30)
+      : this.suppliers.filter(s => this.norm(s.name).includes(q)).slice(0, 30);
+  }
+
+  onSupplierOptionSelected(ev: any): void {
+    const value = ev?.option?.value;
+    if (value && value.idSupplier) {
+      this.dto.idSupplier = value.idSupplier;
+      this.supplierQuery = value.name;
+      this.supplierLocked = true;   // 🔒
+      this.filteredSuppliers = [];  // ocultar sugerencias
+    }
+  }
+
+  onSupplierClear(e?: MouseEvent): void {
+    if (e) e.stopPropagation();
+    this.dto.idSupplier = null;
+    this.supplierQuery = '';
+    this.supplierLocked = false; // 🔓
+    this.refreshFilters();
+  }
+
+  /* ========== Insumo (autocomplete) ========== */
+  onSupplyInput(): void {
+    if (this.supplyLocked) return;
+    const q = this.norm(this.supplyQuery);
+    if (!q) {
+      this.filteredSupplies = this.supplies.slice(0, 30);
+      this.newItem.idSupply = null;
+      return;
+    }
+    this.filteredSupplies = this.supplies
+      .filter(s => this.norm(s.name).includes(q))
+      .slice(0, 30);
+    this.newItem.idSupply = null;
+  }
+
+  onSupplyOptionSelected(ev: any): void {
+    const value = ev?.option?.value;
+    if (value && value.idSupply) {
+      this.newItem.idSupply = value.idSupply;
+      this.supplyQuery = value.name;
+      this.supplyLocked = true;     // 🔒
+      this.filteredSupplies = [];   // ocultar sugerencias
+      this.syncNewItemPrice();
+    }
+  }
+
+  onSupplyClear(e?: MouseEvent): void {
+    if (e) e.stopPropagation();
+    this.newItem.idSupply = null;
+    this.supplyQuery = '';
+    this.supplyLocked = false; // 🔓
+    this.refreshFilters();
+  }
+
+  /* ========== Add item flow ========== */
   syncNewItemPrice(): void {
     const _s = this.supplies.find(x => x.idSupply === this.newItem.idSupply);
+    // usar price si lo necesitas
   }
 
   clampNewQty(): void {
@@ -108,7 +195,7 @@ export class ComprasComponent implements OnInit {
     }
 
     const unit = Number(s.unitPrice) || 0;
-    const qty = Math.max(0.01, Number(this.newItem.quantity) || 0);
+    const qty  = Math.max(0.01, Number(this.newItem.quantity) || 0);
     const existing = this.items.find(i => i.idSupply === s.idSupply);
 
     if (existing) {
@@ -124,7 +211,11 @@ export class ComprasComponent implements OnInit {
       });
     }
 
+    // reset insumo
     this.newItem = { idSupply: null, quantity: 1 };
+    this.supplyQuery = '';
+    this.supplyLocked = false;
+    this.refreshFilters();
     this.recalcGrandTotal();
   }
 
@@ -144,9 +235,11 @@ export class ComprasComponent implements OnInit {
     this.grandTotal = round2(this.items.reduce((a, x) => a + Number(x.subtotal || 0), 0));
   }
 
-  /* ======== Save purchase (multi-ítem) ======== */
+  /* ========== Guardado compra ========== */
   canSavePurchase(): boolean {
-    return typeof this.dto.idSupplier === 'number' && this.items.length > 0 && this.items.every(i => i.quantity > 0);
+    return typeof this.dto.idSupplier === 'number'
+      && this.items.length > 0
+      && this.items.every(i => i.quantity > 0);
   }
 
   async savePurchase(): Promise<void> {
@@ -157,7 +250,6 @@ export class ComprasComponent implements OnInit {
 
     this.isSaving = true;
     try {
-      // Payload multi-ítem (ajusta al backend)
       const payload = {
         idSupplier: this.dto.idSupplier as number,
         items: this.items.map(i => ({ idSupply: i.idSupply, quantity: i.quantity }))
@@ -171,7 +263,6 @@ export class ComprasComponent implements OnInit {
         this.toast.mostrarMensaje('✅ Compra registrada');
       }
 
-      // Limpia formulario
       this.resetForm();
     } catch {
       this.toast.mostrarMensaje('❌ Error al guardar la compra');
@@ -190,19 +281,16 @@ export class ComprasComponent implements OnInit {
     this.newItem = { idSupply: null, quantity: 1 };
     this.items = [];
     this.grandTotal = 0;
+    this.supplierQuery = '';
+    this.supplyQuery = '';
+    this.supplierLocked = false;
+    this.supplyLocked = false;
+    this.refreshFilters();
   }
 
-
-  onSupplierSelect(value: any, select: any): void {
-    if (value === 'new') {
-      setTimeout(() => select.writeValue(null));
-      this.openNewSupplierForm();
-      return;
-    }
-    this.dto.idSupplier = (value ?? null);
-  }
-
+  /* ========== Nuevo proveedor (overlay) ========== */
   openNewSupplierForm(): void {
+    if (this.supplierLocked) return; // no abrir si está bloqueado
     this.newSupplier = { name: '', phone: '', address: '', email: '' };
     this.newSupplierRef?.close();
     this.newSupplierRef = this.overlay.open(this.newSupplierTpl);
@@ -223,9 +311,11 @@ export class ComprasComponent implements OnInit {
     try {
       const created = await firstValueFrom(this.api.createSupplier(this.newSupplier));
       if (created?.idSupplier) {
-        // añade a la lista local, selecciona y cierra overlay
         this.suppliers.push(created);
         this.dto.idSupplier = created.idSupplier;
+        this.supplierQuery = created.name;
+        this.supplierLocked = true;   // 🔒 al crear también
+        this.filteredSuppliers = [];
         this.toast.mostrarMensaje('✅ Proveedor registrado');
         this.closeNewSupplierForm();
       } else {
@@ -238,7 +328,8 @@ export class ComprasComponent implements OnInit {
     }
   }
 
-  goBack(): void { this.router.navigate(['/view/compras']); }
+  /* ========== Navegación ========== */
+  goBack(): void { this.router.navigate(['/view/inventario']); }
 }
 
 /* ======== Helpers ======== */

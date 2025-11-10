@@ -21,7 +21,7 @@ $bg-color: #f9f9f9;
             background: #fff;
         }
     }
-    
+
     .toolbar {
         display: flex;
         justify-content: flex-end;
@@ -94,7 +94,6 @@ $bg-color: #f9f9f9;
     color: #666;
 }
 
-/* Botonería */
 button {
     padding: 10px 15px;
     border: none;
@@ -119,18 +118,16 @@ button {
     }
 }
 
-.toggle-btn {
-    background: $toggle-color;
-    color: #fff;
+.volver-btn {
+    align-self: flex-end;
+    height: 48px;
+    color: white;
+    font-weight: 600;
+    width: 150px;
+    background: color.scale($primary-color, $lightness: 25%);
 
-    &:disabled {
-        opacity: 0.45;
-        background: color.scale($toggle-color, $lightness: 60%);
-        cursor: not-allowed;
-    }
-
-    &:hover:not(:disabled) {
-        background: color.scale($toggle-color, $lightness: -30%);
+    &:hover {
+        background: color.scale($primary-color, $lightness: 10%);
     }
 }
 

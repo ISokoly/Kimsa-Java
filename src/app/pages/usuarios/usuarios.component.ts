@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, OnInit, TemplateRef, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -43,6 +43,7 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
   userSeleccionado: any = null;
   isLoading = false;
 
+  @ViewChild('root') root!: ElementRef<HTMLElement>;
   @ViewChild('formUsuarioTpl') formUsuarioTpl!: TemplateRef<any>;
   @ViewChild('formPasswordTpl') formPasswordTpl!: TemplateRef<any>;
 
@@ -56,30 +57,32 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
     private toastService: ToastService,
     private dialog: MatDialog,
     private pageLoading: PageLoadingService,           // 👈 inyectado
-  ) {}
+  ) { }
 
   ngOnInit(): void {
-    // Carga síncrona de usuario desde localStorage / BehaviorSubject
     const u = this.apiService.getUsuarioActual() ?? this.apiService.usuarioAutenticado;
     this.usuario = u || null;
 
-    // Marca el contenido como listo; el DOM se pinta en el siguiente microtask
     this.contentReady = true;
-
-    // ✅ Apaga el spinner global del layout inmediatamente después de marcar listo
-    // (encolar en microtask evita condiciones de carrera con el render)
     queueMicrotask(() => this.pageLoading.stop());
   }
 
   ngAfterViewInit(): void {
-    // ✅ “seguro adicional” por si el padre encendió el spinner con un leve retraso
-    setTimeout(() => this.pageLoading.stop(), 0);
+    const el = this.root?.nativeElement;
+    if (el) {
+      el.classList.add('intro');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.classList.add('ready');
+        });
+      });
+    }
   }
 
   // ===== Navegación =====
-  verOtros()      { this.router.navigate(['/view/usuarios/otros']); }
-  verMesas()      { this.router.navigate(['/view/usuarios/mesas']); }
-  verClientes()   { this.router.navigate(['/view/usuarios/clientes']); }
+  verOtros() { this.router.navigate(['/view/usuarios/otros']); }
+  verMesas() { this.router.navigate(['/view/usuarios/mesas']); }
+  verClientes() { this.router.navigate(['/view/usuarios/clientes']); }
   verDescuentos() { this.router.navigate(['/view/usuarios/descuentos']); }
 
   // ===== Formularios (overlay) =====
@@ -146,22 +149,21 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
     if (this.Empleado.password) body.password = this.Empleado.password;
 
     this.isLoading = true;
-    this.pageLoading.start();                               // 🔹 opcional: mostrar spinner global durante PUT
+    this.pageLoading.start();
     this.apiService.updateUsuario(id, body).subscribe({
       next: (usuarioActualizado) => {
-        // refresca persona en memoria si es el mismo usuario
         if (usuarioActualizado?.idUser === (this.usuario?.idUser ?? this.usuario?.id_user)) {
           this.usuario = usuarioActualizado;
           localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
         }
         this.cerrarFormulario();
         this.isLoading = false;
-        this.pageLoading.stop();                            // 🔹 apaga spinner global
+        this.pageLoading.stop();
       },
       error: () => {
         this.toastService.mostrarMensaje('❌ Error al actualizar usuario');
         this.isLoading = false;
-        this.pageLoading.stop();                            // 🔹 apaga spinner global aunque haya error
+        this.pageLoading.stop();
       }
     });
   }
@@ -181,7 +183,7 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
 
       const idActual = this.usuario?.idUser ?? this.usuario?.id;
       this.isLoading = true;
-      this.pageLoading.start();                             // 🔹 opcional
+      this.pageLoading.start();
 
       this.apiService.updateUsuario(id, { disabled: true }).subscribe({
         next: () => {
@@ -191,7 +193,7 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
           } else {
             this.toastService.mostrarMensaje('✅ Usuario deshabilitado correctamente');
             this.isLoading = false;
-            this.pageLoading.stop();                        // 🔹 apaga spinner si sigue en esta vista
+            this.pageLoading.stop();
           }
         },
         error: () => {
