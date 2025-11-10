@@ -30,7 +30,6 @@ $bg-color: #f9f9f9;
 .products-grid {
   display: flex;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-
   flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
@@ -44,12 +43,12 @@ $bg-color: #f9f9f9;
   padding: 16px;
   max-width: 250px;
   text-align: center;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .1);
+  transition: transform .2s, box-shadow .2s;
   cursor: pointer;
 
   &:hover {
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .15);
   }
 
   .product-name,
@@ -57,7 +56,7 @@ $bg-color: #f9f9f9;
     font-size: 18px;
     margin-bottom: 10px;
     cursor: pointer;
-    transition: color 0.3s;
+    transition: color .3s;
 
     &:hover {
       color: color.scale($primary-color, $lightness: -30%);
@@ -118,7 +117,7 @@ button {
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-  transition: 0.3s ease-in-out;
+  transition: .3s ease-in-out;
   font-weight: 600;
 
   &.edit-btn {
@@ -151,7 +150,6 @@ button {
 
   &.btn-celeste {
     background: color.scale($secondary-color, $lightness: 50%);
-
     color: #fff;
     font-weight: bold;
 
@@ -161,6 +159,7 @@ button {
   }
 }
 
+/* ====== Modal principal y variante Step 2 ====== */
 .form-modal {
   position: absolute;
   left: 50%;
@@ -171,8 +170,13 @@ button {
   padding: 20px;
   width: 400px;
   max-width: min(92vw, 480px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .6);
   animation: fadeIn .25s ease-in-out;
+
+  &.form-wizard-step2 {
+    width: min(96vw, 980px);
+    max-width: 980px;
+  }
 }
 
 .form-title {
@@ -244,6 +248,100 @@ button {
   }
 }
 
+/* ====== Paso 2 layout ====== */
+.step2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section {
+  background: #fff;
+  border: 1px solid #e7e7e7;
+  border-radius: 10px;
+  padding: 14px;
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: #222;
+
+    &.with-count {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .count-pill {
+        background: color.scale($secondary-color, $lightness: 40%);
+        color: #fff;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
+.add-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  .grow {
+    flex: 1 1 260px;
+    min-width: 230px;
+  }
+
+  .grams {
+    width: 160px;
+    min-width: 150px;
+  }
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+
+  .form-btn-verde {
+    background: $primary-color;
+    color: #fff;
+
+    &:hover {
+      background: color.scale($primary-color, $lightness: -30%);
+    }
+  }
+
+  .form-btn-gris {
+    background: #777;
+    color: #fff;
+
+    &:hover {
+      background: #555;
+    }
+  }
+}
+
+app-caracteristicas-producto {
+  display: block;
+  margin-top: 6px;
+}
+
+/* ====== otros ====== */
 .full-width {
   display: flex;
   align-items: center;
@@ -269,7 +367,7 @@ button {
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: .5;
   cursor: not-allowed;
 }
 
@@ -287,19 +385,18 @@ select[disabled] {
   label {
     cursor: pointer;
     color: $primary-color;
-    transition: color 0.2s ease;
+    transition: color .2s ease;
 
     &:hover {
       text-decoration: underline;
       color: color.scale($primary-color, $lightness: 20%);
-
     }
   }
 }
 
 .mas-opciones.disabled {
-  opacity: 0.5;
-  pointer-events: none; // evita clics
+  opacity: .5;
+  pointer-events: none;
 }
 
 app-marcas {
@@ -317,7 +414,7 @@ app-marcas {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color .3s ease, transform .2s ease;
   margin-bottom: 15px;
 
   &:hover {
@@ -345,7 +442,7 @@ app-marcas {
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 1rem;
-  flex-wrap: wrap; // permite ajustar el botón si hay poco espacio
+  flex-wrap: wrap;
 
   button[mat-raised-button] {
     align-self: flex-end;
@@ -356,9 +453,9 @@ app-marcas {
     background: color.scale($primary-color, $lightness: 25%);
     color: white;
     font-weight: 700;
-    letter-spacing: 0.3px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    letter-spacing: .3px;
+    transition: background-color .3s ease, transform .2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
 
     &:hover:not(:disabled) {
       background: color.scale($primary-color, $lightness: 15%);
@@ -366,7 +463,7 @@ app-marcas {
     }
 
     &:disabled {
-      opacity: 0.6;
+      opacity: .6;
       cursor: not-allowed;
     }
   }
@@ -392,7 +489,7 @@ app-marcas {
   cursor: pointer;
 
   &:hover {
-    opacity: 0.5;
+    opacity: .5;
   }
 }
 
@@ -445,7 +542,6 @@ app-marcas {
   width: 100%;
   border-collapse: separate;
   background: transparent;
-
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;

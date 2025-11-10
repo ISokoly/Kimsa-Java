@@ -1,0 +1,316 @@
+@use "sass:color";
+
+/* ===== Paleta ===== */
+$primary-color: #0b6e4f;
+$secondary-color: #007acc;
+$danger-color: #e74c3c;
+$muted-color: #666;
+$bg-color: #f9f9f9;
+$border-color: #ddd;
+
+/* ===== Contenedor principal del modal ===== */
+.form-modal {
+  position: relative; /* el HTML ya impone el width inline; aquí sólo aseguramos base */
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  animation: fadeIn .25s ease-in-out;
+}
+
+.title.form-title {
+  font-size: 22px;
+  margin: 6px 0 16px;
+  color: $primary-color;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ===== Indicador de pasos ===== */
+.wizard-steps {
+  .step {
+    border: 1px solid $border-color;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    background: #fff;
+    color: #333;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+
+    &.active {
+      border-color: color.scale($secondary-color, $lightness: 10%);
+      background: color.scale($secondary-color, $lightness: 40%);
+      color: #fff;
+      font-weight: 700;
+    }
+  }
+}
+
+/* ===== Formulario ===== */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Grid de campos (Paso 1) */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Botonera inferior */
+.botones {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  .form-btn-verde {
+    background: $primary-color;
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .2s ease;
+
+    &:hover:not(:disabled) {
+      background: color.scale($primary-color, $lightness: -20%);
+    }
+  }
+
+  .form-btn-gris {
+    background: #777;
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background .2s ease;
+
+    &:hover:not(:disabled) {
+      background: #555;
+    }
+  }
+}
+
+/* Divider */
+.divider {
+  margin: 8px 0 2px;
+}
+
+/* Toggle "Más opciones" */
+.mas-opciones {
+  display: flex;
+  justify-content: flex-end;
+
+  label {
+    cursor: pointer;
+    color: $primary-color;
+    transition: color .2s ease;
+
+    &:hover {
+      text-decoration: underline;
+      color: color.scale($primary-color, $lightness: 10%);
+    }
+  }
+
+  &.disabled {
+    opacity: .5;
+    pointer-events: none;
+  }
+}
+
+/* ===== Secciones (Paso 2) ===== */
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin: 4px 0 6px;
+}
+
+.row-inline {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .w-full {
+    flex: 1 1 220px;
+    min-width: 220px;
+  }
+}
+
+/* ===== Lista de características (Paso 2) ===== */
+.lista-product-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+
+  &.grid-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+.product-feature-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  padding: 10px 12px;
+  border: 1px solid $border-color;
+  border-radius: 10px;
+  background: #fff;
+  transition: box-shadow .2s ease, transform .2s ease;
+
+  &:hover {
+    box-shadow: 0 6px 12px rgba(0,0,0,.12);
+    transform: translateY(-1px);
+  }
+
+  .product-feature-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0; /* ellipsis */
+    flex: 1;
+
+    .product-feature-name {
+      font-weight: 600;
+      color: #444;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 46%;
+    }
+
+    .product-feature-value {
+      color: #333;
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 46%;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+
+    .icon-button {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background .2s ease, transform .1s ease;
+
+      &:active { transform: scale(.98); }
+    }
+
+    .x-btn {
+      background: $danger-color;
+      color: #fff;
+
+      &:hover {
+        background: color.scale($danger-color, $lightness: -12%);
+      }
+    }
+  }
+}
+
+/* Estado vacío */
+.empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px dashed $border-color;
+  border-radius: 12px;
+  background: $bg-color;
+  color: $muted-color;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ===== Receta (cards de insumos) ===== */
+.cards-grid {
+  /* el HTML ya define grid inline; aquí afinamos tarjetas */
+  .supply-card {
+    border-radius: 12px;
+    overflow: hidden;
+
+    .close-card {
+      border-radius: 20px;
+      background: $danger-color;
+      color: #fff;
+
+      &:hover {
+        background: color.scale($danger-color, $lightness: -12%);
+      }
+    }
+
+    mat-card-title {
+      font-weight: 700;
+    }
+  }
+}
+
+/* Utilidades */
+.w-100 { width: 100%; }
+
+/* Botones disabled */
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed !important;
+}
+
+/* ===== Animación ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Responsivo ===== */
+@media (max-width: 860px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+
+    .full-width {
+      grid-column: auto;
+    }
+  }
+
+  .lista-product-features.grid-list {
+    grid-template-columns: 1fr; /* 1 columna en pantallas angostas */
+  }
+
+  .row-inline {
+    align-items: stretch;
+
+    .w-full { min-width: 180px; }
+  }
+}

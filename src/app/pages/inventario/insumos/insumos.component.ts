@@ -83,7 +83,6 @@ export class InsumosComponent implements OnInit {
     );
     this.insumos = data || [];
 
-    // Si hay detalle abierto, re-bind al insumo actualizado
     if (this.detailRef && this.selectedSupply) this.rebindSelectedSupply();
   }
 
@@ -161,13 +160,6 @@ export class InsumosComponent implements OnInit {
     } finally {
       this.isLoading = false;
     }
-  }
-
-  toggle(idSupply: number): void {
-    this.apiService.toggleSupply(idSupply).subscribe({
-      next: () => { this.toast.mostrarMensaje('🔁 Estado cambiado'); this.loadInsumos(); this.closeSupplyDetail(); },
-      error: () => this.toast.mostrarMensaje('❌ No se pudo cambiar el estado')
-    });
   }
 
   private rebindSelectedSupply(): void {

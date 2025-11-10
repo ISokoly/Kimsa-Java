@@ -849,9 +849,23 @@ export class ApiService {
     );
   }
 
+  getRecipeByProduct(idProduct: number): any {
+    return this.http.get(
+      `${this.apiUrl}/recipes/product/${idProduct}`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
   getRecipeDetails(idRecipe: number): any {
     return this.http.get(
       `${this.apiUrl}/recipes/${idRecipe}/details`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
+
+  getRecipeDetailsByProduct(idProduct: number): any {
+    return this.http.get(
+      `${this.apiUrl}/recipes/product/${idProduct}/details`,
       this.withCred({ headers: this.authHeaders() })
     );
   }
