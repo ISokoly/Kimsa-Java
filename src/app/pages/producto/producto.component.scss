@@ -159,6 +159,19 @@ button {
   }
 }
 
+.volver-btn {
+  align-self: flex-end;
+  height: 48px;
+  color: white;
+  font-weight: 600;
+  width: 150px;
+  background: color.scale($primary-color, $lightness: 25%);
+
+  &:hover {
+    background: color.scale($primary-color, $lightness: 10%);
+  }
+}
+
 /* ====== Modal principal y variante Step 2 ====== */
 .form-modal {
   position: absolute;

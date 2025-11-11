@@ -84,21 +84,34 @@
 
       <div class="toolbar">
         <div class="full-width" style="display: flex">
-          <!-- 🟢 Crear: abre el WIZARD -->
-          <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px; letter-spacing: .3px;"
-            (click)="abrirFormulario()" [disabled]="isLoading">
+          <button mat-raised-button class="btn-azul"
+            style="width: 225px; height: 50px; letter-spacing: .3px; margin-right: 20px;" (click)="abrirFormulario()"
+            [disabled]="isLoading">
             <mat-icon>add</mat-icon> Añadir Nuevo Producto
           </button>
-        </div>
 
-        @if (marcas && marcas.length > 0) {
-        <div class="full-width" style="display: flex; justify-content: center; margin-left: 20px;">
-          <button mat-raised-button class="btn-celeste" style="width: 200px; height: 50px;"
-            (click)="abrirFormularioMarca()" [disabled]="isLoading">
-            Organizar Marcas
+          @if (marcas && marcas.length > 0) {
+          <div class="full-width" style="display: flex; justify-content: center; margin-right: 20px;">
+            <button mat-raised-button class="btn-celeste" style="width: 200px; height: 50px;"
+              (click)="abrirFormularioMarca()" [disabled]="isLoading">
+              Organizar Marcas
+            </button>
+          </div>
+          }
+
+          @if (features && features.length > 0) {
+          <div class="full-width" style="display: flex; justify-content: center; margin-right: 20px;">
+            <button mat-raised-button class="btn-celeste" style="width: 200px; height: 50px;"
+              (click)="abrirConfigurarFeature()" [disabled]="isLoading">
+              Organizar Características
+            </button>
+          </div>
+          }
+          <button mat-raised-button class="volver-btn" style="width: 225px; height: 50px; letter-spacing: .3px;"
+            (click)="volverInventario()">
+            Volver
           </button>
         </div>
-        }
       </div>
     </div>
 
@@ -204,11 +217,19 @@
       </app-marcas>
     </ng-template>
 
-    <!-- 🟢 Wizard de creación (producto se crea al finalizar con características + receta) -->
     <ng-template #formProductoTpl>
-      <app-producto-form-wizard [categoriaId]="categoriaId!" [marcas]="marcas" [supplies]="supplies" [productoEditar]="selectedProducto"
-        (created)="loadProductosPorCategoria(categoriaId!); cerrarFormulario()" (closed)="cerrarFormulario()">
+      <app-producto-form-wizard [categoriaId]="categoriaId!" [marcas]="marcas" [supplies]="supplies"
+        [productoEditar]="selectedProducto" (created)="loadProductosPorCategoria(categoriaId!); cerrarFormulario()"
+        (updated)="onProductoActualizado($event)"
+        (marcasChanged)="onMarcasChanged()"
+        (closed)="cerrarFormulario()">
       </app-producto-form-wizard>
+    </ng-template>
+
+
+    <ng-template #formOrgCaractTpl>
+      <app-caracteristicas [soloFormulario]="false" (closed)="cerrarConfigurarFeature()">
+      </app-caracteristicas>
     </ng-template>
   </div>
 </div>

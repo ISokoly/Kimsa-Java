@@ -16,6 +16,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmDialogComponent } from '../../../view/confirm-dialog/confirm-dialog.component';
 import { PageLoadingService } from '../../../core/services/page-loading.service';
+import { firstValueFrom } from 'rxjs';
 
 const GENERIC_DNI = '00000001';
 type DayWeek = 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado' | 'Domingo' | 'General';
@@ -225,25 +226,71 @@ export class RegistrarVentaComponent implements OnInit {
     this.isSaving = true;
     try {
       const customer = await this.ensureCustomer();
-      const user = this.api.getUsuarioActual(); // <--- correcto, sin "?.()"
-      const idUser = Number(user?.idUser ?? 1); // <--- normaliza a idUser
+      const user = this.api.getUsuarioActual();
+      const idUser = Number(user?.idUser ?? 1);
 
+      const items = this.cart.map(i => ({ idProduct: i.idProduct, quantity: i.quantity }));
+
+      const safetyThreshold = 10;
+      const precheck = await firstValueFrom(
+        this.api.checkInventoryForItems(items, safetyThreshold)
+      );
+
+      if (precheck?.insufficient?.length) {
+        const nombres = precheck.insufficient
+          .map((x: any) => x.productName ?? x.supplyName ?? `ID ${x.idProduct ?? x.idSupply}`)
+          .join(', ');
+        this.toast.mostrarMensaje(`❌ Stock insuficiente: ${nombres}`);
+        this.isSaving = false;
+        return;
+      }
       const payload = {
         idClient: customer.idClient,
         idUser,
         idTable: this.isDelivery ? null : this.selectedTableId,
         delivery: this.isDelivery,
-        items: this.cart.map(i => ({ idProduct: i.idProduct, quantity: i.quantity }))
+        items
       };
 
-      const req$ = this.saleId ? this.api.updateSale(this.saleId, payload) : this.api.createSale(payload);
+      const creando = !this.saleId;
+      const req$ = creando ? this.api.createSale(payload) : this.api.updateSale(this.saleId!, payload);
+
       req$.subscribe({
-        next: () => {
-          this.toast.mostrarMensaje(this.saleId ? '✅ Venta actualizada correctamente' : '✅ Venta registrada correctamente');
-          this.goBack();
+        next: (order: any) => {
+          const idOrder = Number(order?.idOrder ?? order?.id ?? this.saleId);
+
+          this.toast.mostrarMensaje(creando
+            ? '✅ Venta registrada correctamente'
+            : '✅ Venta actualizada correctamente');
+
+          if (creando && idOrder) {
+            this.api.consumeInventory(idOrder, true).subscribe({
+              next: (res: any) => {
+                const low = res?.lowStock ?? precheck?.lowStock ?? [];
+                if (low.length) {
+                  const avisos = low
+                    .map((x: any) => `${x.name ?? x.supplyName} (${x.remaining})`)
+                    .join(', ');
+                  this.toast.mostrarMensaje(`⚠️ Stock crítico: ${avisos}`);
+                }
+                this.toast.mostrarMensaje('✅ Stock actualizado');
+                this.goBack();
+              },
+              error: (err) => {
+                console.error('[INV] Error consumo:', err);
+                const msg = err?.error?.message || err?.message || 'No se pudo actualizar stock';
+                this.toast.mostrarMensaje('❌ ' + msg);
+                this.goBack();
+              }
+            });
+          } else {
+            this.goBack();
+          }
         },
         error: () => {
-          this.toast.mostrarMensaje(this.saleId ? '❌ Error al actualizar la venta' : '❌ Error al registrar la venta');
+          this.toast.mostrarMensaje(creando
+            ? '❌ Error al registrar la venta'
+            : '❌ Error al actualizar la venta');
           if (this.saleId != null) this.loadExistingSale(this.saleId, () => this.loadTables(this.selectedTableId));
         },
         complete: () => (this.isSaving = false)
@@ -327,6 +374,7 @@ export class RegistrarVentaComponent implements OnInit {
   }
   private refreshCartPricing(): void { this.cart.forEach(i => this.recalcItemPricing(i)); }
 
+  // en tu componente (donde está cancelSale)
   cancelSale(): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true,
@@ -337,10 +385,27 @@ export class RegistrarVentaComponent implements OnInit {
       if (!ok || !this.saleId) return;
 
       this.isSaving = true;
-      this.api.updateSale(this.saleId, { status: 'Cancelled' }).subscribe({
-        next: () => { this.toast.mostrarMensaje('✅ Venta cancelada correctamente'); this.goBack(); },
-        error: () => this.toast.mostrarMensaje('❌ Error al cancelar la venta'),
-        complete: () => (this.isSaving = false)
+
+      this.api.refundInventory(this.saleId).subscribe({
+        next: (res) => {
+          console.log('[INV][REFUND] OK =>', res);
+          this.toast.mostrarMensaje('✅ Stock repuesto');
+          this.api.updateSale(this.saleId!, { status: 'Cancelled' }).subscribe({
+            next: () => {
+              this.toast.mostrarMensaje('✅ Venta cancelada correctamente');
+              this.goBack();
+            },
+            error: () => {
+              this.toast.mostrarMensaje('❌ Error al cancelar la venta (estado)');
+            },
+            complete: () => (this.isSaving = false)
+          });
+        },
+        error: (err) => {
+          const msg = err?.error?.message || err?.message || 'No se pudo reponer stock';
+          this.toast.mostrarMensaje('❌ ' + msg);
+          this.isSaving = false;
+        }
       });
     });
   }

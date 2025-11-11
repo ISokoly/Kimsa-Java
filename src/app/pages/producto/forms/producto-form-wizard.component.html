@@ -1,5 +1,5 @@
 <div class="form-modal" style="max-width: min(96vw, 860px); width: 820px;">
-  <h2 class="title form-title">Nuevo Producto</h2>
+  <h2 class="title form-title">{{ productoEditar ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
 
   <!-- Indicador de pasos -->
   <div class="wizard-steps" style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
@@ -8,33 +8,37 @@
   </div>
 
   <form class="form-container">
-
     <!-- PASO 1 -->
     <ng-container *ngIf="formStep===1">
       <div class="form-grid">
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Nombre del producto</mat-label>
           <input matInput type="text" [(ngModel)]="formData.name" name="nombre" placeholder="Nombre" required
-                 [disabled]="isLoading" />
+            [disabled]="isLoading" />
         </mat-form-field>
 
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Precio</mat-label>
           <input matInput type="number" [(ngModel)]="formData.price" name="precio" placeholder="Precio" required
-                 [disabled]="isLoading" />
+            [disabled]="isLoading" />
         </mat-form-field>
 
-        <ng-container *ngIf="mostrarMasOpciones">
-          <mat-form-field appearance="fill" class="full-width">
-            <mat-label>Marca</mat-label>
-            <mat-select [(ngModel)]="formData.brand" name="brand" [disabled]="isLoading">
-              <ng-container *ngFor="let marca of marcas; index as i">
-                <mat-option [value]="marca.idBrand">{{ marca.name }}</mat-option>
-              </ng-container>
-              <mat-option [value]="null">➖ Sin marca</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </ng-container>
+        <mat-form-field *ngIf="mostrarMasOpciones" appearance="fill" class="full-width">
+          <mat-label>Marca</mat-label>
+          <mat-select [(ngModel)]="formData.brand" name="brand" [disabled]="isLoading">
+            <mat-option *ngFor="let marca of marcas; trackBy: rastrearPorId" [value]="marca.idBrand">{{ marca.name
+              }}</mat-option>
+            <mat-option [value]="null">➖ Sin marca</mat-option>
+            <mat-option (click)="abrirFormularioCrearMarca(); $event.stopPropagation();">➕ Crear nueva
+              marca</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <ng-template #formCrearMarcaTpl>
+          <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true" (closed)="alCerrarOverlayMarcas()"
+            (marcaDeleted)="alEliminarMarca($event)">
+          </app-marcas>
+        </ng-template>
 
         <div class="mas-opciones full-width" [class.disabled]="isLoading">
           <label (click)="!isLoading && (mostrarMasOpciones = !mostrarMasOpciones)">
@@ -47,67 +51,74 @@
             Seleccionar Imagen
           </button>
           <span style="margin-left: 10px;">{{ nombreArchivo || 'Ningún archivo seleccionado' }}</span>
-          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden
-                 [disabled]="isLoading" />
+          <input #fileInput type="file" (change)="alSeleccionarArchivo($event)" accept="image/*" hidden
+            [disabled]="isLoading" />
         </div>
       </div>
 
       <mat-divider class="divider"></mat-divider>
 
       <div class="botones">
-        <button type="button" class="form-btn-verde" (click)="goStep2()" [disabled]="isLoading">
-          Siguiente
-        </button>
-        <button type="button" class="form-btn-gris" (click)="close()" [disabled]="isLoading">
-          Cancelar
-        </button>
+        <button type="button" class="form-btn-verde" (click)="irPaso2()" [disabled]="isLoading">Siguiente</button>
+        <button type="button" class="form-btn-gris" (click)="cerrar()" [disabled]="isLoading">Cancelar</button>
       </div>
     </ng-container>
 
     <!-- PASO 2 -->
     <ng-container *ngIf="formStep===2">
-
       <!-- Características -->
       <section>
         <h3 class="section-title">Características</h3>
 
         <div class="row-inline">
-          <mat-form-field appearance="outline" class="w-full">
+          <!-- Autocomplete de características: bloqueado cuando hay selección -->
+          <mat-form-field appearance="fill" class="w-full">
             <mat-label>Característica base</mat-label>
-            <mat-select [(ngModel)]="newFeature.idFeature" name="featureDraft">
+            <input matInput [matAutocomplete]="autoFeature" [(ngModel)]="textoCaracteristica" name="featureInput"
+              (input)="alEscribirCaracteristica()" [disabled]="isLoading || newFeature.idFeature !== null"
+              placeholder="Buscar o seleccionar característica" (keydown.enter)="$event.preventDefault()" />
+            <button *ngIf="newFeature.idFeature !== null" matSuffix type="button" mat-icon-button
+              aria-label="Limpiar característica" (click)="limpiarCaracteristicaSeleccion()">
+              <mat-icon>close</mat-icon>
+            </button>
+            <mat-autocomplete #autoFeature="matAutocomplete"
+              (optionSelected)="alSeleccionarCaracteristica($event.option.value)" autoActiveFirstOption="false">
               <mat-option [value]="null" disabled>Seleccione una característica</mat-option>
-              <ng-container *ngFor="let f of featuresBase">
-                <mat-option [value]="f.idFeature">{{ f.featureName }}</mat-option>
-              </ng-container>
-            </mat-select>
+              <mat-option *ngFor="let f of caracteristicasFiltradas; trackBy: rastrearPorId" [value]="f.idFeature">
+                {{ f.featureName }}
+              </mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="w-full">
+          <mat-form-field appearance="fill" class="w-full">
             <mat-label>Valor</mat-label>
-            <input matInput [(ngModel)]="newFeature.featureValue" name="featureValueDraft" placeholder="Ej: Grande, Vidrio..." />
+            <input matInput [(ngModel)]="newFeature.featureValue" name="featureValueDraft"
+              placeholder="Ej: Grande, Vidrio..." />
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="button" (click)="addDraftFeature()" [disabled]="isLoading">
+          <button mat-raised-button color="primary" type="button" (click)="agregarCaracteristicaBorrador()"
+            [disabled]="isLoading">
             <mat-icon>add</mat-icon> Agregar
           </button>
         </div>
 
         <div class="lista-product-features" [ngClass]="{'grid-list': draftFeatures.length > 3}">
-          <ng-container *ngFor="let df of draftFeatures">
-            <div class="product-feature-item">
-              <div class="product-feature-wrapper">
-                <span class="product-feature-name">{{ df.featureName }}:</span>
-                <span class="product-feature-value">{{ df.featureValue }}</span>
-              </div>
-              <span class="actions">
-                <button class="icon-button x-btn" type="button" (click)="removeDraftFeature(df)">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </span>
+          <div *ngFor="let df of draftFeatures; trackBy: rastrearPorId" class="product-feature-item">
+            <div class="product-feature-wrapper">
+              <span class="product-feature-name">{{ df.featureName }}:</span>
+              <span class="product-feature-value">{{ df.featureValue }}</span>
             </div>
-          </ng-container>
+            <span class="actions">
+              <button mat-icon-button color="accent" (click)="editarCaracteristicaBorrador(df)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="eliminarCaracteristicaBorrador(df)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </span>
+          </div>
 
-          <div class="empty" *ngIf="draftFeatures.length===0">
+          <div class="empty" *ngIf="draftFeatures.length === 0">
             <mat-icon>info</mat-icon>
             <span>No has agregado características.</span>
           </div>
@@ -116,57 +127,63 @@
 
       <mat-divider class="divider"></mat-divider>
 
-      <!-- Receta -->
+      <!-- Receta / Insumos -->
       <section>
-        <h3 class="section-title">Receta (insumos)</h3>
+        <h3 class="section-title">Insumos</h3>
 
         <div class="row-inline">
+          <!-- Autocomplete de insumos: bloqueado cuando hay selección -->
           <mat-form-field appearance="fill" class="w-full">
             <mat-label>Insumo</mat-label>
-            <mat-select [(ngModel)]="newRecetaItem.idSupply" name="recetaSupply">
+            <input matInput [matAutocomplete]="autoSupply" [(ngModel)]="textoInsumo" name="supplyInput"
+              (input)="alEscribirInsumo()" placeholder="Buscar o seleccionar insumo"
+              [disabled]="newRecetaItem.idSupply !== null" (keydown.enter)="$event.preventDefault()" />
+            <button *ngIf="newRecetaItem.idSupply !== null" matSuffix type="button" mat-icon-button
+              aria-label="Limpiar insumo" (click)="limpiarInsumoSeleccion()">
+              <mat-icon>close</mat-icon>
+            </button>
+            <mat-autocomplete #autoSupply="matAutocomplete" (optionSelected)="alSeleccionarInsumo($event.option.value)"
+              autoActiveFirstOption="false">
               <mat-option [value]="null" disabled>Seleccione</mat-option>
-              <ng-container *ngFor="let s of supplies">
-                <mat-option [value]="s.idSupply">{{ s.name }} — {{ unitLabel(s.unit) }}</mat-option>
-              </ng-container>
-            </mat-select>
+              <mat-option *ngFor="let s of insumosFiltrados; trackBy: rastrearPorId" [value]="s.idSupply">
+                {{ s.name }} — {{ etiquetaUnidad(s.unit) }}
+              </mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
           <mat-form-field appearance="fill" style="width:200px;">
-            <mat-label>Cantidad ({{ unitLabelBySupply(newRecetaItem.idSupply) }})</mat-label>
-            <input matInput type="number" min="0.01" step="0.01"
-                   [(ngModel)]="newRecetaItem.gramsQuantity" name="recetaQty" (blur)="clampNewGrams()" placeholder="0.00" />
-            <span matSuffix>{{ unitLabelBySupply(newRecetaItem.idSupply) }}&nbsp;</span>
+            <mat-label>Cantidad ({{ etiquetaUnidadPorInsumo(newRecetaItem.idSupply) }})</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="newRecetaItem.gramsQuantity"
+              name="recetaQty" (blur)="ajustarCantidadNueva()" placeholder="0.00" />
+            <span matSuffix>{{ etiquetaUnidadPorInsumo(newRecetaItem.idSupply) }}&nbsp;</span>
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="button" (click)="addRecetaItem()" [disabled]="isLoading || !canAddReceta">
+          <button mat-raised-button color="primary" type="button" (click)="agregarItemReceta()"
+            [disabled]="isLoading || !puedeAgregarItemReceta">
             <mat-icon>add</mat-icon> Agregar
           </button>
         </div>
 
-        <div class="cards-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:10px; margin-top:10px;">
-          <ng-container *ngFor="let it of draftRecipe">
-            <mat-card class="supply-card mat-elevation-z2" style="position:relative;">
-              <button mat-icon-button type="button" class="close-card" aria-label="Quitar"
-                      (click)="removeRecetaItem(it)" style="position:absolute;top:6px;right:6px;">
-                <mat-icon>close</mat-icon>
-              </button>
-
-              <mat-card-header>
-                <mat-card-title style="margin-bottom: 6px;">{{ it.name }}</mat-card-title>
-              </mat-card-header>
-
-              <mat-card-content>
-                <mat-form-field appearance="fill" class="w-100">
-                  <mat-label>Cantidad ({{ unitLabel(it.unit) }})</mat-label>
-                  <input matInput type="number" min="0.01" step="0.01"
-                         [(ngModel)]="it.gramsQuantity"
-                         [ngModelOptions]="{ standalone: true }"
-                         (blur)="clampItemGrams(it)" placeholder="0.00" />
-                  <span matSuffix>{{ unitLabel(it.unit) }}&nbsp;</span>
-                </mat-form-field>
-              </mat-card-content>
-            </mat-card>
-          </ng-container>
+        <div class="cards-grid"
+          style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:10px; margin-top:10px;">
+          <mat-card *ngFor="let it of draftRecipe; trackBy: rastrearPorId" class="supply-card mat-elevation-z2"
+            style="position:relative;">
+            <button mat-icon-button type="button" aria-label="Quitar" (click)="eliminarItemReceta(it)"
+              style="position:absolute;top:6px;right:6px;">
+              <mat-icon>close</mat-icon>
+            </button>
+            <mat-card-header>
+              <mat-card-title style="margin-bottom: 6px;">{{ it.name }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Cantidad ({{ etiquetaUnidad(it.unit) }})</mat-label>
+                <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="it.gramsQuantity"
+                  [ngModelOptions]="{ standalone: true }" (blur)="ajustarCantidadItem(it)" placeholder="0.00" />
+                <span matSuffix>{{ etiquetaUnidad(it.unit) }}&nbsp;</span>
+              </mat-form-field>
+            </mat-card-content>
+          </mat-card>
         </div>
 
         <div class="empty" *ngIf="draftRecipe.length===0" style="margin-top:10px;">
@@ -177,15 +194,10 @@
       <mat-divider class="divider"></mat-divider>
 
       <div class="botones">
-        <button type="button" class="form-btn-gris" (click)="backStep1()" [disabled]="isLoading">
-          Volver
-        </button>
-        <button type="button" class="form-btn-verde" (click)="finish()" [disabled]="isLoading || !canFinish()">
-          Finalizar
-        </button>
-        <button type="button" class="form-btn-gris" (click)="close()" [disabled]="isLoading">
-          Cancelar
-        </button>
+        <button type="button" class="form-btn-gris" (click)="volverPaso1()" [disabled]="isLoading">Volver</button>
+        <button type="button" class="form-btn-verde" (click)="finalizar()"
+          [disabled]="isLoading || !puedeFinalizar()">Finalizar</button>
+        <button type="button" class="form-btn-gris" (click)="cerrar()" [disabled]="isLoading">Cancelar</button>
       </div>
     </ng-container>
   </form>

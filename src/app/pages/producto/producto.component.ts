@@ -2,7 +2,7 @@
 import { ChangeDetectorRef, Component, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,22 +29,20 @@ import { MarcasComponent } from './forms/marcas/marcas.component';
 import { ConfirmDialogComponent } from '../../view/confirm-dialog/confirm-dialog.component';
 import { refreshSelectedProductSimple } from './product-refresh.util';
 
-// ⬇️ Nuevo: wizard de creación
 import { ProductoFormWizardComponent } from './forms/producto-form-wizard.component';
+import { CaracteristicasComponent } from "./forms/caracteristicas/caracteristicas.component";
 
 @Component({
   selector: 'app-producto',
   standalone: true,
   imports: [
-    // Angular
     CommonModule, FormsModule, RouterModule,
-    // Material
     MatInputModule, MatGridListModule, MatButtonModule, MatSelectModule,
     MatAutocompleteModule, MatChipsModule, MatHeaderCellDef, MatTableModule, MatIconModule,
     MatDialogModule, MatDividerModule,
-    // Hijos/otros
-    MarcasComponent, ProductoFormWizardComponent
-],
+    MarcasComponent, ProductoFormWizardComponent,
+    CaracteristicasComponent
+  ],
   templateUrl: './producto.component.html',
   styleUrls: ['./producto.component.scss']
 })
@@ -53,24 +51,25 @@ export class ProductoComponent implements OnInit {
 
   productos: Product[] = [];
   marcas: Brand[] = [];
-  supplies: any[] = [];                 // ⬅️ nuevo: insumos para el wizard
+  supplies: any[] = [];
   marcaMap: Record<number, string> = {};
   imagenesCache: Record<number, string> = {};
   imgLoaded: Record<number, boolean> = {};
 
-  // filtros
   tipoFiltro: '' | 'nombre' | 'marca' | 'caracteristica' = '';
   filtro = '';
   estadoFiltro: 'habilitados' | 'deshabilitados' | 'todos' = 'habilitados';
   filtroSugs: string[] = [];
   private namePool: string[] = [];
   private brandPool: string[] = [];
+  features: any[] = [];
 
   isLoading = false;
 
   displayedInfoColumns: string[] = ['prop', 'value'];
   displayedFeatureColumns: string[] = ['base', 'value'];
   productFeatureRows: Array<{ base: string; value: string }> = [];
+  mostrarConfigurarFeature = false;
 
   selectedProducto: Product | null = null;
 
@@ -85,7 +84,6 @@ export class ProductoComponent implements OnInit {
     ];
   }
 
-  // feature filter (buscador principal)
   get featureQuery() { return this.featuresSvc.featureQuery; }
   set featureQuery(v: string) { this.featuresSvc.featureQuery = v; }
   get featureSuggestions() { return this.featuresSvc.featureSuggestions; }
@@ -113,14 +111,14 @@ export class ProductoComponent implements OnInit {
   @ViewChild('formProductoTpl') formProductoTpl!: TemplateRef<any>;
   @ViewChild('formOrganizarMarcasTpl') formOrganizarMarcasTpl!: TemplateRef<any>;
   @ViewChild('formCrearMarcaTpl') formCrearMarcaTpl!: TemplateRef<any>;
-  @ViewChild('formProdCaractTpl') formProdCaractTpl!: TemplateRef<any>;
+  @ViewChild('formOrgCaractTpl') formOrgCaractTpl!: TemplateRef<any>;
   @ViewChild('productDetailTpl') productDetailTpl!: TemplateRef<any>;
 
   private productDetailRef?: OverlayHandle;
   private productFormRef?: OverlayHandle;
   private organizarMarcasRef?: OverlayHandle;
   private crearMarcaRef?: OverlayHandle;
-  private prodCaractRef?: OverlayHandle;
+  private orgCaractRef?: OverlayHandle;
 
   private overlay = inject(OverlayPortalService);
 
@@ -131,7 +129,8 @@ export class ProductoComponent implements OnInit {
     private dialog: MatDialog,                 // ✅ inyección válida (MatDialogModule importado)
     private featuresSvc: FeatureFilterService,
     private cd: ChangeDetectorRef,
-    private pageLoading: PageLoadingService
+    private pageLoading: PageLoadingService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -144,6 +143,8 @@ export class ProductoComponent implements OnInit {
       this.pageLoading.start();
 
       await this.loadCategoriaYProductos(this.categoriaNombre);
+      await this.loadAllFeatures();
+
     });
   }
 
@@ -155,7 +156,7 @@ export class ProductoComponent implements OnInit {
 
       await this.loadMarcasPorCategoria(this.categoriaId);
       await this.loadProductosPorCategoria(this.categoriaId);
-      await this.loadSupplies();                       // ⬅️ cargar insumos para el wizard
+      await this.loadSupplies();
 
       const ids = this.productos.map(p => p.idImage).filter((id): id is number => !!id);
       await this.preloadImages(ids);
@@ -178,6 +179,12 @@ export class ProductoComponent implements OnInit {
     } catch {
       this.supplies = [];
     }
+  }
+
+  loadAllFeatures(): void {
+    this.api.getFeatures().subscribe((data: any[]) => {
+      this.features = data || [];
+    });
   }
 
   private async preloadImages(ids: number[]): Promise<void> {
@@ -224,6 +231,11 @@ export class ProductoComponent implements OnInit {
     const all = await firstValueFrom(this.api.getMarcas()) as Brand[];
     this.marcas = (all || []).filter(m => Number(m.category ?? (m as any).idCategory) === idCategory);
     this.marcaMap = Object.fromEntries(this.marcas.map(m => [m.idBrand, m.name]));
+  }
+
+  async onMarcasChanged(): Promise<void> {
+    if (this.categoriaId) await this.loadMarcasPorCategoria(this.categoriaId);
+    await this.refreshDetailNow();
   }
 
   // ========= FILTROS =========
@@ -320,6 +332,19 @@ export class ProductoComponent implements OnInit {
     this.cd.detectChanges();
   }
 
+  async onProductoActualizado(idProduct: number): Promise<void> {
+    if (this.categoriaId) await this.loadProductosPorCategoria(this.categoriaId);
+
+    if (this.selectedProducto && this.selectedProducto.idProduct === idProduct) {
+      await this.refreshDetailNow();
+    } else {
+      const p = this.productos.find(p => p.idProduct === idProduct);
+      if (p?.idImage) await this.loadImagen(p.idImage);
+    }
+
+    this.cerrarFormulario();
+  }
+
   // ========= OVERLAYS =========
   openProductDetail(p: Product): void {
     this.selectedProducto = p;
@@ -336,9 +361,18 @@ export class ProductoComponent implements OnInit {
       this.toast.mostrarMensaje('❌ No hay categoría seleccionada.');
       return;
     }
+    this.closeProductDetail();
+
     this.productFormRef?.close();
-    this.productFormRef = this.overlay.open(this.formProductoTpl);
+    this.productFormRef = undefined;
+
+    this.selectedProducto = _producto ? { ..._producto } : null;
+
+    setTimeout(() => {
+      this.productFormRef = this.overlay.open(this.formProductoTpl);
+    }, 0);
   }
+
 
   cerrarFormulario(): void {
     this.productFormRef?.close();
@@ -403,5 +437,21 @@ export class ProductoComponent implements OnInit {
       this.loadMarcasPorCategoria(this.categoriaId);
       this.loadProductosPorCategoria(this.categoriaId);
     }
+  }
+
+  // ========= Caracteristicas =========
+  abrirConfigurarFeature(): void {
+    this.mostrarConfigurarFeature = true;
+    this.orgCaractRef = this.overlay.open(this.formOrgCaractTpl)
+  }
+  cerrarConfigurarFeature(): void {
+    this.mostrarConfigurarFeature = false;
+    this.orgCaractRef?.close();
+    this.orgCaractRef = undefined;
+    this.loadAllFeatures();
+  }
+
+  volverInventario(): void {
+    this.router.navigate([`/view/categoria`]);
   }
 }

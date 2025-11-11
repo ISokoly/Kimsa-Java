@@ -50,7 +50,7 @@ export type MenuItem = {
             <button
               mat-icon-button
               matListItemMeta
-              type="button"
+              type="button" class="chev-abs"
               (click)="toggleExpand($event)"
               aria-label="Expandir productos">
               <mat-icon>{{ expanded() ? 'expand_more' : 'chevron_right' }}</mat-icon>
@@ -124,6 +124,20 @@ export type MenuItem = {
     outline: 0;
   }
 
+  .chev-abs {
+    position: absolute;
+    right: -10px !important;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    height: 32px;
+    width: 32px;
+  }
+
   .menu-item { font-weight: bold; color: white; }
   .menu-item mat-icon { color: white; }
 
@@ -174,7 +188,7 @@ export class MenuComponent {
   @Input() set collapsed(val: boolean) { this.sideNavCollpsed.set(val); }
 
   menuItems = signal<MenuItem[]>([]);
-  expanded = signal(false); // para “Productos”
+  expanded = signal(false);
 
   constructor(private api: ApiService) {
     this.initMenu();
@@ -201,18 +215,22 @@ export class MenuComponent {
         label: c.name,
         route: ['categoria/producto', c.name] // sin slash inicial
       }));
-    } catch { /* noop */ }
+    } catch { }
 
-    const items: MenuItem[] = [
-      { icon: 'local_pizza', label: 'Productos', route: 'categoria', children }
-    ];
+    const items: MenuItem[] = [];
 
     if (rol === 'Employee') {
-      items.push({ icon: 'store', label: 'Ventas', route: 'ventas' });
+      items.push(
+        { icon: 'local_pizza', label: 'Productos', route: 'categoria', children },
+        { icon: 'store', label: 'Ventas', route: 'ventas' }
+      );
     }
+
     if (rol === 'Administrator') {
-      items.push({ icon: 'trending_up', label: 'Estadisticas', route: 'estadisticas' });
-      items.push({ icon: 'trending_up', label: 'Inventario', route: 'inventario' });
+      items.push(
+        { icon: 'trending_up', label: 'Estadísticas', route: 'estadisticas' },
+        { icon: 'inventory_2', label: 'Inventario', route: 'inventario' }
+      );
     }
 
     this.menuItems.set(items);
