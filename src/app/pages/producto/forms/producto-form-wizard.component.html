@@ -9,7 +9,9 @@
 
   <form class="form-container">
     <!-- PASO 1 -->
-    <ng-container *ngIf="formStep===1">
+
+    @if (formStep===1) {
+    <ng-container>
       <div class="form-grid">
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Nombre del producto</mat-label>
@@ -23,7 +25,8 @@
             [disabled]="isLoading" />
         </mat-form-field>
 
-        <mat-form-field *ngIf="mostrarMasOpciones" appearance="fill" class="full-width">
+        @if (mostrarMasOpciones) {
+        <mat-form-field appearance="fill" class="full-width">
           <mat-label>Marca</mat-label>
           <mat-select [(ngModel)]="formData.brand" name="brand" [disabled]="isLoading">
             <mat-option *ngFor="let marca of marcas; trackBy: rastrearPorId" [value]="marca.idBrand">{{ marca.name
@@ -33,6 +36,7 @@
               marca</mat-option>
           </mat-select>
         </mat-form-field>
+        }
 
         <ng-template #formCrearMarcaTpl>
           <app-marcas [currentCategoryId]="categoriaId" [soloFormulario]="true" (closed)="alCerrarOverlayMarcas()"
@@ -63,9 +67,9 @@
         <button type="button" class="form-btn-gris" (click)="cerrar()" [disabled]="isLoading">Cancelar</button>
       </div>
     </ng-container>
-
-    <!-- PASO 2 -->
-    <ng-container *ngIf="formStep===2">
+    }
+    @if (formStep===2) {
+    <ng-container>
       <!-- Características -->
       <section>
         <h3 class="section-title">Características</h3>
@@ -77,10 +81,12 @@
             <input matInput [matAutocomplete]="autoFeature" [(ngModel)]="textoCaracteristica" name="featureInput"
               (input)="alEscribirCaracteristica()" [disabled]="isLoading || newFeature.idFeature !== null"
               placeholder="Buscar o seleccionar característica" (keydown.enter)="$event.preventDefault()" />
-            <button *ngIf="newFeature.idFeature !== null" matSuffix type="button" mat-icon-button
-              aria-label="Limpiar característica" (click)="limpiarCaracteristicaSeleccion()">
+            @if (newFeature.idFeature !== null) {
+            <button matSuffix type="button" mat-icon-button aria-label="Limpiar característica"
+              (click)="limpiarCaracteristicaSeleccion()">
               <mat-icon>close</mat-icon>
             </button>
+            }
             <mat-autocomplete #autoFeature="matAutocomplete"
               (optionSelected)="alSeleccionarCaracteristica($event.option.value)" autoActiveFirstOption="false">
               <mat-option [value]="null" disabled>Seleccione una característica</mat-option>
@@ -118,10 +124,12 @@
             </span>
           </div>
 
-          <div class="empty" *ngIf="draftFeatures.length === 0">
+          @if (draftFeatures.length === 0) {
+          <div class="empty">
             <mat-icon>info</mat-icon>
             <span>No has agregado características.</span>
           </div>
+          }
         </div>
       </section>
 
@@ -138,10 +146,12 @@
             <input matInput [matAutocomplete]="autoSupply" [(ngModel)]="textoInsumo" name="supplyInput"
               (input)="alEscribirInsumo()" placeholder="Buscar o seleccionar insumo"
               [disabled]="newRecetaItem.idSupply !== null" (keydown.enter)="$event.preventDefault()" />
-            <button *ngIf="newRecetaItem.idSupply !== null" matSuffix type="button" mat-icon-button
-              aria-label="Limpiar insumo" (click)="limpiarInsumoSeleccion()">
+            @if (newRecetaItem.idSupply !== null) {
+            <button matSuffix type="button" mat-icon-button aria-label="Limpiar insumo"
+              (click)="limpiarInsumoSeleccion()">
               <mat-icon>close</mat-icon>
             </button>
+            }
             <mat-autocomplete #autoSupply="matAutocomplete" (optionSelected)="alSeleccionarInsumo($event.option.value)"
               autoActiveFirstOption="false">
               <mat-option [value]="null" disabled>Seleccione</mat-option>
@@ -186,9 +196,11 @@
           </mat-card>
         </div>
 
-        <div class="empty" *ngIf="draftRecipe.length===0" style="margin-top:10px;">
+        @if (draftRecipe.length===0) {
+        <div class="empty" style="margin-top:10px;">
           Aún no has agregado insumos a la receta.
         </div>
+        }
       </section>
 
       <mat-divider class="divider"></mat-divider>
@@ -200,5 +212,6 @@
         <button type="button" class="form-btn-gris" (click)="cerrar()" [disabled]="isLoading">Cancelar</button>
       </div>
     </ng-container>
+    }
   </form>
 </div>
