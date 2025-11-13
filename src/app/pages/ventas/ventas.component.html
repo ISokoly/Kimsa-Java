@@ -2,7 +2,7 @@
 
 } @else {
 <div class="ventas-container route-shell fade-in">
-  <h1 class="title">Ventas</h1>
+  <h1 class="title">Ventas de la Pizzeria</h1>
 
   <div class="filtros-row">
     <!-- Fecha -->
@@ -19,9 +19,9 @@
       <mat-label>Estado</mat-label>
       <mat-select [(ngModel)]="statusFilter" (selectionChange)="onStatusChange()">
         <mat-option value="All">Todos</mat-option>
-        <mat-option value="Pending">Pending</mat-option>
-        <mat-option value="Confirmed">Confirmed</mat-option>
-        <mat-option value="Cancelled">Cancelled</mat-option>
+        <mat-option value="Pending">Pendientes</mat-option>
+        <mat-option value="Confirmed">Confirmados</mat-option>
+        <mat-option value="Cancelled">Cancelados</mat-option>
       </mat-select>
     </mat-form-field>
 
@@ -37,18 +37,19 @@
         }
       </mat-autocomplete>
     </mat-form-field>
-      <div class="toolbar">
-    <button mat-raised-button color="primary" class="btn btn-limpiar" style="letter-spacing: .3px; margin-top: -15px;" 
-    (click)="clearAllFilters()" [disabled]="!selectedProductNames.length">Limpiar</button>
-  </div>
+    <div class="toolbar">
+      <button mat-raised-button color="primary" class="btn btn-limpiar" style="letter-spacing: .3px; margin-top: -15px;"
+        (click)="clearAllFilters()" [disabled]="!selectedProductNames.length">Limpiar</button>
+    </div>
   </div>
 
   <div class="chips-row">
     <mat-chip-listbox>
-      <mat-chip *ngFor="let name of selectedProductNames" (removed)="removeSelectedProduct(name)" removable>
+      @for (name of selectedProductNames; track name) {
+      <mat-chip (removed)="removeSelectedProduct(name)" removable>
         {{ name }}
         <button matChipRemove aria-label="Remover">×</button>
-      </mat-chip>
+      </mat-chip>}
     </mat-chip-listbox>
   </div>
 
@@ -140,7 +141,8 @@
           }
         </div>
 
-        <button mat-stroked-button class="btn" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
+        <button mat-stroked-button class="btn" (click)="nextPage()"
+          [disabled]="pageIndex >= totalPages - 1">Siguiente</button>
       </div>
       }
     </div>

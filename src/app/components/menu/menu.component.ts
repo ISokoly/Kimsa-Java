@@ -1,11 +1,11 @@
-import { Component, computed, Input, signal } from '@angular/core';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ApiService } from '../../core/services/api.service';
-import { firstValueFrom } from 'rxjs';
+import { Component, computed, Input, signal } from "@angular/core";
+import { MatListModule } from "@angular/material/list";
+import { MatIconModule } from "@angular/material/icon";
+import { RouterLink, RouterLinkActive } from "@angular/router";
+import { ApiService } from "../../core/services/api.service";
+import { firstValueFrom } from "rxjs";
 
-type Categoria = { idCategory: number; name: string };
+type Categoria = { idCategory: number; name: string; disabled: boolean };
 
 export type MenuItem = {
   icon: string;
@@ -15,82 +15,86 @@ export type MenuItem = {
 };
 
 @Component({
-  selector: 'app-menu',
+  selector: "app-menu",
   standalone: true,
   imports: [MatListModule, MatIconModule, RouterLink, RouterLinkActive],
   template: `
-  <div class="sidenav-header">
-    <img src="kimsa_black.png" alt="" [width]="profilePicSize()">
-    <div class="header-text" [class.hide-header-text]="sideNavCollpsed()">
-      <h2>Kimsa</h2>
-      <p>Pastas y Pizzas</p>
+    <div class="sidenav-header">
+      <img src="kimsa_black.png" alt="" [width]="profilePicSize()" />
+      <div class="header-text" [class.hide-header-text]="sideNavCollpsed()">
+        <h2>Kimsa</h2>
+        <p>Pastas y Pizzas</p>
+      </div>
     </div>
-  </div>
-  <br><br>
+    <br /><br />
 
-  <mat-nav-list>
-    @for (item of menuItems(); track $index) {
+    <mat-nav-list>
+      @for (item of menuItems(); track $index) {
 
       <!-- ===== Productos con expansión ===== -->
       @if (item.label === 'Productos') {
-        <mat-list-item
-          class="menu-item"
-          routerLinkActive="selected-menu-item"
-          [routerLink]="item.route">
+      <mat-list-item
+        class="menu-item"
+        routerLinkActive="selected-menu-item"
+        [routerLink]="item.route"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
 
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-
-          <ng-container matListItemTitle>
-            @if (!sideNavCollpsed()) {
-              <span class="title">{{ item.label }}</span>
-            }
-          </ng-container>
-
-          @if (item.children?.length && !sideNavCollpsed()) {
-            <button
-              mat-icon-button
-              matListItemMeta
-              type="button" class="chev-abs"
-              (click)="toggleExpand($event)"
-              aria-label="Expandir productos">
-              <mat-icon>{{ expanded() ? 'expand_more' : 'chevron_right' }}</mat-icon>
-            </button>
+        <ng-container matListItemTitle>
+          @if (!sideNavCollpsed()) {
+          <span class="title">{{ item.label }}</span>
           }
-        </mat-list-item>
+        </ng-container>
 
-        @if (expanded() && !sideNavCollpsed() && item.children?.length) {
-          <div class="submenu">
-            @for (child of item.children; track child.label) {
-              <mat-list-item
-                class="submenu-item"
-                routerLinkActive="selected-submenu-item"
-                [routerLink]="child.route">
-                <mat-icon matListItemIcon>label</mat-icon>
-                <ng-container matListItemTitle>
-                  <span class="title">{{ child.label }}</span>
-                </ng-container>
-              </mat-list-item>
-            }
-          </div>
+        @if (item.children?.length && !sideNavCollpsed()) {
+        <button
+          mat-icon-button
+          matListItemMeta
+          type="button"
+          class="chev-abs"
+          (click)="toggleExpand($event)"
+          aria-label="Expandir productos"
+        >
+          <mat-icon>{{
+            expanded() ? "expand_more" : "chevron_right"
+          }}</mat-icon>
+        </button>
         }
-      }
+      </mat-list-item>
+
+      @if (expanded() && !sideNavCollpsed() && item.children?.length) {
+      <div class="submenu">
+        @for (child of item.children; track child.label) {
+        <mat-list-item
+          class="submenu-item"
+          routerLinkActive="selected-submenu-item"
+          [routerLink]="child.route"
+        >
+          <mat-icon matListItemIcon>label</mat-icon>
+          <ng-container matListItemTitle>
+            <span class="title">{{ child.label }}</span>
+          </ng-container>
+        </mat-list-item>
+        }
+      </div>
+      } }
 
       <!-- ===== Resto de ítems normales ===== -->
       @else {
-        <mat-list-item
-          class="menu-item"
-          routerLinkActive="selected-menu-item"
-          [routerLink]="item.route">
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <ng-container matListItemTitle>
-            @if (!sideNavCollpsed()) {
-              <span class="title">{{ item.label }}</span>
-            }
-          </ng-container>
-        </mat-list-item>
-      }
-    }
-  </mat-nav-list>
+      <mat-list-item
+        class="menu-item"
+        routerLinkActive="selected-menu-item"
+        [routerLink]="item.route"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        <ng-container matListItemTitle>
+          @if (!sideNavCollpsed()) {
+          <span class="title">{{ item.label }}</span>
+          }
+        </ng-container>
+      </mat-list-item>
+      } }
+    </mat-nav-list>
   `,
   styles: `
   :host { transition: all 500ms ease-in-out }
@@ -180,12 +184,13 @@ export type MenuItem = {
     box-shadow: inset 5px 0 0 0 white;
     border: 2px solid white
   }
-  `
+  `,
 })
 export class MenuComponent {
-
   sideNavCollpsed = signal(false);
-  @Input() set collapsed(val: boolean) { this.sideNavCollpsed.set(val); }
+  @Input() set collapsed(val: boolean) {
+    this.sideNavCollpsed.set(val);
+  }
 
   menuItems = signal<MenuItem[]>([]);
   expanded = signal(false);
@@ -194,15 +199,17 @@ export class MenuComponent {
     this.initMenu();
   }
 
-  profilePicSize = computed(() => this.sideNavCollpsed() ? '32' : '100');
+  profilePicSize = computed(() => (this.sideNavCollpsed() ? "32" : "100"));
 
   private getRolUsuario(): string {
-    const usuarioGuardado = localStorage.getItem('usuario');
-    if (!usuarioGuardado) return '';
+    const usuarioGuardado = localStorage.getItem("usuario");
+    if (!usuarioGuardado) return "";
     try {
       const usuario = JSON.parse(usuarioGuardado);
       return usuario.rol;
-    } catch { return ''; }
+    } catch {
+      return "";
+    }
   }
 
   private async initMenu(): Promise<void> {
@@ -210,26 +217,36 @@ export class MenuComponent {
 
     let children: Array<{ label: string; route: any[] }> = [];
     try {
-      const cats = await firstValueFrom(this.api.getCategorias()) as Categoria[];
-      children = (cats || []).map(c => ({
-        label: c.name,
-        route: ['categoria/producto', c.name] // sin slash inicial
-      }));
-    } catch { }
+      const cats = (await firstValueFrom(
+        this.api.getCategorias()
+      )) as Categoria[];
+
+      children = (cats || [])
+        .filter((c) => !c.disabled)
+        .map((c) => ({
+          label: c.name,
+          route: ["categoria/producto", c.name], // sin slash inicial
+        }));
+    } catch {}
 
     const items: MenuItem[] = [];
 
-    if (rol === 'Employee') {
+    if (rol === "Employee") {
       items.push(
-        { icon: 'local_pizza', label: 'Productos', route: 'categoria', children },
-        { icon: 'store', label: 'Ventas', route: 'ventas' }
+        {
+          icon: "local_pizza",
+          label: "Productos",
+          route: "categoria",
+          children,
+        },
+        { icon: "store", label: "Ventas", route: "ventas" }
       );
     }
 
-    if (rol === 'Administrator') {
+    if (rol === "Administrator") {
       items.push(
-        { icon: 'trending_up', label: 'Estadísticas', route: 'estadisticas' },
-        { icon: 'inventory_2', label: 'Inventario', route: 'inventario' }
+        { icon: "trending_up", label: "Estadísticas", route: "estadisticas" },
+        { icon: "inventory_2", label: "Inventario", route: "inventario" }
       );
     }
 

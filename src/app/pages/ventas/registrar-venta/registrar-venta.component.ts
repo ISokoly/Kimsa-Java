@@ -84,6 +84,8 @@ export class RegistrarVentaComponent implements OnInit {
   private dniSuggestTimer?: any;
 
   isDelivery = false;
+
+  // 🔎 Autocomplete de productos
   productSearch = '';
   filteredProducts: Product[] = [];
 
@@ -323,8 +325,24 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
+  /* ========= AUTOCOMPLETE PRODUCTO (estilo característica base) ========= */
+
+  // Se llama desde (input) o (ngModelChange)
+  onProductTyping(): void {
+    // Si escribe algo, ya no hay un producto fijo seleccionado
+    this.selectedProductId = null;
+    this.filtrarProductos();
+  }
+
+  // Botón X (matSuffix) para limpiar selección
+  clearProductSelection(): void {
+    this.productSearch = '';
+    this.selectedProductId = null;
+    this.filteredProducts = this.products.slice(0, 10);
+  }
+
   filtrarProductos(): void {
-    const q = this.productSearch.toLowerCase().trim();
+    const q = (this.productSearch || '').toLowerCase().trim();
     this.filteredProducts = !q
       ? this.products.slice(0, 10)
       : this.products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 10);
@@ -339,9 +357,15 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
-  onProductoSeleccionado(producto: Product): void {
-    this.selectedProductId = producto.idProduct;
-    this.productSearch = `${producto.name} — S/${producto.price}`;
+  // Recibe el idProduct (igual que el ejemplo de características recibe idFeature)
+  onProductoSeleccionado(idProduct: number | null): void {
+    if (idProduct == null) return;
+    const prod = this.products.find(p => p.idProduct === idProduct);
+    if (!prod) return;
+
+    this.selectedProductId = prod.idProduct;
+    // Solo mostramos el nombre (como en características solo muestran featureName)
+    this.productSearch = prod.name;
   }
 
   ensureCustomer(): Promise<{ idClient: number; name: string; dni: string }> {
@@ -374,7 +398,7 @@ export class RegistrarVentaComponent implements OnInit {
   }
   private refreshCartPricing(): void { this.cart.forEach(i => this.recalcItemPricing(i)); }
 
-  // en tu componente (donde está cancelSale)
+  // cancelar venta con reembolso de stock
   cancelSale(): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px', maxWidth: '95vw', panelClass: 'custom-confirm-dialog', disableClose: true,
@@ -460,8 +484,11 @@ export class RegistrarVentaComponent implements OnInit {
       });
     }
 
+    // después de agregar, reseteamos la selección (igual que en otros formularios)
     this.selectedProductId = null;
     this.selectedQty = 1;
+    this.productSearch = '';
+    this.filteredProducts = this.products.slice(0, 10);
   }
 
   updateQty(item: CartItem, qty: number): void {

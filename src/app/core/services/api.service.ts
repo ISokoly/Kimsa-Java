@@ -283,6 +283,9 @@ export class ApiService {
   disableCategoriaYProductos(id: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/categories/${id}/disable`, {}, this.withCred({ headers: this.authHeaders() }));
   }
+  enableCategoriaYProductos(id: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/categories/${id}/enable`, {}, this.withCred({ headers: this.authHeaders() }));
+  }
   deleteCategoria(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/categories/${id}`, this.withCred({ headers: this.authHeaders() }));
   }

@@ -170,7 +170,8 @@ button {
     }
   }
 
-  &.btn-azul {
+  &.btn-azul,
+  &.form-btn-azul {
     background: $secondary-color;
     color: #fff;
     font-weight: 600;
@@ -253,8 +254,9 @@ button {
 
   .form-btn-verde,
   .form-btn-rojo,
-  .form-btn-gris {
-    width: 48%;
+  .form-btn-gris,
+  .form-btn-azul {
+    width: 100%;
   }
 }
 

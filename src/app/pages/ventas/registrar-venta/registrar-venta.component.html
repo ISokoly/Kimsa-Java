@@ -111,19 +111,28 @@
                             <mat-label>Seleccionar producto</mat-label>
 
                             <input type="text" matInput placeholder="Buscar producto..." [(ngModel)]="productSearch"
-                                [matAutocomplete]="autoProductos" (input)="filtrarProductos()" />
+                                name="productInput" [matAutocomplete]="autoProductos" (input)="onProductTyping()"
+                                (keydown.enter)="$event.preventDefault()" />
+
+                            @if (selectedProductId !== null) {
+                            <button matSuffix type="button" mat-icon-button aria-label="Limpiar producto"
+                                (click)="clearProductSelection()">
+                                <mat-icon>close</mat-icon>
+                            </button>
+                            }
 
                             <mat-autocomplete #autoProductos="matAutocomplete"
-                                (optionSelected)="onProductoSeleccionado($event.option.value)">
-                                @if (filteredProducts.length === 0) {
-                                <mat-option disabled>— Sin coincidencias —</mat-option>
-                                } @else {
+                                (optionSelected)="onProductoSeleccionado($event.option.value)"
+                                autoActiveFirstOption="false">
+                                <mat-option [value]="null" disabled>Seleccione un producto</mat-option>
                                 @for (p of filteredProducts; track p.idProduct) {
-                                <mat-option [value]="p">{{ p.name }} — S/{{ p.price }}</mat-option>
-                                }
+                                <mat-option [value]="p.idProduct">
+                                    {{ p.name }} — S/{{ p.price }}
+                                </mat-option>
                                 }
                             </mat-autocomplete>
                         </mat-form-field>
+
                     </td>
                     <td>
                         <mat-form-field appearance="outline" class="cantidad-field">

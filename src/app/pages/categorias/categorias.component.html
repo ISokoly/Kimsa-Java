@@ -4,7 +4,55 @@
   <div class="categoria-container">
     <h1 class="title">Productos de la pizzería</h1>
 
-    <div class="toolbar">
+    <div class="filtros">
+      <div style="display:flex; gap:10px; align-items:center; width:100%; padding-right:15px;">
+        <mat-form-field appearance="fill" style="flex: 1;">
+          <mat-label>
+            {{ !tipoFiltro
+            ? 'Seleccione tipo de búsqueda'
+            : (tipoFiltro === 'nombre'
+            ? 'Buscar categoría'
+            : 'Buscar por producto') }}
+          </mat-label>
+
+          <input matInput [disabled]="!tipoFiltro" [matAutocomplete]="autoBusq" [(ngModel)]="mainQuery"
+            (ngModelChange)="onMainTyping($event)" [placeholder]="
+          !tipoFiltro
+            ? 'Primero elige: Nombre o Producto'
+            : (tipoFiltro === 'nombre'
+                ? 'Ingrese nombre de categoría...'
+                : 'Ingrese nombre de producto...')
+        " autocomplete="off" />
+
+          <mat-autocomplete #autoBusq="matAutocomplete" (optionSelected)="onMainAutoSelected($event.option.value)"
+            [displayWith]="getDisplayWith()" autoActiveFirstOption="false">
+            @for (s of mainSuggestions; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <!-- Tipo de búsqueda -->
+        <mat-form-field appearance="fill" style="width: 30%;">
+          <mat-label>Buscar por</mat-label>
+          <mat-select [(ngModel)]="tipoFiltro" (selectionChange)="onTipoFiltroChange()">
+            <mat-option [value]="'nombre'">Nombre</mat-option>
+            <mat-option [value]="'producto'">Producto</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Estado -->
+        <mat-form-field appearance="fill" style="width: 25%;">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="estadoFiltro" (selectionChange)="onEstadoFiltroChange()">
+            <mat-option value="habilitados">Habilitados</mat-option>
+            <mat-option value="deshabilitados">Deshabilitados</mat-option>
+            <mat-option value="todos">Todos</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+        <div class="toolbar">
       <div class="full-width" style="display: flex;">
         <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px; letter-spacing: .3px;"
           (click)="abrirFormulario()" [disabled]="isLoading">

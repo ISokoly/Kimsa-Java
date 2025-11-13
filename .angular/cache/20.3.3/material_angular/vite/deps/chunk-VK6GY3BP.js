@@ -1,6 +1,6 @@
 import {
   MediaMatcher
-} from "./chunk-HAIRIHHM.js";
+} from "./chunk-YMVPGO6L.js";
 import {
   ANIMATION_MODULE_TYPE,
   NgModule,
@@ -79,4 +79,4 @@ export {
   _getAnimationsState,
   _animationsDisabled
 };
-//# sourceMappingURL=chunk-MOXQPS7M.js.map
+//# sourceMappingURL=chunk-VK6GY3BP.js.map
