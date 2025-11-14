@@ -1,4 +1,7 @@
 import {
+  MatFormFieldModule
+} from "./chunk-OSDTY25U.js";
+import {
   SelectionModel
 } from "./chunk-TQAD7LQE.js";
 import {
@@ -6,8 +9,9 @@ import {
   _ErrorStateTracker
 } from "./chunk-PYEXC7SF.js";
 import {
-  MatFormFieldModule
-} from "./chunk-EKZDATLB.js";
+  MAT_FORM_FIELD,
+  MatFormFieldControl
+} from "./chunk-OL2L44S4.js";
 import {
   FormGroupDirective,
   NgControl,
@@ -21,20 +25,16 @@ import {
   MatOptionModule,
   _countGroupLabelsBeforeOption,
   _getOptionScrollPosition
-} from "./chunk-HVFGLCVR.js";
+} from "./chunk-EC7O63PJ.js";
 import {
   CdkConnectedOverlay,
   CdkOverlayOrigin,
   OverlayModule,
   createRepositionScrollStrategy
-} from "./chunk-SGEH44FP.js";
-import {
-  MAT_FORM_FIELD,
-  MatFormFieldControl
-} from "./chunk-QESHIVR3.js";
+} from "./chunk-E3TNMNRS.js";
 import {
   _animationsDisabled
-} from "./chunk-VK6GY3BP.js";
+} from "./chunk-E7RAHOML.js";
 import {
   A,
   ActiveDescendantKeyManager,
@@ -51,11 +51,11 @@ import {
   addAriaReferencedId,
   hasModifierKey,
   removeAriaReferencedId
-} from "./chunk-YMVPGO6L.js";
+} from "./chunk-NUWJTB3P.js";
 import {
   CdkScrollableModule,
   ViewportRuler
-} from "./chunk-32UU7V5A.js";
+} from "./chunk-IFMW7MGU.js";
 import {
   NgClass
 } from "./chunk-QCDBD2C7.js";
@@ -1611,4 +1611,4 @@ export {
   MatSelectTrigger,
   MatSelectModule
 };
-//# sourceMappingURL=chunk-YNTRMB77.js.map
+//# sourceMappingURL=chunk-LIUWSVHW.js.map
