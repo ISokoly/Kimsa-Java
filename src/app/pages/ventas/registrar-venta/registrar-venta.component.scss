@@ -145,25 +145,29 @@ mat-form-field {
 
     .boton-agregar {
       width: 220px;
-      background-color: $primary-color;
+      background-color: $secondary-color;
       color: #fff;
       font-weight: bold;
       transition: 0.3s ease-in-out;
+      border-radius: 10px;
+      height: 48px;
 
       &:hover {
-        background-color: color.scale($primary-color, $lightness: -30%);
+        background-color: color.scale($secondary-color, $lightness: -30%);
       }
     }
 
     .boton-volver {
       width: 220px;
-      background-color: $secondary-color;
+      background: color.scale($primary-color, $lightness: 25%);
       color: #fff;
       font-weight: bold;
       transition: 0.3s ease-in-out;
+      border-radius: 10px;
+      height: 48px;
 
       &:hover {
-        background-color: color.scale($secondary-color, $lightness: -30%);
+        background: color.scale($primary-color, $lightness: 10%);
       }
     }
 

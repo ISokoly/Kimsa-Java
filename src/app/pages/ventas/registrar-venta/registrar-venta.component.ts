@@ -243,7 +243,6 @@ export class RegistrarVentaComponent implements OnInit {
   }
 
   /* ==================== GUARDAR ==================== */
-  /* ==================== GUARDAR ==================== */
   async saveSale(): Promise<void> {
     if (!this.isDelivery && !this.selectedTableId) {
       return this.toast.mostrarMensaje('⚠️ Seleccione una mesa o marque Delivery');
@@ -269,13 +268,11 @@ export class RegistrarVentaComponent implements OnInit {
         idTable: this.isDelivery ? null : this.selectedTableId,
         delivery: this.isDelivery,
         items,
-        // status lo maneja backend (Pending)
       };
 
       const creando = !this.saleId;
 
       if (creando) {
-        // 1) Crear pedido
         this.api.createSale(payload).subscribe({
           next: (order: any) => {
             const idOrder = order?.idOrder;
@@ -288,7 +285,6 @@ export class RegistrarVentaComponent implements OnInit {
               return;
             }
 
-            // 2) Consumir inventario según recetas
             this.api.consumeInventory(idOrder, true).subscribe({
               next: () => {
                 this.toast.mostrarMensaje('✅ Venta registrada y stock actualizado');
@@ -311,15 +307,12 @@ export class RegistrarVentaComponent implements OnInit {
           },
         });
       } else {
-        // === ACTUALIZAR VENTA ===
         const idOrder = this.saleId!;
 
         this.api.refundInventory(idOrder).subscribe({
           next: () => {
-            // 2) Actualizar la venta (detalles, mesa, etc.)
             this.api.updateSale(idOrder, payload).subscribe({
               next: () => {
-                // 3) Consumir stock para la nueva versión
                 this.api.consumeInventory(idOrder, true).subscribe({
                   next: () => {
                     this.toast.mostrarMensaje('✅ Venta actualizada y stock ajustado');

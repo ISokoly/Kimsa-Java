@@ -39,6 +39,20 @@
         </mat-form-field>
       </div>
 
+      <div class="full-width" style="display: flex; justify-content: end; margin: 20px 0;">
+        <button mat-raised-button class="btn-azul"
+          style="width: 200px; height: 48px; letter-spacing: .3px; margin-top: -15px ; padding: 10px 15px; font-weight: 600;"
+          (click)="crearUsuario()">
+          <mat-icon>add</mat-icon> Añadir Nuevo Usuario
+        </button>
+
+        <button mat-raised-button class="volver-btn"
+          style="width: 150px; height: 48px; letter-spacing: .3px; margin-top: -15px ; padding: 10px 15px;"
+          (click)="volverUsuario()">
+          Volver
+        </button>
+      </div>
+
       <div class="tabla-usuarios mat-elevation-z4">
         <table mat-table [dataSource]="listaFiltrada" class="mat-elevation-z2 full-width-table">
 
@@ -102,12 +116,6 @@
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
-      </div>
-
-      <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-        <button mat-raised-button class="btn-azul" style="width: 200px; height: 50px;" (click)="crearUsuario()">
-          Añadir Nuevo Usuario
-        </button>
       </div>
     </div>
   </div>

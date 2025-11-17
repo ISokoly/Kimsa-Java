@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
+import { Router } from '@angular/router';
 
 type Mesa = {
   idTable: number;
@@ -41,7 +42,7 @@ export class MesasComponent implements OnInit {
   constructor(
     private api: ApiService,
     private toastService: ToastService,
-    private pageLoading: PageLoadingService
+    private pageLoading: PageLoadingService, private router: Router
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -142,5 +143,10 @@ export class MesasComponent implements OnInit {
         this.isSavingEstados = false;
       }
     });
+  }
+
+
+  volverUsuario(): void {
+    this.router.navigate([`/view/usuarios`]);
   }
 }

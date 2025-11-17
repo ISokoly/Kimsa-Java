@@ -16,6 +16,7 @@ import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
+import { Router } from '@angular/router';
 
 /* ==================== INTERFACES ==================== */
 export interface Discount {
@@ -69,7 +70,8 @@ export class DescuentosComponent implements OnInit {
   constructor(
     private api: ApiService,
     private toastService: ToastService,
-    private pageLoading: PageLoadingService
+    private pageLoading: PageLoadingService,
+    private router: Router
   ) { }
 
   /* ==================== CICLO DE VIDA ==================== */
@@ -260,5 +262,10 @@ export class DescuentosComponent implements OnInit {
   obtenerNombreProducto(idProduct: number): string {
     const producto = this.productos.find(p => p.idProduct === idProduct);
     return producto ? producto.name : '';
+  }
+
+  
+  volverUsuario(): void {
+    this.router.navigate([`/view/usuarios`]);
   }
 }

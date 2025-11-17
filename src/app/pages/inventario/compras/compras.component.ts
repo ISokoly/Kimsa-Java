@@ -60,16 +60,13 @@ interface Purchase {
 })
 export class ComprasComponent implements OnInit {
 
-  // Datos normalizados
   purchases: Purchase[] = [];
   suppliers: any[] = [];
   supplies: any[] = [];
 
-  // Listas de nombres para autocomplete
   suppliersList: string[] = [];
   suppliesList: string[] = [];
 
-  // Filtros / autocomplete
   fechaSeleccionada: Date | null = null;
   supplierQuery = '';
   supplyQuery = '';
@@ -77,18 +74,16 @@ export class ComprasComponent implements OnInit {
   filteredSuppliers: string[] = [];
   filteredSupplies: string[] = [];
 
-  // Visible y paginador simple
   visiblePurchases: Purchase[] = [];
   pageIndex = 0;
   pageSize = 12;
   totalPages = 0;
   pagesArray: number[] = [];
 
-  // UI
   contentReady = false;
   private pendingLoads = 0;
+  isLoading = false;
 
-  // columnas
   displayedColumns = ['number', 'fecha', 'proveedor', 'insumos', 'total', 'opciones'];
 
   constructor(
@@ -229,11 +224,21 @@ export class ComprasComponent implements OnInit {
     this.applyFilters();
   }
 
+  resetFilters(): void {
+    this.fechaSeleccionada = null;
+    this.supplierQuery = '';
+    this.supplyQuery = '';
+
+    this.filteredSuppliers = this.suppliersList.slice(0, 50);
+    this.filteredSupplies = this.suppliesList.slice(0, 50);
+
+    this.applyFilters();
+  }
+
   /** ========== FILTROS EN CLIENTE ========== */
   applyFilters(): void {
     let list = [...this.purchases];
 
-    // Por fecha
     if (this.fechaSeleccionada) {
       const sel = new Date(
         this.fechaSeleccionada.getFullYear(),
@@ -249,7 +254,6 @@ export class ComprasComponent implements OnInit {
       });
     }
 
-    // Por proveedor
     if (this.supplierQuery?.trim()) {
       const q = this.supplierQuery.trim().toLowerCase();
       list = list.filter(p => {
@@ -259,7 +263,6 @@ export class ComprasComponent implements OnInit {
       });
     }
 
-    // Por insumo (buscando en items[].supply.name)
     if (this.supplyQuery?.trim()) {
       const q = this.supplyQuery.trim().toLowerCase();
       list = list.filter((p: any) => {
@@ -436,6 +439,7 @@ export class ComprasComponent implements OnInit {
   /** ========== LOADING GROUP HELPERS ========== */
   private startLoadingGroup(n = 1) {
     this.pendingLoads = n;
+    this.isLoading = true;              // 🔹 Activamos bloqueo de botones
     this.pageLoading.start();
   }
 
@@ -444,7 +448,12 @@ export class ComprasComponent implements OnInit {
     if (this.pendingLoads === 0) {
       this.pageLoading.stop();
       this.contentReady = true;
+      this.isLoading = false;           // 🔹 Liberamos botones cuando todo termina
       this.applyFilters();
     }
+  }
+
+  volverInventario(): void {
+    this.router.navigate([`/view/inventario`]);
   }
 }

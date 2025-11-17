@@ -17,6 +17,18 @@
       </mat-select>
     </mat-form-field>
   </div>
+  <div class="full-width" style="display: flex; justify-content: end;">
+    <button mat-raised-button class="btn-azul"
+      style="height: 48px; letter-spacing: .3px; margin-top: -15px; padding: 10px 15px; font-weight: 600;"
+      (click)="abrirFormularioNuevoCliente()">
+      <mat-icon>add</mat-icon> Añadir Nuevo Cliente
+    </button>
+
+    <button mat-raised-button class="volver-btn"
+      style="width: 150px; height: 48px; letter-spacing: .3px;  margin-top: -15px; padding: 10px 15px;" (click)="volverUsuario()">
+      Volver
+    </button>
+  </div>
 
   @if (clients.length === 0) {
   <p style="margin-top:12px;">No hay clientes registrados.</p>
@@ -71,12 +83,6 @@
   </div>
   }
   }
-
-  <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-    <button class="btn-azul" style="width: 200px; height: 50px;" (click)="abrirFormularioNuevoCliente()">
-      Añadir Nuevo Cliente
-    </button>
-  </div>
 </div>
 
 <ng-template #formEditarClienteTpl>

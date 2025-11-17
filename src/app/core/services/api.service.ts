@@ -498,7 +498,7 @@ export class ApiService {
   getSupplierById(id: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/suppliers/${id}`, this.withCred({ headers: this.authHeaders() }));
   }
-  createSupplier(data: { name: string; phone?: string; address?: string; email?: string }): Observable<any> {
+  createSupplier(data: { name: string; phone?: string; address?: string; email?: string, active?: boolean }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/suppliers`, data, this.withCred({ headers: this.authHeaders() }));
   }
   updateSupplier(id: number, data: any): Observable<any> {

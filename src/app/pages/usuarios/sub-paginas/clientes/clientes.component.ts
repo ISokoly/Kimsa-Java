@@ -12,6 +12,8 @@ import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { OverlayHandle, OverlayPortalService } from '../../../../core/services/overlay-portal.service';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
+import { MatIconModule } from "@angular/material/icon";
+import { Router } from '@angular/router';
 
 interface Client {
   idClient?: number;
@@ -27,7 +29,8 @@ interface Client {
     FormsModule, ReactiveFormsModule, CommonModule,
     MatFormFieldModule, MatInputModule, MatButtonModule,
     MatSelectModule, MatOptionModule,
-    MatTableModule
+    MatTableModule,
+    MatIconModule
   ],
   templateUrl: './clientes.component.html',
   styleUrls: ['./clientes.component.scss']
@@ -57,8 +60,8 @@ export class ClientesComponent implements OnInit {
   constructor(
     private api: ApiService,
     private toastService: ToastService,
-    private pageLoading: PageLoadingService
-  ) {}
+    private pageLoading: PageLoadingService, private router: Router
+  ) { }
 
   ngOnInit(): void {
     this.contentReady = false;
@@ -215,5 +218,10 @@ export class ClientesComponent implements OnInit {
   soloNumeros(event: KeyboardEvent): void {
     const code = event.which ? event.which : event.keyCode;
     if (code < 48 || code > 57) event.preventDefault();
+  }
+
+
+  volverUsuario(): void {
+    this.router.navigate([`/view/usuarios`]);
   }
 }

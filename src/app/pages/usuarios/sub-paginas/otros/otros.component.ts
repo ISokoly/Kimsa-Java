@@ -16,13 +16,16 @@ import { ConfirmDialogComponent } from '../../../../view/confirm-dialog/confirm-
 import { MatDialog } from '@angular/material/dialog';
 import { PageLoadingService } from '../../../../core/services/page-loading.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from "@angular/material/icon";
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-otros',
   standalone: true,
   imports: [
     FormsModule, MatInputModule, MatGridListModule,
-    MatButtonModule, MatSelectModule, MatOptionModule, MatTableModule, MatCheckboxModule
+    MatButtonModule, MatSelectModule, MatOptionModule, MatTableModule, MatCheckboxModule,
+    MatIconModule
   ],
   templateUrl: './otros.component.html',
   styleUrls: ['./otros.component.scss']
@@ -62,7 +65,7 @@ export class OtrosComponent implements OnInit {
   private createRef?: OverlayHandle;
   private passRef?: OverlayHandle;
 
-  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService) { }
+  constructor(private apiService: ApiService, private toastService: ToastService, private dialog: MatDialog, private pageLoading: PageLoadingService, private router: Router) { }
 
   async ngOnInit(): Promise<void> {
     await this.initLoad();
@@ -354,5 +357,10 @@ export class OtrosComponent implements OnInit {
     const adminsConPerm = activos.filter(u => u.rol === 'Administrator' && !!u.administratorPermissions);
     if (adminsConPerm.length !== 1) return false;
     return adminsConPerm[0]?.idUser === targetId;
+  }
+
+
+  volverUsuario(): void {
+    this.router.navigate([`/view/usuarios`]);
   }
 }

@@ -11,13 +11,13 @@ $bg-color: #f9f9f9;
 }
 
 @media (max-width: 1000px) {
-    .client-card {
+    .supplier-card {
         flex: 1 1 calc(50% - 12px);
     }
 }
 
 @media (max-width: 600px) {
-    .client-card {
+    .supplier-card {
         flex: 1 1 100%;
     }
 }
@@ -26,10 +26,9 @@ button {
     padding: 10px 15px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    margin: 5px;
+    margin: 4px;
 
     &.btn-verde {
         background: $primary-color;
@@ -41,6 +40,7 @@ button {
     }
 
     &.btn-azul {
+        font-weight: 600;
         background: $secondary-color;
         color: #fff;
 
@@ -68,16 +68,16 @@ button {
     background: #fff;
     border-radius: 12px;
     padding: 20px;
-    width: 400px;
-    max-width: min(92vw, 480px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
-    animation: fadeIn .25s ease-in-out;
+    width: 420px;
+    max-width: min(92vw, 500px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.25s ease-in-out;
 }
 
 .form-title {
     font-size: 22px;
     font-weight: bold;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .form-container {
@@ -97,6 +97,7 @@ button {
 .botones {
     display: flex;
     justify-content: space-between;
+    margin-top: 10px;
 }
 
 .form-btn-verde {
@@ -131,7 +132,7 @@ button {
     }
 }
 
-.filtros-clientes {
+.filtros-proveedores {
     display: flex;
     gap: 1rem;
     margin-bottom: 1rem;
@@ -182,6 +183,16 @@ button {
             background: color.scale($primary-color, $lightness: 90%);
         }
     }
+}
+
+.estado-activo {
+    color: #0b6e4f;
+    font-weight: 600;
+}
+
+.estado-inactivo {
+    color: #b00020;
+    font-weight: 600;
 }
 
 .paginador {

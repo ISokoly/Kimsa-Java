@@ -1,6 +1,17 @@
 @if (!contentReady) {
 } @else {<div class="descuentos-container">
   <h1 class="title">Descuentos</h1>
+  <div class="full-width" style="display: flex; justify-content: end; margin: 20px 0;">
+    <button mat-raised-button class="btn-azul" style="width: 225px; height: 48px; margin-right: 20px;" (click)="mostrarFormularioNuevo()">
+      <mat-icon>add</mat-icon> Añadir Nuevo Descuento
+    </button>
+
+    <button mat-raised-button class="volver-btn"
+      style="width: 150px; height: 48px; letter-spacing: .3px; padding: 10px 15px;"
+      (click)="volverUsuario()">
+      Volver
+    </button>
+  </div>
   <ng-template #formDescuentoTpl>
     <div class="form-modal">
       <h2 class="title form-title">{{ editando ? 'Editar Descuento' : 'Nuevo Descuento' }}</h2>
@@ -108,11 +119,5 @@
     @if (!descuentos || descuentos.length === 0) {
     <div class="empty"><em>No hay descuentos registrados</em></div>
     }
-  </div>
-
-  <div class="full-width" style="display: flex; justify-content: center; margin: 20px 0;">
-    <button mat-raised-button class="btn-azul" style="width: 225px; height: 50px;" (click)="mostrarFormularioNuevo()">
-      Añadir Nuevo Descuento
-    </button>
   </div>
 </div>}

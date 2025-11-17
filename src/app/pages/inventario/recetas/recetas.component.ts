@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  OnInit,
-  TemplateRef,
-  ViewChild,
-  inject,
-} from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, TemplateRef, ViewChild, inject, } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { Router, RouterModule } from "@angular/router";
 
@@ -24,10 +16,7 @@ import { MatOptionModule } from "@angular/material/core";
 
 import { firstValueFrom, forkJoin, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
-import {
-  OverlayHandle,
-  OverlayPortalService,
-} from "../../../core/services/overlay-portal.service";
+import { OverlayHandle, OverlayPortalService, } from "../../../core/services/overlay-portal.service";
 import { ApiService } from "../../../core/services/api.service";
 import { ToastService } from "../../../core/services/toast.service";
 import { PageLoadingService } from "../../../core/services/page-loading.service";
@@ -66,6 +55,7 @@ export class RecetasComponent implements OnInit {
   products: any[] = [];
   supplies: any[] = [];
   private suppliesMap = new Map<number, any>();
+  readonly MAX_VISIBLE_SUPPLIES = 3;
 
   detailsByRecipe: Record<
     number,
@@ -80,12 +70,10 @@ export class RecetasComponent implements OnInit {
   formData: any = { idProduct: null };
   newItem: any = { idSupply: null, gramsQuantity: 0 };
 
-  // Autocomplete estado: PRODUCTO
   productQuery = "";
   filteredProducts: any[] = [];
   productLocked = false;
 
-  // Autocomplete estado: INSUMO (para añadir items)
   supplyQuery = "";
   filteredSupplies: any[] = [];
   supplyLocked = false;
@@ -97,7 +85,7 @@ export class RecetasComponent implements OnInit {
     unit?: string;
   }> = [];
 
-  displayedColumns: string[] = ["id", "product", "items", "actions"];
+  displayedColumns: string[] = ["index", "product", "items", "actions"];
 
   constructor(
     private api: ApiService,
@@ -105,7 +93,7 @@ export class RecetasComponent implements OnInit {
     private pageLoading: PageLoadingService,
     private cdr: ChangeDetectorRef,
     private router: Router
-  ) {}
+  ) { }
 
   private groupStart() {
     if (this.pendingLoads === 0) this.pageLoading.start();
@@ -428,6 +416,16 @@ export class RecetasComponent implements OnInit {
     );
   }
 
+  getVisibleDetails(idRecipe: number) {
+    const list = this.detailsByRecipe[idRecipe] ?? [];
+    return list.slice(0, this.MAX_VISIBLE_SUPPLIES);
+  }
+
+  getExtraDetailsCount(idRecipe: number): number {
+    const list = this.detailsByRecipe[idRecipe] ?? [];
+    return Math.max(0, list.length - this.MAX_VISIBLE_SUPPLIES);
+  }
+
   async saveRecipe(): Promise<void> {
     if (!this.canSave()) {
       this.toast.mostrarMensaje(
@@ -488,7 +486,7 @@ export class RecetasComponent implements OnInit {
   trackByRecipe = (_: number, r: any) => r?.idRecipe ?? _;
 }
 
-/* Helpers */
+/* =================== Helpers =================== */
 function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }

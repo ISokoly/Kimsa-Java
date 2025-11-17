@@ -81,10 +81,16 @@ export class InsumosComponent implements OnInit {
         catchError(() => of([]))
       )
     );
-    this.insumos = data || [];
+
+    this.insumos = (data || []).slice().sort((a: any, b: any) => {
+      const ida = Number(a.idSupply ?? 0);
+      const idb = Number(b.idSupply ?? 0);
+      return ida - idb; // orden ascendente por id
+    });
 
     if (this.detailRef && this.selectedSupply) this.rebindSelectedSupply();
   }
+
 
   /* == Helpers Overlay == */
   openSupplyDetail(s: any): void {

@@ -1,0 +1,186 @@
+@if (!contentReady) {
+} @else {
+<div class="contenedor">
+  <h1 class="title">Proveedores</h1>
+
+  <div class="filtros-proveedores">
+    <mat-form-field appearance="fill">
+      <mat-label>Buscar proveedor</mat-label>
+      <input matInput [matAutocomplete]="autoProveedor" [placeholder]="
+          filtroPor === 'phone'
+            ? 'Escriba teléfono'
+            : (filtroPor === 'email' ? 'Escriba correo' : 'Escriba nombre')
+        " [(ngModel)]="terminoBusqueda" (ngModelChange)="onSearchChange($event)" />
+
+      <mat-autocomplete #autoProveedor="matAutocomplete" (optionSelected)="onSuggestionSelected($event.option.value)"
+        autoActiveFirstOption="false">
+        @for (s of sugerencias; track s) {
+        <mat-option [value]="s">{{ s }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Buscar por</mat-label>
+      <mat-select [(ngModel)]="filtroPor" (selectionChange)="onSearchChange()">
+        <mat-option value="name">Nombre</mat-option>
+        <mat-option value="phone">Teléfono</mat-option>
+        <mat-option value="email">Correo</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="full-width" style="display: flex; justify-content: flex-end">
+    <button mat-raised-button class="btn-azul"
+      style="height: 48px; letter-spacing: .3px; margin-right: 20px; margin-top: -15px ; padding: 10px 15px"
+      (click)="abrirFormularioNuevoProveedor()">
+      <mat-icon>add</mat-icon> Añadir Nuevo Proveedor
+    </button>
+
+    <button mat-raised-button class="volver-btn" style="width: 150px; height: 48px; letter-spacing: .3px; margin-top: -15px ; padding: 10px 15px;"
+      (click)="volverUsuario()">
+      Volver
+    </button>
+  </div>
+  @if (suppliers.length === 0) {
+  <p style="margin-top:12px;">No hay proveedores registrados.</p>
+  } @else if (suppliers.length > 0 && suppliersFiltrados.length === 0) {
+  <p style="margin-top:12px;">No hay proveedores con el filtro actual.</p>
+  } @else {
+  <div class="tabla-scroll">
+    <table mat-table [dataSource]="pagedSuppliers" class="mat-elevation-z2 full-width-table">
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Nombre</th>
+        <td mat-cell *matCellDef="let s">{{ s.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="phone">
+        <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+        <td mat-cell *matCellDef="let s">{{ s.phone || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>Correo</th>
+        <td mat-cell *matCellDef="let s">{{ s.email || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="active">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let s">
+          <span [class.estado-activo]="s.active" [class.estado-inactivo]="!s.active">
+            {{ s.active ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let s">
+          <button class="btn-verde" (click)="seleccionarSupplier(s)">Editar</button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+
+  @if (totalPages > 1) {
+  <div class="paginador">
+    <button mat-stroked-button (click)="prevPage()" [disabled]="pageIndex === 0">
+      Anterior
+    </button>
+
+    <div class="paginas">
+      @for (p of pagesArray; track p) {
+      <button mat-button [disabled]="p === pageIndex" (click)="goToPage(p)">
+        {{ p + 1 }}
+      </button>
+      }
+    </div>
+
+    <button mat-stroked-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">
+      Siguiente
+    </button>
+  </div>
+  }
+  }
+</div>
+
+<!-- ====== EDITAR PROVEEDOR ====== -->
+<ng-template #formEditarProveedorTpl>
+  <div class="form-modal">
+    <h2 class="title form-title">Editar Proveedor</h2>
+    <div class="form-container">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Nombre</mat-label>
+        <input matInput [(ngModel)]="selectedSupplier.name" placeholder="Escriba el nombre del proveedor" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Teléfono</mat-label>
+        <input matInput [(ngModel)]="selectedSupplier.phone" placeholder="Escriba el teléfono" maxlength="20" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Correo electrónico</mat-label>
+        <input matInput type="email" [(ngModel)]="selectedSupplier.email" placeholder="Ej: proveedor@empresa.com" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Dirección</mat-label>
+        <textarea matInput rows="2" [(ngModel)]="selectedSupplier.address"
+          placeholder="Dirección del proveedor"></textarea>
+      </mat-form-field>
+
+      <mat-checkbox [(ngModel)]="selectedSupplier.active">
+        Proveedor activo
+      </mat-checkbox>
+
+      <div class="botones">
+        <button class="form-btn-verde" (click)="actualizarSupplier()">Guardar</button>
+        <button class="form-btn-gris" (click)="cerrarFormularioProveedor()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ====== NUEVO PROVEEDOR ====== -->
+<ng-template #formNuevoProveedorTpl>
+  <div class="form-modal">
+    <h2 class="title form-title">Registrar Proveedor</h2>
+    <div class="form-container">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Nombre</mat-label>
+        <input matInput [(ngModel)]="nuevoSupplier.name" placeholder="Escriba el nombre del proveedor" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Teléfono</mat-label>
+        <input matInput [(ngModel)]="nuevoSupplier.phone" placeholder="Escriba el teléfono" maxlength="20" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Correo electrónico</mat-label>
+        <input matInput type="email" [(ngModel)]="nuevoSupplier.email" placeholder="Ej: proveedor@empresa.com" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Dirección</mat-label>
+        <textarea matInput rows="2" [(ngModel)]="nuevoSupplier.address"
+          placeholder="Dirección del proveedor"></textarea>
+      </mat-form-field>
+
+      <mat-checkbox [(ngModel)]="nuevoSupplier.active">
+        Proveedor activo
+      </mat-checkbox>
+
+      <div class="botones">
+        <button class="form-btn-verde" (click)="crearSupplier()">Guardar</button>
+        <button class="form-btn-gris" (click)="cerrarFormularioNuevoProveedor()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+}

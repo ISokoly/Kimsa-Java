@@ -4,18 +4,28 @@
     <div class="tabla-scroll">
         <h1>Mesas de la Pizzería</h1>
 
-        <div class="utilidades">
-            <mat-form-field appearance="outline">
-                <mat-label>Cantidad total de mesas</mat-label>
-                <input matInput type="number" [(ngModel)]="cantidadMesas" [min]="mesasActivas" (blur)="clampCantidad()"
-                    aria-label="Cantidad total de mesas" />
-            </mat-form-field>
+        <div class="utilidades" style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
 
-            <button mat-flat-button class="btn-azul-changes" (click)="actualizarCantidad()"
-                [disabled]="cantidadMesas === cantidadActual || isUpdatingCantidad">
-                {{ isUpdatingCantidad ? 'Actualizando...' : 'Actualizar' }}
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <mat-form-field appearance="outline">
+                    <mat-label>Cantidad total de mesas</mat-label>
+                    <input matInput type="number" [(ngModel)]="cantidadMesas" [min]="mesasActivas"
+                        (blur)="clampCantidad()" />
+                </mat-form-field>
+
+                <button mat-flat-button class="btn-azul-changes" (click)="actualizarCantidad()"
+                    [disabled]="cantidadMesas === cantidadActual || isUpdatingCantidad">
+                    {{ isUpdatingCantidad ? 'Actualizando...' : 'Actualizar' }}
+                </button>
+            </div>
+
+            <button mat-raised-button class="volver-btn" style="width: 150px; height: 48px; letter-spacing: .3px; margin-top: -15px;"
+                (click)="volverUsuario()">
+                Volver
             </button>
+
         </div>
+
 
         <div class="info">
             Actualmente hay {{ mesasActivas }} mesas habilitadas

@@ -1,7 +1,5 @@
 @if (!contentReady) {
-
 } @else {
-
 <div class="compras-container route-shell fade-in">
   <h1 class="title">Compras de la Pizzería</h1>
 
@@ -10,7 +8,7 @@
     <mat-form-field appearance="fill" class="filtro-item">
       <mat-label>Seleccionar Fecha</mat-label>
       <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" (dateChange)="applyFilters()"
-        placeholder="dd/mm/aaaa" />
+        placeholder="dd/mm/aaaa" [disabled]="isLoading" />
       <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
       <mat-datepicker #picker></mat-datepicker>
     </mat-form-field>
@@ -19,7 +17,7 @@
     <mat-form-field appearance="fill" class="filtro-item flex-grow">
       <mat-label>Filtrar por proveedor</mat-label>
       <input matInput [matAutocomplete]="provAuto" [(ngModel)]="supplierQuery" (ngModelChange)="onSupplierInput()"
-        placeholder="Escribe el nombre del proveedor" />
+        placeholder="Escribe el nombre del proveedor" [disabled]="isLoading" />
       <mat-autocomplete #provAuto="matAutocomplete" (optionSelected)="onSupplierSelected($event)">
         @for (s of filteredSuppliers; track s) {
         <mat-option [value]="s">{{ s }}</mat-option>
@@ -31,7 +29,7 @@
     <mat-form-field appearance="fill" class="filtro-item">
       <mat-label>Filtrar por insumo</mat-label>
       <input matInput [matAutocomplete]="insAuto" [(ngModel)]="supplyQuery" (ngModelChange)="onSupplyInput()"
-        placeholder="Buscar insumo..." />
+        placeholder="Buscar insumo..." [disabled]="isLoading" />
       <mat-autocomplete #insAuto="matAutocomplete" (optionSelected)="onSupplySelected($event)">
         @for (s of filteredSupplies; track s) {
         <mat-option [value]="s">{{ s }}</mat-option>
@@ -40,8 +38,8 @@
     </mat-form-field>
 
     <div class="toolbar">
-      <button mat-raised-button color="primary" class="btn btn-limpiar"
-        (click)="supplierQuery=''; supplyQuery=''; fechaSeleccionada=null; applyFilters()">
+      <button mat-raised-button color="primary" class="btn-limpiar" style="letter-spacing: .3px; margin-top: -25px;"
+        (click)="resetFilters()" [disabled]="isLoading || !supplyQuery.length && !supplierQuery.length">
         Limpiar
       </button>
     </div>
@@ -97,10 +95,11 @@
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Opciones</th>
           <td mat-cell *matCellDef="let row" class="cabecera-derecha">
             <div class="opciones-botones">
-              <button mat-icon-button (click)="viewPurchase(row)" aria-label="Ver">
+              <button mat-icon-button (click)="viewPurchase(row)" aria-label="Ver" [disabled]="isLoading">
                 <mat-icon>visibility</mat-icon>
               </button>
-              <button mat-icon-button color="primary" (click)="editPurchase(row)" aria-label="Editar">
+              <button mat-icon-button color="primary" (click)="editPurchase(row)" aria-label="Editar"
+                [disabled]="isLoading">
                 <mat-icon>edit</mat-icon>
               </button>
             </div>
@@ -117,19 +116,20 @@
 
       @if (totalPages > 1) {
       <div class="paginador">
-        <button mat-stroked-button class="btn" (click)="prevPage()" [disabled]="pageIndex === 0">
+        <button mat-stroked-button class="btn" (click)="prevPage()" [disabled]="isLoading || pageIndex === 0">
           Anterior
         </button>
 
         <div class="paginas">
           @for (p of pagesArray; track p) {
-          <button mat-button class="btn" [disabled]="p === pageIndex" (click)="goToPage(p)">
+          <button mat-button class="btn" [disabled]="isLoading || p === pageIndex" (click)="goToPage(p)">
             {{ p + 1 }}
           </button>
           }
         </div>
 
-        <button mat-stroked-button class="btn" (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">
+        <button mat-stroked-button class="btn" (click)="nextPage()"
+          [disabled]="isLoading || pageIndex >= totalPages - 1">
           Siguiente
         </button>
       </div>
@@ -142,12 +142,16 @@
       </div>
 
       <div class="contenedor-boton">
-        <button mat-raised-button color="primary" class="boton-agregar" (click)="registerNewPurchase()">
+        <button mat-raised-button color="primary" class="boton-agregar" (click)="registerNewPurchase()"
+          [disabled]="isLoading">
           Registrar compra
+        </button>
+        <button mat-raised-button color="primary" (click)="volverInventario()" class="volver-btn"
+          [disabled]="isLoading">
+          Volver
         </button>
       </div>
     </div>
   </div>
 </div>
-
 }

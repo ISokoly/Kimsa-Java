@@ -23,6 +23,7 @@ import { InsumosComponent } from "./pages/inventario/insumos/insumos.component";
 import { RecetasComponent } from "./pages/inventario/recetas/recetas.component";
 import { InventarioComponent } from "./pages/inventario/inventario.component";
 import { RegistrarComprasComponent } from "./pages/inventario/compras/registrar-compras/registrar-compras.component";
+import { ProveedoresComponent } from "./pages/usuarios/sub-paginas/proveedores/proveedores.component";
 
 export const routes: Routes = [
   { path: "", pathMatch: "full", redirectTo: "view" },
@@ -76,6 +77,11 @@ export const routes: Routes = [
       {
         path: "usuarios/mesas",
         component: MesasComponent,
+        canActivate: [AdminGuard],
+      },
+      {
+        path: "usuarios/proveedores",
+        component: ProveedoresComponent,
         canActivate: [AdminGuard],
       },
       {

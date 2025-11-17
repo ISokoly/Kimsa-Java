@@ -98,6 +98,16 @@ button {
       background: color.scale($secondary-color, $lightness: 25%);
     }
   }
+
+  &.volver-btn {
+    font-weight: 600;
+    background: color.scale($primary-color, $lightness: 25%);
+    color: #fff;
+
+    &:hover {
+      background: color.scale($primary-color, $lightness: 10%);
+    }
+  }
 }
 
 // ---------- MODAL ----------

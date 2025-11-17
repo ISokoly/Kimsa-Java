@@ -82,6 +82,7 @@ export class UsuariosComponent implements OnInit, AfterViewInit {
   // ===== Navegación =====
   verOtros() { this.router.navigate(['/view/usuarios/otros']); }
   verMesas() { this.router.navigate(['/view/usuarios/mesas']); }
+  verProveedores() { this.router.navigate(['/view/usuarios/proveedores']); }
   verClientes() { this.router.navigate(['/view/usuarios/clientes']); }
   verDescuentos() { this.router.navigate(['/view/usuarios/descuentos']); }
 

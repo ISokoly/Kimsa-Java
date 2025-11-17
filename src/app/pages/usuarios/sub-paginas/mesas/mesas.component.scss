@@ -1,7 +1,7 @@
 @use "sass:color";
 
 $color-bg: #f9f9f9;
-$color-verde: #097d4c;
+$primary-color: #0b6e4f;
 $color-azul: #007acc;
 $color-rojo: #a30e0e;
 
@@ -12,8 +12,8 @@ $color-rojo: #a30e0e;
 
   h1,
   h2 {
-    color: $color-verde;
-    border-bottom: 2px dashed $color-verde;
+    color: $primary-color;
+    border-bottom: 2px dashed $primary-color;
     padding-bottom: 8px;
     text-align: center;
   }
@@ -95,7 +95,7 @@ $color-rojo: #a30e0e;
     &:hover {
       background: color.scale($color-azul, $lightness: -30%);
     }
-    
+
     &-changes {
       &:disabled {
         background: color.scale($color-azul, $lightness: 80%);
@@ -127,22 +127,27 @@ $color-rojo: #a30e0e;
   button {
     flex: 0 0 auto;
     padding: 0.6rem 1.2rem;
-    background-color: $color-azul;
     border: none;
     color: white;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: 0.2s;
+  }
+}
 
-    &:hover {
-      background: color.scale($color-azul, $lightness: -30%);
-    }
+.volver-btn {
+  font-weight: 600;
+  background: color.scale($primary-color, $lightness: 25%);
+  color: #fff;
+
+  &:hover {
+    background: color.scale($primary-color, $lightness: 10%);
   }
 }
 
 .info {
   font-style: italic;
-  color: $color-verde;
+  color: $primary-color;
   margin-top: 0.5rem;
 }
 

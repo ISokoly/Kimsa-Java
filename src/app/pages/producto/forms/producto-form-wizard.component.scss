@@ -10,11 +10,11 @@ $border-color: #ddd;
 
 /* ===== Contenedor principal del modal ===== */
 .form-modal {
-  position: relative; /* el HTML ya impone el width inline; aquí sólo aseguramos base */
+  position: relative; // el HTML ya impone el width inline
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
   animation: fadeIn .25s ease-in-out;
 }
 
@@ -28,6 +28,11 @@ $border-color: #ddd;
 
 /* ===== Indicador de pasos ===== */
 .wizard-steps {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+
   .step {
     border: 1px solid $border-color;
     border-radius: 999px;
@@ -35,13 +40,14 @@ $border-color: #ddd;
     font-size: 13px;
     background: #fff;
     color: #333;
-    transition: background .2s ease, color .2s ease, border-color .2s ease;
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .1s ease;
 
     &.active {
       border-color: color.scale($secondary-color, $lightness: 10%);
       background: color.scale($secondary-color, $lightness: 40%);
       color: #fff;
       font-weight: 700;
+      transform: translateY(-1px);
     }
   }
 }
@@ -79,10 +85,15 @@ $border-color: #ddd;
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: background .2s ease;
+    transition: background .2s ease, transform .1s ease;
 
     &:hover:not(:disabled) {
       background: color.scale($primary-color, $lightness: -20%);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
   }
 
@@ -94,10 +105,15 @@ $border-color: #ddd;
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: background .2s ease;
+    transition: background .2s ease, transform .1s ease;
 
     &:hover:not(:disabled) {
       background: #555;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
   }
 }
@@ -115,6 +131,7 @@ $border-color: #ddd;
   label {
     cursor: pointer;
     color: $primary-color;
+    font-size: 14px;
     transition: color .2s ease;
 
     &:hover {
@@ -137,6 +154,7 @@ $border-color: #ddd;
   margin: 4px 0 6px;
 }
 
+/* fila de inputs horizontales (características / insumos) */
 .row-inline {
   display: flex;
   align-items: flex-end;
@@ -175,7 +193,7 @@ $border-color: #ddd;
   transition: box-shadow .2s ease, transform .2s ease;
 
   &:hover {
-    box-shadow: 0 6px 12px rgba(0,0,0,.12);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .12);
     transform: translateY(-1px);
   }
 
@@ -183,7 +201,8 @@ $border-color: #ddd;
     display: flex;
     align-items: center;
     gap: 6px;
-    min-width: 0; /* ellipsis */
+    min-width: 0;
+    /* ellipsis */
     flex: 1;
 
     .product-feature-name {
@@ -210,23 +229,10 @@ $border-color: #ddd;
     gap: 6px;
     flex-shrink: 0;
 
-    .icon-button {
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      transition: background .2s ease, transform .1s ease;
-
-      &:active { transform: scale(.98); }
-    }
-
-    .x-btn {
-      background: $danger-color;
-      color: #fff;
-
-      &:hover {
-        background: color.scale($danger-color, $lightness: -12%);
-      }
+    .mat-icon-button {
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
     }
   }
 }
@@ -252,6 +258,7 @@ $border-color: #ddd;
 
 /* ===== Receta (cards de insumos) ===== */
 .cards-grid {
+
   /* el HTML ya define grid inline; aquí afinamos tarjetas */
   .supply-card {
     border-radius: 12px;
@@ -273,8 +280,31 @@ $border-color: #ddd;
   }
 }
 
-/* Utilidades */
-.w-100 { width: 100%; }
+/* ===== Mini formulario de insumo rápido (overlay) ===== */
+.insumo-form-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+  min-width: 320px;
+  max-width: 480px;
+  animation: fadeIn .25s ease-in-out;
+}
+
+.insumo-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Utilidades ===== */
+.w-100 {
+  width: 100%;
+}
 
 /* Botones disabled */
 button:disabled {
@@ -288,6 +318,7 @@ button:disabled {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -305,12 +336,18 @@ button:disabled {
   }
 
   .lista-product-features.grid-list {
-    grid-template-columns: 1fr; /* 1 columna en pantallas angostas */
+    grid-template-columns: 1fr; // 1 columna en pantallas angostas
   }
 
   .row-inline {
     align-items: stretch;
 
-    .w-full { min-width: 180px; }
+    .w-full {
+      min-width: 180px;
+    }
+  }
+
+  .insumo-form-modal {
+    max-width: 95vw;
   }
 }

@@ -36,6 +36,7 @@
         @if (usuario?.rol === 'Administrator') {
           <button mat-raised-button class="btn-azul" (click)="verOtros()">Ver otros usuarios</button>
           <button mat-raised-button class="btn-azul" (click)="verMesas()">Administrar Mesas</button>
+          <button mat-raised-button class="btn-azul" (click)="verProveedores()">Administrar Proveedores</button>
         } @else {
           <button mat-raised-button class="btn-azul" (click)="verClientes()">Administrar Clientes</button>
           <button mat-raised-button class="btn-azul" (click)="verDescuentos()">Administrar Descuentos</button>

@@ -15,9 +15,11 @@
 
     <table mat-table [dataSource]="recipes" class="mat-elevation-z8 recipes-table">
 
-        <ng-container matColumnDef="id">
-            <th mat-header-cell *matHeaderCellDef class="c-center col-id">ID</th>
-            <td mat-cell *matCellDef="let r" class="c-center col-id">{{ r.idRecipe }}</td>
+        <ng-container matColumnDef="index">
+            <th mat-header-cell *matHeaderCellDef class="c-center col-id">N°</th>
+            <td mat-cell *matCellDef="let r; let i = index" class="c-center col-id">
+                {{ i + 1 }}
+            </td>
         </ng-container>
 
         <ng-container matColumnDef="product">
@@ -32,9 +34,15 @@
             <td mat-cell *matCellDef="let r" class="c-center col-items">
                 @if (detailsByRecipe[r.idRecipe]?.length) {
                 <mat-chip-set class="chips-inline" aria-label="Insumos de la receta">
-                    @for (d of detailsByRecipe[r.idRecipe]; track d.idSupply) {
+                    @for (d of getVisibleDetails(r.idRecipe); track d.idSupply) {
                     <mat-chip>
                         {{ d.name }} — {{ d.gramsQuantity | number:'1.0-2' }} {{ unitLabel(d.unit) }}
+                    </mat-chip>
+                    }
+
+                    @if (getExtraDetailsCount(r.idRecipe) > 0) {
+                    <mat-chip class="chip-extra">
+                        +{{ getExtraDetailsCount(r.idRecipe) }} insumos más
                     </mat-chip>
                     }
                 </mat-chip-set>
@@ -43,6 +51,7 @@
                 }
             </td>
         </ng-container>
+
 
         <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef class="c-center col-actions">Acciones</th>
@@ -65,7 +74,6 @@
     }
 </div>
 
-<!-- ========= FORM OVERLAY ========= -->
 <ng-template #recipeFormTpl>
     <div class="form-modal">
         <h2 class="title form-title">
@@ -73,14 +81,12 @@
         </h2>
 
         <form class="form-container">
-            <!-- =================== Producto =================== -->
             <section class="section">
                 <h3 class="section-title">Producto</h3>
 
                 <mat-form-field appearance="fill" class="w-100">
                     <mat-label>Producto</mat-label>
 
-                    <!-- Input con AUTOCOMPLETE (cuando NO está bloqueado) -->
                     @if (!productLocked) {
                     <input matInput placeholder="Escribe para buscar producto…" [(ngModel)]="productQuery"
                         name="productQuery" (input)="onProductInput()" [matAutocomplete]="prodAuto"
@@ -118,12 +124,10 @@
 
             <mat-divider class="divider"></mat-divider>
 
-            <!-- =================== Agregar insumo =================== -->
             <section class="section">
                 <h3 class="section-title">Agregar insumo</h3>
 
                 <div class="add-row">
-                    <!-- Insumo: input con autocomplete/lock -->
                     <mat-form-field appearance="fill" class="grow">
                         <mat-label>Insumo</mat-label>
 
@@ -163,7 +167,6 @@
                         }
                     </mat-form-field>
 
-                    <!-- Cantidad -->
                     <mat-form-field appearance="fill" class="grams">
                         <mat-label>Cantidad ({{ unitLabelBySupply(newItem.idSupply) }})</mat-label>
                         <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="newItem.gramsQuantity"
@@ -185,7 +188,6 @@
 
             <mat-divider class="divider"></mat-divider>
 
-            <!-- =================== Detalle (cards) =================== -->
             <section class="section">
                 <h3 class="section-title with-count">
                     Detalle de insumos
@@ -229,7 +231,6 @@
 
             <mat-divider class="divider"></mat-divider>
 
-            <!-- =================== Acciones =================== -->
             <div class="actions botones">
                 <button mat-raised-button color="primary" class="button-form form-btn-verde" type="button"
                     (click)="saveRecipe()" [disabled]="isSaving || !canSave() || formLoading">
