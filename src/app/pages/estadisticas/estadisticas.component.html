@@ -1,38 +1,46 @@
 @if (!contentReady) {
 } @else {
-<div class="ventas-container">
-  <h1>Estadisticas</h1>
 
+<div class="ventas-container">
+  <h1>Estadísticas</h1>
+
+  <!-- Selector de mes -->
   <mat-form-field appearance="fill" style="width: 50%;">
     <mat-label>Seleccionar Mes</mat-label>
     <input matInput [matDatepicker]="picker" [(ngModel)]="fechaSeleccionada" [readonly]="true" />
     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-    <mat-datepicker
-      #picker
-      startView="year"
-      (monthSelected)="onMesSeleccionado($event, picker)"
+
+    <mat-datepicker #picker startView="year" (monthSelected)="onMesSeleccionado($event, picker)"
       panelClass="datepicker-month-year">
     </mat-datepicker>
   </mat-form-field>
 
+  <!-- SWITCH TABLAS / GRÁFICOS -->
+  <mat-button-toggle-group [(ngModel)]="vista" name="vistaEstadisticas" appearance="legacy" class="toggle-vista">
+    <mat-button-toggle value="tablas">Tablas</mat-button-toggle>
+    <mat-button-toggle value="graficos">Gráficos</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <!-- ======================= TABLAS ======================= -->
+  @if (vista === 'tablas') {
   <div class="ventas-grid">
+
     <div class="estadisticas-tabla">
+
       <h2 class="title-one">Productos más vendidos</h2>
 
       <table mat-table [dataSource]="estadisticasSemanales" class="mat-elevation-z1 ventas-tabla">
-        <!-- Semana -->
+
         <ng-container matColumnDef="semana">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Semana</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.semana }}</td>
         </ng-container>
 
-        <!-- Producto -->
         <ng-container matColumnDef="producto">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Producto mayor vendido</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.producto }}</td>
         </ng-container>
 
-        <!-- Ganancias -->
         <ng-container matColumnDef="ganancia">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Ganancias</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">S/ {{ row.ganancia | number:'1.2-2' }}</td>
@@ -45,6 +53,7 @@
       <h2 class="title">Ganancias Semanales</h2>
 
       <table mat-table [dataSource]="gananciasSemanales" class="mat-elevation-z1 ventas-tabla">
+
         <ng-container matColumnDef="semana">
           <th mat-header-cell *matHeaderCellDef class="celdas-centradas">Semana</th>
           <td mat-cell *matCellDef="let row" class="celdas-centradas">{{ row.semana }}</td>
@@ -71,5 +80,22 @@
       </div>
     </div>
   </div>
+  }
+
+  <!-- ======================= GRÁFICOS ====================== -->
+  @if (vista === 'graficos') {
+  <div class="graficos-container">
+
+    <h2>Ganancias Semanales</h2>
+    <canvas id="chartGanancias"></canvas>
+
+    <h2 class="mt-4">Productos más vendidos</h2>
+    <canvas id="chartProductos"></canvas>
+
+    <h2 class="mt-4">Ventas mensuales por producto (Línea)</h2>
+    <canvas id="chartLineaProductos"></canvas>
+    
+  </div>
+  }
 </div>
 }

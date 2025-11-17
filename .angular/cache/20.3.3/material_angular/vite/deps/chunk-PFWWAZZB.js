@@ -1,23 +1,15 @@
 import {
   _animationsDisabled
-} from "./chunk-E7RAHOML.js";
-import {
-  MatCommonModule
-} from "./chunk-NUWJTB3P.js";
+} from "./chunk-MOXQPS7M.js";
 import {
   ChangeDetectionStrategy,
   Component,
   Input,
-  NgModule,
   ViewEncapsulation,
   setClassMetadata,
   ɵɵclassProp,
-  ɵɵdefineComponent,
-  ɵɵdefineNgModule
+  ɵɵdefineComponent
 } from "./chunk-SYQEHEBD.js";
-import {
-  ɵɵdefineInjector
-} from "./chunk-5YKDIGWC.js";
 
 // node_modules/@angular/material/fesm2022/pseudo-checkbox.mjs
 var MatPseudoCheckbox = class _MatPseudoCheckbox {
@@ -92,32 +84,7 @@ var MatPseudoCheckbox = class _MatPseudoCheckbox {
   });
 })();
 
-// node_modules/@angular/material/fesm2022/pseudo-checkbox-module.mjs
-var MatPseudoCheckboxModule = class _MatPseudoCheckboxModule {
-  static ɵfac = function MatPseudoCheckboxModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _MatPseudoCheckboxModule)();
-  };
-  static ɵmod = ɵɵdefineNgModule({
-    type: _MatPseudoCheckboxModule,
-    imports: [MatCommonModule, MatPseudoCheckbox],
-    exports: [MatPseudoCheckbox]
-  });
-  static ɵinj = ɵɵdefineInjector({
-    imports: [MatCommonModule]
-  });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MatPseudoCheckboxModule, [{
-    type: NgModule,
-    args: [{
-      imports: [MatCommonModule, MatPseudoCheckbox],
-      exports: [MatPseudoCheckbox]
-    }]
-  }], null, null);
-})();
-
 export {
-  MatPseudoCheckbox,
-  MatPseudoCheckboxModule
+  MatPseudoCheckbox
 };
-//# sourceMappingURL=chunk-HZOZ5OFU.js.map
+//# sourceMappingURL=chunk-PFWWAZZB.js.map

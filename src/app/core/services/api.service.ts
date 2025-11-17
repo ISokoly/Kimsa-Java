@@ -560,16 +560,4 @@ export class ApiService {
       this.withCred({ headers: this.authHeaders() })
     );
   }
-
-checkInventoryForItems(
-  items: Array<{ idProduct: number; quantity: number }>,
-  safetyThresholdPercent = 10
-) {
-  return this.http.post<any>(
-    `${this.apiUrl}/inventory/check-items?safety=${safetyThresholdPercent}`,
-    { items },
-    this.withCred({ headers: this.authHeaders() })
-  );
-}
-
 }

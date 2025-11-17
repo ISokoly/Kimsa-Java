@@ -13,7 +13,12 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { PageLoadingService } from '../../core/services/page-loading.service';
+
+// ===== CHART JS =====
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-estadisticas',
@@ -29,6 +34,7 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
     MatDatepickerModule,
     MatNativeDateModule,
     MatTableModule,
+    MatButtonToggleModule,
     DecimalPipe
   ],
   templateUrl: './estadisticas.component.html',
@@ -36,16 +42,32 @@ import { PageLoadingService } from '../../core/services/page-loading.service';
 })
 export class EstadisticasComponent implements OnInit {
 
+  private _vista: 'tablas' | 'graficos' = 'tablas';
+  get vista(): 'tablas' | 'graficos' { return this._vista; }
+  set vista(v: 'tablas' | 'graficos') {
+    this._vista = v;
+    if (v === 'graficos') {
+      setTimeout(() => this.tryDrawCharts(), 80);
+    } else {
+      this.destroyCharts();
+    }
+  }
+
   colsTop = ['semana', 'producto', 'ganancia'];
   colsGan = ['semana', 'ganancia'];
 
   estadisticasSemanales: { semana: string; producto: string; ganancia: number; }[] = [];
   gananciasSemanales: { semana: string; ganancia: number; }[] = [];
+  labelsSemanas: string[] = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
 
   gananciaMensual = 0;
   ventas: any[] = [];
   detallesPedido: any[] = [];
   productos: any[] = [];
+  productosDelMes: string[] = [];
+  mapaVentasPorProducto: Record<string, number[]> = {};
+
+  chartLineaProductos: any;
 
   ventasCargadas = false;
   detallesCargados = false;
@@ -55,6 +77,10 @@ export class EstadisticasComponent implements OnInit {
   contentReady = false;
   private pendingLoads = 0;
   private started = false;
+
+  // Instancias Chart.js
+  private chartGanancias: Chart | null = null;
+  private chartProductos: Chart | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -163,6 +189,7 @@ export class EstadisticasComponent implements OnInit {
       this.agregarDetallesAVentas();
       this.generarEstadisticasPorSemana();
       this.generarGananciasPorSemana();
+      this.generarLineaProductosPorMes();
     }
   }
 
@@ -184,6 +211,10 @@ export class EstadisticasComponent implements OnInit {
     picker.close();
     this.generarGananciasPorSemana();
     this.generarEstadisticasPorSemana();
+    this.generarLineaProductosPorMes();
+    if (this.vista === 'graficos') {
+      setTimeout(() => this.tryDrawCharts(), 80);
+    }
   }
 
   private ventasDelMes(): any[] {
@@ -226,6 +257,10 @@ export class EstadisticasComponent implements OnInit {
 
     this.gananciaMensual = this.gananciasSemanales
       .reduce((acc, s) => acc + Number(s.ganancia || 0), 0);
+
+    if (this.vista === 'graficos') {
+      setTimeout(() => this.tryDrawCharts(), 80);
+    }
   }
 
   generarEstadisticasPorSemana(): void {
@@ -256,6 +291,10 @@ export class EstadisticasComponent implements OnInit {
 
     this.gananciaMensual = this.gananciasSemanales
       .reduce((acc, s) => acc + Number(s.ganancia || 0), 0);
+
+    if (this.vista === 'graficos') {
+      setTimeout(() => this.tryDrawCharts(), 80);
+    }
   }
 
   obtenerNombreProducto(idProducto: number): string {
@@ -265,6 +304,127 @@ export class EstadisticasComponent implements OnInit {
   private isConfirmed(v: any): boolean {
     const s = this.vStatus(v);
     return s === 'Confirmed';
+  }
+
+  // ====== CHARTS ======
+  private tryDrawCharts(): void {
+    if (!this.contentReady) return;
+
+    const c1 = document.getElementById('chartGanancias') as HTMLCanvasElement | null;
+    const c2 = document.getElementById('chartProductos') as HTMLCanvasElement | null;
+    const c3 = document.getElementById('chartLineaProductos') as HTMLCanvasElement | null;
+
+    // si no existen todavía, reintentar
+    if (!c1 || !c2 || !c3) {
+      setTimeout(() => this.tryDrawCharts(), 120);
+      return;
+    }
+
+    this.drawGananciasChart(c1);
+    this.drawProductosChart(c2);
+    this.renderLineaProductos(); // ← 💥 AQUI ESTABA EL PROBLEMA
+  }
+
+
+  private drawGananciasChart(canvas: HTMLCanvasElement) {
+    if (!canvas) return;
+    if (this.chartGanancias) this.chartGanancias.destroy();
+
+    const labels = this.gananciasSemanales.map(x => x.semana);
+    const data = this.gananciasSemanales.map(x => Number(x.ganancia || 0));
+
+    // evitar dibujar si no hay datos
+    if (labels.length === 0) return;
+
+    this.chartGanancias = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Ganancias (S/)',
+          data,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      } as any
+    });
+  }
+
+  private drawProductosChart(canvas: HTMLCanvasElement) {
+    if (!canvas) return;
+    if (this.chartProductos) this.chartProductos.destroy();
+
+    const semanas = this.bucketSemanas(this.ventasDelMes()); // 4 semanas
+    const labels: string[] = [];
+    const data: number[] = [];
+    const colors: string[] = [];
+
+    semanas.forEach((ventasSemana, i) => {
+      const semanaLabel = `Semana ${i + 1}`;
+      const contador: Record<string, number> = {};
+
+      // Contamos las cantidades por producto en esta semana
+      for (const v of ventasSemana) {
+        if (!this.isConfirmed(v)) continue;
+        const detalles = (v as any).detalles ?? [];
+        for (const det of detalles) {
+          const pid = this.dProductId(det);
+          const nombre = this.pNameById(pid);
+          const cantidad = this.dQty(det);
+          contador[nombre] = (contador[nombre] ?? 0) + cantidad;
+        }
+      }
+
+      // Sacamos el producto más vendido de la semana
+      const topProducto = Object.entries(contador)
+        .sort((a, b) => b[1] - a[1])[0];
+
+      if (topProducto) {
+        labels.push(`${topProducto[0]} - ${semanaLabel}`);
+        data.push(topProducto[1]);
+        colors.push(`hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`);
+      }
+    });
+
+    if (labels.length === 0) return;
+
+    this.chartProductos = new Chart(canvas, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: colors,
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right' },
+          title: {
+            display: true,
+            text: 'Producto más vendido por semana'
+          }
+        }
+      } as any
+    });
+  }
+
+  private destroyCharts() {
+    if (this.chartGanancias) {
+      this.chartGanancias.destroy();
+      this.chartGanancias = null;
+    }
+    if (this.chartProductos) {
+      this.chartProductos.destroy();
+      this.chartProductos = null;
+    }
   }
 
   // ====== Helpers de pageLoading en grupo ======
@@ -281,6 +441,127 @@ export class EstadisticasComponent implements OnInit {
       this.started = false;
       this.pageLoading.stop();
       this.contentReady = true;
+
+      if (this.vista === 'graficos') {
+        setTimeout(() => this.tryDrawCharts(), 100);
+      }
     }
+  }
+
+  generarLineaProductosPorMes() {
+    const semanas = this.bucketSemanas(this.ventasDelMes());
+
+    this.productosDelMes = [];
+    this.mapaVentasPorProducto = {};
+
+    semanas.forEach((ventasSemana, semanaIndex) => {
+      for (const v of ventasSemana) {
+        if (!this.isConfirmed(v)) continue;
+
+        const detalles = (v as any).detalles ?? [];
+
+        for (const det of detalles) {
+          const pid = this.dProductId(det);
+          const nombre = this.pNameById(pid);
+          const qty = this.dQty(det);
+
+          if (!this.productosDelMes.includes(nombre)) {
+            this.productosDelMes.push(nombre);
+            this.mapaVentasPorProducto[nombre] = [0, 0, 0, 0];
+          }
+
+          this.mapaVentasPorProducto[nombre][semanaIndex] += qty;
+        }
+      }
+    });
+
+    this.renderLineaProductos();
+  }
+
+  renderLineaProductos(): void {
+    const canvas = document.getElementById('chartLineaProductos') as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (this.chartLineaProductos) {
+      this.chartLineaProductos.destroy();
+    }
+
+    // === Año y mes actual (del datepicker) ===
+    const anio = this.fechaSeleccionada.getFullYear();
+    const mes = this.fechaSeleccionada.getMonth(); // 0-11
+
+    // === Número de días del mes ===
+    const diasDelMes = new Date(anio, mes + 1, 0).getDate();
+
+    // === Labels: 1..n ===
+    const labels = Array.from({ length: diasDelMes }, (_, i) => (i + 1).toString());
+
+    // === Mapa producto → [ventas por día] ===
+    const productosMap: Record<string, number[]> = {};
+
+    // Solo ventas del mes seleccionado
+    const ventasMes = this.ventasDelMes();
+
+    for (const venta of ventasMes) {
+      const fecha = this.vDate(venta);
+      if (!fecha) continue;
+
+      const dia = fecha.getDate();
+      const detalles = (venta as any).detalles ?? [];
+
+      for (const det of detalles) {
+        const pid = this.dProductId(det);
+        const nombreProducto = this.pNameById(pid);
+        const cantidad = this.dQty(det);
+
+        if (!productosMap[nombreProducto]) {
+          productosMap[nombreProducto] = Array(diasDelMes).fill(0);
+        }
+
+        productosMap[nombreProducto][dia - 1] += cantidad;
+      }
+    }
+
+    const randomColor = () =>
+      `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
+
+    const datasets = Object.keys(productosMap).map((prod) => ({
+      label: prod,
+      data: productosMap[prod],
+      borderColor: randomColor(),
+      fill: false,
+      tension: 0.3,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }));
+
+    this.chartLineaProductos = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          title: {
+            display: true,
+            text: 'Ventas por Día del Mes'
+          }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  colorAleatorio(): string {
+    return `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
   }
 }

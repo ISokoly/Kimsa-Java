@@ -1,0 +1,235 @@
+@if (!contentReady) {
+} @else {
+<div class="compras-container">
+  <h1 class="title">
+    {{ selectedPurchase?.idPurchase ? 'Editar Compra' : 'Registrar Compra' }}
+  </h1>
+
+  <div class="compras-grid">
+    <div>
+      <table class="cliente-tabla compras-datos-tabla">
+        <colgroup>
+          <col class="col-label" />
+          <col class="col-content" />
+        </colgroup>
+
+        <tr>
+          <th colspan="2" class="cabecera-principal-1">Datos de la compra</th>
+        </tr>
+
+        <!-- =================== PROVEEDOR =================== -->
+        <tr>
+          <td class="label-cell"><strong>Proveedor</strong></td>
+          <td class="content-cell">
+            <mat-form-field appearance="outline" class="field field--wide">
+              <mat-label>Selecciona un proveedor</mat-label>
+
+              @if (!supplierLocked) {
+              <input type="text" matInput [matAutocomplete]="supAuto" [(ngModel)]="supplierQuery"
+                placeholder="Buscar proveedor..." (input)="onSupplierInput()" autocomplete="off" />
+
+              <mat-autocomplete #supAuto="matAutocomplete" (optionSelected)="onSupplierOptionSelected($event)"
+                autoActiveFirstOption>
+                <mat-option class="nuevo-proveedor-option" (click)="openNewSupplierForm()">
+                  ➕ Añadir nuevo proveedor
+                </mat-option>
+
+                @for (prov of filteredSuppliers; track prov.idSupplier) {
+                <mat-option [value]="prov">{{ prov.name }}</mat-option>
+                }
+
+                @if (supplierQuery && !filteredSuppliers.length) {
+                <mat-option disabled>Sin resultados</mat-option>
+                }
+              </mat-autocomplete>
+              } @else {
+              <input type="text" matInput [(ngModel)]="supplierQuery" placeholder="Proveedor seleccionado" readonly />
+              }
+
+              @if (supplierQuery) {
+              <button mat-icon-button matSuffix aria-label="Limpiar proveedor" (click)="onSupplierClear($event)">
+                <mat-icon>close</mat-icon>
+              </button>
+              }
+            </mat-form-field>
+          </td>
+        </tr>
+
+        <!-- =================== FORM NUEVO PROVEEDOR =================== -->
+        <ng-template #newSupplierTpl>
+          <div class="form-modal">
+            <h2 class="title form-title">Registrar nuevo proveedor</h2>
+            <form class="form-container">
+              <div class="form-grid">
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Nombre</mat-label>
+                  <input matInput [(ngModel)]="newSupplier.name" name="prov_name" required />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                  <mat-label>Teléfono</mat-label>
+                  <input matInput [(ngModel)]="newSupplier.phone" name="prov_phone" />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                  <mat-label>Email</mat-label>
+                  <input matInput type="email" [(ngModel)]="newSupplier.email" name="prov_email" />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>Dirección</mat-label>
+                  <textarea matInput [(ngModel)]="newSupplier.address" name="prov_address" rows="1"></textarea>
+                </mat-form-field>
+              </div>
+
+              <div class="botones">
+                <button mat-raised-button class="boton form-btn-verde" type="button" (click)="saveNewSupplier()"
+                  [disabled]="isSaving">
+                  Guardar
+                </button>
+                <button mat-stroked-button class="boton form-btn-gris" type="button" (click)="closeNewSupplierForm()"
+                  [disabled]="isSaving">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </ng-template>
+
+        <!-- =================== AGREGAR INSUMO =================== -->
+        <tr>
+          <td class="label-cell"><strong>Agregar insumo</strong></td>
+          <td class="content-cell">
+            <div class="row-controls">
+              <mat-form-field appearance="outline" class="field field--grow">
+                <mat-label>Insumo</mat-label>
+
+                @if (!supplyLocked) {
+                <input matInput placeholder="Escribe para buscar insumo…" [(ngModel)]="supplyQuery"
+                  (input)="onSupplyInput()" [matAutocomplete]="autoSupply" autocomplete="off" />
+
+                <mat-autocomplete #autoSupply="matAutocomplete" (optionSelected)="onSupplyOptionSelected($event)"
+                  autoActiveFirstOption>
+                  @for (ins of filteredSupplies; track ins.idSupply) {
+                  <mat-option [value]="ins">
+                    {{ ins.name }} — S/. {{ ins.unitPrice | number:'1.2-2' }}
+                    @if (ins.stock !== undefined) {
+                    <span class="stock-pill">Stock: {{ ins.stock }}</span>
+                    }
+                  </mat-option>
+                  }
+
+                  @if (supplyQuery && !filteredSupplies.length) {
+                  <mat-option disabled>Sin resultados</mat-option>
+                  }
+                </mat-autocomplete>
+                } @else {
+                <input matInput [(ngModel)]="supplyQuery" placeholder="Insumo seleccionado" readonly />
+                }
+
+                @if (supplyQuery) {
+                <button mat-icon-button matSuffix aria-label="Limpiar insumo" (click)="onSupplyClear($event)">
+                  <mat-icon>close</mat-icon>
+                </button>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="field field--qty">
+                <mat-label>Cantidad</mat-label>
+                <input matInput type="number" step="0.01" min="0.01" [(ngModel)]="newItem.quantity"
+                  (ngModelChange)="clampNewQty()" />
+              </mat-form-field>
+
+              <button mat-raised-button color="primary" class="boton boton-agregar" (click)="addItem()"
+                [disabled]="!canAddItem() || isSaving">
+                <mat-icon>add</mat-icon> Agregar
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- =================== TOTAL COMPRA =================== -->
+        <tr>
+          <td class="label-cell"><strong>Total compra</strong></td>
+          <td class="content-cell">
+            <div class="total-box">S/. {{ grandTotal | number:'1.2-2' }}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- ===== Carrito / Ítems agregados ===== -->
+      <table mat-table class="compras-tabla">
+        <tr class="cabecera-principal-2">
+          <th mat-header-cell style="width:200px;">Insumo</th>
+          <th mat-header-cell class="celdas-centradas" style="width:120px;">Cant.</th>
+          <th mat-header-cell class="celdas-centradas" style="width:140px;">Precio unit.</th>
+          <th mat-header-cell class="celdas-centradas" style="width:140px;">Subtotal</th>
+          <th mat-header-cell class="celdas-centradas" style="width:100px;">Opciones</th>
+        </tr>
+
+        @for (it of items; track it.idSupply) {
+        <tr>
+          <td>{{ it.name }}</td>
+          <td class="celdas-centradas">
+            <mat-form-field appearance="outline" style="width:110px;">
+              <mat-label>Cant.</mat-label>
+              <input matInput type="number" min="0.01" step="0.01" [ngModel]="it.quantity"
+                (ngModelChange)="updateItemQty(it, $event)" />
+            </mat-form-field>
+          </td>
+          <td class="celdas-centradas">S/. {{ it.unitPrice | number:'1.2-2' }}</td>
+          <td class="celdas-centradas">S/. {{ it.subtotal | number:'1.2-2' }}</td>
+          <td class="celdas-centradas opciones-botones">
+            <button mat-stroked-button class="boton edit-btn" (click)="removeItem(it)" [disabled]="isSaving">
+              <mat-icon>delete</mat-icon> Quitar
+            </button>
+          </td>
+        </tr>
+        }
+
+        @if (!items.length) {
+        <tr>
+          <td colspan="5" class="empty" style="padding: 20px;">
+            <em>Agrega insumos a la compra</em>
+          </td>
+        </tr>
+        }
+
+        <tr>
+          <td colspan="3" class="celdas-centradas"><strong>Total</strong></td>
+          <td class="celdas-centradas">
+            <strong>S/. {{ grandTotal | number:'1.2-2' }}</strong>
+          </td>
+          <td class="celdas-centradas"></td>
+        </tr>
+      </table>
+    </div>
+
+    <div>
+      <div class="imagen-contenedor">
+        <img src="kimsa_black.png" alt="Pizzería" class="pizza-imagen" />
+      </div>
+
+      <div class="contenedor-boton">
+        <button mat-raised-button color="primary" class="boton boton-agregar" (click)="savePurchase()"
+          [disabled]="isSaving || !canSavePurchase()">
+          {{ selectedPurchase?.idPurchase ? 'Actualizar compra' : 'Registrar compra' }}
+        </button>
+      </div>
+
+      <div class="contenedor-boton" style="margin-top:10px;">
+        <button mat-raised-button color="warn" class="boton boton-cancelar" (click)="cancelEdit()"
+          [disabled]="isSaving || (!selectedPurchase && !items.length)">
+          Cancelar
+        </button>
+      </div>
+
+      <div class="contenedor-boton" style="margin-top:10px;">
+        <button mat-raised-button color="accent" class="boton boton-volver" (click)="goBack()">
+          Volver
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}

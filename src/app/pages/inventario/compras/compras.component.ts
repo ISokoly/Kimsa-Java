@@ -1,338 +1,450 @@
-// oxlint-disable no-unused-expressions
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatOptionModule } from '@angular/material/core';
-import { DecimalPipe } from '@angular/common';
-
-import { firstValueFrom } from 'rxjs';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTableModule } from '@angular/material/table';
 
 import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../core/services/toast.service';
 import { PageLoadingService } from '../../../core/services/page-loading.service';
-import { OverlayHandle, OverlayPortalService } from '../../../core/services/overlay-portal.service';
+
+/** ====== MODELOS ====== */
+
+interface PurchaseItem {
+  idPurchaseItem?: number;
+  supply?: {
+    idSupply?: number;
+    name?: string;
+    unit?: string;       // "Units", "Grams", "Milliliters", etc.
+  };
+  quantity: number;      // SIEMPRE viene en unidad base (lo que guarda el backend)
+  unitPrice?: number;
+  subtotal?: number;
+}
+
+interface Purchase {
+  idPurchase: number;
+  supplier: { name?: string } | null;
+  purchaseDate: string;
+  total: number;
+  items: PurchaseItem[];
+  raw?: any;
+}
 
 @Component({
   selector: 'app-compras',
   standalone: true,
   imports: [
-    FormsModule, RouterModule,
-    MatInputModule, MatGridListModule, MatButtonModule, MatIconModule,
-    MatFormFieldModule, MatAutocompleteModule, MatOptionModule,
-    DecimalPipe
+    CommonModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatAutocompleteModule,
+    MatOptionModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTableModule
   ],
   templateUrl: './compras.component.html',
   styleUrls: ['./compras.component.scss']
 })
 export class ComprasComponent implements OnInit {
 
-  contentReady = false;
-  private pendingLoads = 0;
-  isSaving = false;
-
+  // Datos normalizados
+  purchases: Purchase[] = [];
   suppliers: any[] = [];
   supplies: any[] = [];
 
+  // Listas de nombres para autocomplete
+  suppliersList: string[] = [];
+  suppliesList: string[] = [];
+
+  // Filtros / autocomplete
+  fechaSeleccionada: Date | null = null;
   supplierQuery = '';
   supplyQuery = '';
 
-  filteredSuppliers: any[] = [];
-  filteredSupplies: any[] = [];
+  filteredSuppliers: string[] = [];
+  filteredSupplies: string[] = [];
 
-  // 🔒 bloqueo después de seleccionar
-  supplierLocked = false;
-  supplyLocked = false;
+  // Visible y paginador simple
+  visiblePurchases: Purchase[] = [];
+  pageIndex = 0;
+  pageSize = 12;
+  totalPages = 0;
+  pagesArray: number[] = [];
 
-  selectedPurchase: any = null;
+  // UI
+  contentReady = false;
+  private pendingLoads = 0;
 
-  dto: { idSupplier: number | null } = { idSupplier: null };
-  newItem: { idSupply: number | null, quantity: number } = { idSupply: null, quantity: 1 };
-
-  items: Array<{ idSupply: number, name: string, unitPrice: number, quantity: number, subtotal: number }> = [];
-
-  grandTotal = 0;
-
-  @ViewChild('newSupplierTpl') newSupplierTpl!: TemplateRef<any>;
-  private overlay = inject(OverlayPortalService);
-  private newSupplierRef?: OverlayHandle;
-
-  newSupplier: any = { name: '', phone: '', address: '', email: '' };
+  // columnas
+  displayedColumns = ['number', 'fecha', 'proveedor', 'insumos', 'total', 'opciones'];
 
   constructor(
     private api: ApiService,
-    private toast: ToastService,
     private pageLoading: PageLoadingService,
     private router: Router
   ) { }
 
-  /* ====== loading agrupado ====== */
-  private groupStart() { if (this.pendingLoads === 0) this.pageLoading.start(); this.pendingLoads++; }
-  private groupEnd() { this.pendingLoads = Math.max(0, this.pendingLoads - 1); if (this.pendingLoads === 0) { this.pageLoading.stop(); this.contentReady = true; } }
+  ngOnInit(): void {
+    this.initLoad();
+  }
 
-  async ngOnInit(): Promise<void> {
+  private initLoad() {
     this.contentReady = false;
-    this.groupStart();
-    await this.loadCatalogs();
-    this.refreshFilters();
+    this.startLoadingGroup(3);
+    this.loadPurchases();
+    this.loadSuppliers();
+    this.loadSupplies();
   }
 
-  private async loadCatalogs(): Promise<void> {
-    try {
-      const [prov, ins] = await Promise.all([
-        firstValueFrom(this.api.getSuppliers()),
-        firstValueFrom(this.api.getSupplies())
-      ]);
-      this.suppliers = Array.isArray(prov) ? prov : [];
-      this.supplies  = Array.isArray(ins)  ? ins  : [];
-    } catch {
-      this.suppliers = []; this.supplies = [];
-      this.toast.mostrarMensaje('❌ Error al cargar catálogos');
-    } finally {
-      this.groupEnd();
-    }
+  /** ========== CARGA DE COMPRAS ========== */
+  private loadPurchases() {
+    this.api.getPurchases().subscribe({
+      next: (res: any) => {
+        console.log('[Compras] Respuesta cruda /purchases =>', res);
+
+        const rawList: any[] = Array.isArray(res)
+          ? res
+          : (res?.content && Array.isArray(res.content)
+            ? res.content
+            : (res ? [res] : []));
+
+        this.purchases = rawList.map((p: any): Purchase => {
+          const idPurchase = Number(p.idPurchase ?? p.id ?? 0);
+          const supplier = p.supplier ?? null;
+          const purchaseDate = String(
+            p.purchaseDate ?? p.date ?? p.fecha ?? p.createdAt ?? ''
+          );
+          const total = Number(p.total ?? 0);
+
+          const items: PurchaseItem[] = Array.isArray(p.items)
+            ? p.items
+            : [];
+
+          return {
+            idPurchase,
+            supplier,
+            purchaseDate,
+            total,
+            items,
+            raw: p
+          };
+        });
+
+        console.log('[Compras] Normalizado =>', this.purchases);
+        this.applyFilters();
+      },
+      error: (err) => {
+        console.error('[Compras] Error al cargar /purchases =>', err);
+        this.purchases = [];
+        this.applyFilters();
+      },
+      complete: () => this.finishOneLoad()
+    });
   }
 
-  /* ========== Helpers ========== */
-  private norm(v: any): string { return (v ?? '').toString().trim().toLowerCase(); }
-
-  private refreshFilters(): void {
-    this.filteredSuppliers = this.suppliers.slice(0, 30);
-    this.filteredSupplies  = this.supplies.slice(0, 30);
+  /** ========== CARGA DE PROVEEDORES ========== */
+  private loadSuppliers() {
+    this.api.getSuppliers().subscribe({
+      next: (res: any[]) => {
+        this.suppliers = Array.isArray(res) ? res : (res ? [res] : []);
+        this.suppliersList = this.suppliers
+          .map(s => String(s?.name ?? s?.nombre ?? s).trim())
+          .filter(Boolean)
+          .sort();
+        this.filteredSuppliers = this.suppliersList.slice(0, 50);
+      },
+      error: () => {
+        this.suppliers = [];
+        this.suppliersList = [];
+        this.filteredSuppliers = [];
+      },
+      complete: () => this.finishOneLoad()
+    });
   }
 
-  /* ========== Proveedor (autocomplete) ========== */
+  /** ========== CARGA DE INSUMOS (solo para filtros) ========== */
+  private loadSupplies() {
+    this.api.getSupplies().subscribe({
+      next: (res: any[]) => {
+        this.supplies = Array.isArray(res) ? res : (res ? [res] : []);
+        this.suppliesList = this.supplies
+          .map(s => String(s?.name ?? s?.nombre ?? s).trim())
+          .filter(Boolean)
+          .sort();
+        this.filteredSupplies = this.suppliesList.slice(0, 50);
+      },
+      error: () => {
+        this.supplies = [];
+        this.suppliesList = [];
+        this.filteredSupplies = [];
+      },
+      complete: () => this.finishOneLoad()
+    });
+  }
+
+  /** ========== AUTOCOMPLETE PROVEEDORES ========== */
   onSupplierInput(): void {
-    if (this.supplierLocked) return; // no filtrar si está bloqueado
-    const q = this.norm(this.supplierQuery);
-    this.filteredSuppliers = !q
-      ? this.suppliers.slice(0, 30)
-      : this.suppliers.filter(s => this.norm(s.name).includes(q)).slice(0, 30);
-  }
-
-  onSupplierOptionSelected(ev: any): void {
-    const value = ev?.option?.value;
-    if (value && value.idSupplier) {
-      this.dto.idSupplier = value.idSupplier;
-      this.supplierQuery = value.name;
-      this.supplierLocked = true;   // 🔒
-      this.filteredSuppliers = [];  // ocultar sugerencias
-    }
-  }
-
-  onSupplierClear(e?: MouseEvent): void {
-    if (e) e.stopPropagation();
-    this.dto.idSupplier = null;
-    this.supplierQuery = '';
-    this.supplierLocked = false; // 🔓
-    this.refreshFilters();
-  }
-
-  /* ========== Insumo (autocomplete) ========== */
-  onSupplyInput(): void {
-    if (this.supplyLocked) return;
-    const q = this.norm(this.supplyQuery);
+    const q = (this.supplierQuery ?? '').toString().trim().toLowerCase();
     if (!q) {
-      this.filteredSupplies = this.supplies.slice(0, 30);
-      this.newItem.idSupply = null;
+      this.filteredSuppliers = this.suppliersList.slice(0, 50);
       return;
     }
-    this.filteredSupplies = this.supplies
-      .filter(s => this.norm(s.name).includes(q))
-      .slice(0, 30);
-    this.newItem.idSupply = null;
+    this.filteredSuppliers = this.suppliersList
+      .filter(x => x.toLowerCase().includes(q))
+      .slice(0, 50);
   }
 
-  onSupplyOptionSelected(ev: any): void {
-    const value = ev?.option?.value;
-    if (value && value.idSupply) {
-      this.newItem.idSupply = value.idSupply;
-      this.supplyQuery = value.name;
-      this.supplyLocked = true;     // 🔒
-      this.filteredSupplies = [];   // ocultar sugerencias
-      this.syncNewItemPrice();
-    }
+  onSupplierSelected(ev: MatAutocompleteSelectedEvent) {
+    this.supplierQuery = ev.option.value ?? '';
+    this.applyFilters();
   }
 
-  onSupplyClear(e?: MouseEvent): void {
-    if (e) e.stopPropagation();
-    this.newItem.idSupply = null;
-    this.supplyQuery = '';
-    this.supplyLocked = false; // 🔓
-    this.refreshFilters();
-  }
-
-  /* ========== Add item flow ========== */
-  syncNewItemPrice(): void {
-    const _s = this.supplies.find(x => x.idSupply === this.newItem.idSupply);
-    // usar price si lo necesitas
-  }
-
-  clampNewQty(): void {
-    const q = Number(this.newItem.quantity) || 0;
-    this.newItem.quantity = q > 0 ? q : 1;
-  }
-
-  canAddItem(): boolean {
-    return typeof this.newItem.idSupply === 'number' && (Number(this.newItem.quantity) || 0) > 0;
-  }
-
-  addItem(): void {
-    if (!this.canAddItem()) {
-      this.toast.mostrarMensaje('⚠️ Selecciona insumo y cantidad > 0');
+  /** ========== AUTOCOMPLETE INSUMOS ========== */
+  onSupplyInput(): void {
+    const q = (this.supplyQuery ?? '').toString().trim().toLowerCase();
+    if (!q) {
+      this.filteredSupplies = this.suppliesList.slice(0, 50);
       return;
     }
-    const s = this.supplies.find(x => x.idSupply === this.newItem.idSupply);
-    if (!s) {
-      this.toast.mostrarMensaje('❌ Insumo inválido');
-      return;
-    }
+    this.filteredSupplies = this.suppliesList
+      .filter(x => x.toLowerCase().includes(q))
+      .slice(0, 50);
+  }
 
-    const unit = Number(s.unitPrice) || 0;
-    const qty  = Math.max(0.01, Number(this.newItem.quantity) || 0);
-    const existing = this.items.find(i => i.idSupply === s.idSupply);
+  onSupplySelected(ev: MatAutocompleteSelectedEvent) {
+    this.supplyQuery = ev.option.value ?? '';
+    this.applyFilters();
+  }
 
-    if (existing) {
-      existing.quantity = round2(existing.quantity + qty);
-      existing.subtotal = round2(existing.quantity * existing.unitPrice);
-    } else {
-      this.items.push({
-        idSupply: s.idSupply,
-        name: s.name,
-        unitPrice: unit,
-        quantity: round2(qty),
-        subtotal: round2(unit * qty)
+  /** ========== FILTROS EN CLIENTE ========== */
+  applyFilters(): void {
+    let list = [...this.purchases];
+
+    // Por fecha
+    if (this.fechaSeleccionada) {
+      const sel = new Date(
+        this.fechaSeleccionada.getFullYear(),
+        this.fechaSeleccionada.getMonth(),
+        this.fechaSeleccionada.getDate()
+      ).getTime();
+
+      list = list.filter(p => {
+        const d = this.safeDateFromPurchase(p);
+        if (!d) return false;
+        const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        return day === sel;
       });
     }
 
-    // reset insumo
-    this.newItem = { idSupply: null, quantity: 1 };
-    this.supplyQuery = '';
-    this.supplyLocked = false;
-    this.refreshFilters();
-    this.recalcGrandTotal();
-  }
-
-  updateItemQty(it: any, value: any): void {
-    const qty = Math.max(0.01, Number(value) || 0.01);
-    it.quantity = round2(qty);
-    it.subtotal = round2(it.unitPrice * it.quantity);
-    this.recalcGrandTotal();
-  }
-
-  removeItem(it: any): void {
-    this.items = this.items.filter(x => x !== it);
-    this.recalcGrandTotal();
-  }
-
-  private recalcGrandTotal(): void {
-    this.grandTotal = round2(this.items.reduce((a, x) => a + Number(x.subtotal || 0), 0));
-  }
-
-  /* ========== Guardado compra ========== */
-  canSavePurchase(): boolean {
-    return typeof this.dto.idSupplier === 'number'
-      && this.items.length > 0
-      && this.items.every(i => i.quantity > 0);
-  }
-
-  async savePurchase(): Promise<void> {
-    if (!this.canSavePurchase()) {
-      this.toast.mostrarMensaje('⚠️ Completa proveedor y agrega al menos un insumo con cantidad > 0');
-      return;
+    // Por proveedor
+    if (this.supplierQuery?.trim()) {
+      const q = this.supplierQuery.trim().toLowerCase();
+      list = list.filter(p => {
+        const sup = p.supplier;
+        const name = String(sup?.name ?? '').toLowerCase();
+        return name.includes(q);
+      });
     }
 
-    this.isSaving = true;
-    try {
-      const payload = {
-        idSupplier: this.dto.idSupplier as number,
-        items: this.items.map(i => ({ idSupply: i.idSupply, quantity: i.quantity }))
-      };
+    // Por insumo (buscando en items[].supply.name)
+    if (this.supplyQuery?.trim()) {
+      const q = this.supplyQuery.trim().toLowerCase();
+      list = list.filter((p: any) => {
+        const items: PurchaseItem[] = Array.isArray(p.items) ? p.items : [];
+        const names = items
+          .map(it => String(it?.supply?.name ?? '').toLowerCase())
+          .filter(n => !!n);
+        return names.some(n => n.includes(q));
+      });
+    }
 
-      if (this.selectedPurchase?.idPurchase) {
-        await firstValueFrom(this.api.updatePurchase(this.selectedPurchase.idPurchase, payload));
-        this.toast.mostrarMensaje('✅ Compra actualizada');
-      } else {
-        await firstValueFrom(this.api.createPurchase(payload));
-        this.toast.mostrarMensaje('✅ Compra registrada');
+    this.pageIndex = 0;
+    this.setVisible(list);
+  }
+
+  private setVisible(list: Purchase[]) {
+    this.totalPages = Math.max(1, Math.ceil(list.length / this.pageSize));
+    this.pagesArray = Array.from({ length: this.totalPages }, (_, i) => i);
+    const start = this.pageIndex * this.pageSize;
+    this.visiblePurchases = list.slice(start, start + this.pageSize);
+  }
+
+  /** ========== PAGINADOR ========== */
+  prevPage() {
+    if (this.pageIndex === 0) return;
+    this.pageIndex--;
+    this.applyFiltersAfterPaging();
+  }
+
+  nextPage() {
+    if (this.pageIndex >= this.totalPages - 1) return;
+    this.pageIndex++;
+    this.applyFiltersAfterPaging();
+  }
+
+  goToPage(p: number) {
+    if (p < 0 || p >= this.totalPages) return;
+    this.pageIndex = p;
+    this.applyFiltersAfterPaging();
+  }
+
+  private applyFiltersAfterPaging() {
+    let list = [...this.purchases];
+
+    if (this.fechaSeleccionada) {
+      const sel = new Date(
+        this.fechaSeleccionada.getFullYear(),
+        this.fechaSeleccionada.getMonth(),
+        this.fechaSeleccionada.getDate()
+      ).getTime();
+      list = list.filter(p => {
+        const d = this.safeDateFromPurchase(p);
+        if (!d) return false;
+        const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        return day === sel;
+      });
+    }
+
+    if (this.supplierQuery?.trim()) {
+      const q = this.supplierQuery.trim().toLowerCase();
+      list = list.filter(p => {
+        const sup = p.supplier;
+        const name = String(sup?.name ?? '').toLowerCase();
+        return name.includes(q);
+      });
+    }
+
+    if (this.supplyQuery?.trim()) {
+      const q = this.supplyQuery.trim().toLowerCase();
+      list = list.filter((p: any) => {
+        const items: PurchaseItem[] = Array.isArray(p.items) ? p.items : [];
+        const names = items
+          .map(it => String(it?.supply?.name ?? '').toLowerCase())
+          .filter(n => !!n);
+        return names.some(n => n.includes(q));
+      });
+    }
+
+    this.setVisible(list);
+  }
+
+  /** ========== HELPERS DE FECHA / TEXTO ========== */
+  safeDateFromPurchase(p: Purchase): Date | null {
+    const raw = p.purchaseDate;
+    const d = raw ? new Date(raw) : null;
+    return (d && !isNaN(d.getTime())) ? d : null;
+  }
+
+  formatDate(d: Date | null): string {
+    if (!d) return '---';
+    try {
+      return new Intl.DateTimeFormat('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+    } catch {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  formatTime(d: Date | null): string {
+    if (!d) return '';
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  purchaseSupplierName(p: Purchase): string {
+    return String(p.supplier?.name ?? 'Desconocido');
+  }
+
+  purchaseTotal(p: Purchase): number {
+    return Number(p.total ?? 0);
+  }
+
+  // Muestra insumos en texto bonito a partir de items[]
+  purchaseItemsSummary(p: Purchase): string {
+    const items: PurchaseItem[] = Array.isArray(p.items) ? p.items : [];
+
+    if (!items.length) {
+      return 'Sin insumos';
+    }
+
+    const formatItem = (it: PurchaseItem): string => {
+      const supply = it?.supply ?? {};
+      const name = String(supply.name ?? 'Insumo');
+
+      let qtyBase = Number(it.quantity ?? 0);
+      let unitLabel: string = supply.unit ?? '';
+
+      // Normalizamos cantidades para mostrar
+      const unitType = supply.unit as string | undefined;
+      if (unitType === 'Grams') {
+        qtyBase = qtyBase / 1000;
+        unitLabel = 'kg';
+      } else if (unitType === 'Milliliters') {
+        qtyBase = qtyBase / 1000;
+        unitLabel = 'L';
       }
 
-      this.resetForm();
-    } catch {
-      this.toast.mostrarMensaje('❌ Error al guardar la compra');
-    } finally {
-      this.isSaving = false;
-    }
-  }
+      const qty = Math.round((qtyBase + Number.EPSILON) * 100) / 100;
 
-  cancelEdit(): void {
-    this.resetForm();
-  }
-
-  private resetForm(): void {
-    this.selectedPurchase = null;
-    this.dto = { idSupplier: null };
-    this.newItem = { idSupply: null, quantity: 1 };
-    this.items = [];
-    this.grandTotal = 0;
-    this.supplierQuery = '';
-    this.supplyQuery = '';
-    this.supplierLocked = false;
-    this.supplyLocked = false;
-    this.refreshFilters();
-  }
-
-  /* ========== Nuevo proveedor (overlay) ========== */
-  openNewSupplierForm(): void {
-    if (this.supplierLocked) return; // no abrir si está bloqueado
-    this.newSupplier = { name: '', phone: '', address: '', email: '' };
-    this.newSupplierRef?.close();
-    this.newSupplierRef = this.overlay.open(this.newSupplierTpl);
-  }
-
-  closeNewSupplierForm(): void {
-    this.newSupplierRef?.close();
-    this.newSupplierRef = undefined;
-  }
-
-  async saveNewSupplier(): Promise<void> {
-    if (!this.newSupplier.name?.trim()) {
-      this.toast.mostrarMensaje('⚠️ Escribe un nombre de proveedor');
-      return;
-    }
-
-    this.isSaving = true;
-    try {
-      const created = await firstValueFrom(this.api.createSupplier(this.newSupplier));
-      if (created?.idSupplier) {
-        this.suppliers.push(created);
-        this.dto.idSupplier = created.idSupplier;
-        this.supplierQuery = created.name;
-        this.supplierLocked = true;   // 🔒 al crear también
-        this.filteredSuppliers = [];
-        this.toast.mostrarMensaje('✅ Proveedor registrado');
-        this.closeNewSupplierForm();
-      } else {
-        this.toast.mostrarMensaje('❌ Respuesta inválida al crear proveedor');
+      if (unitLabel) {
+        return `${name} x${qty} ${unitLabel}`;
       }
-    } catch {
-      this.toast.mostrarMensaje('❌ Error al registrar proveedor');
-    } finally {
-      this.isSaving = false;
+      return `${name} x${qty}`;
+    };
+
+    if (items.length === 1) {
+      return formatItem(items[0]);
     }
+
+    const first = formatItem(items[0]);
+    const extra = items.length - 1;
+
+    return `${first} (+${extra} más)`;
   }
 
-  /* ========== Navegación ========== */
-  goBack(): void { this.router.navigate(['/view/inventario']); }
-}
+  /** ========== NAVEGACIÓN ========== */
+  viewPurchase(p: Purchase) {
+    console.log('[Compras] Ver compra =>', p);
+    const id = Number(p.idPurchase ?? 0);
+    if (id) this.router.navigate(['/purchases', id]);
+  }
 
-/* ======== Helpers ======== */
-function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+  editPurchase(p: Purchase) {
+    const id = Number(p.idPurchase ?? 0);
+    if (id) this.router.navigate(['/view/inventario/compras/editar', id]);
+  }
+
+  registerNewPurchase(): void {
+    this.router.navigate(['/view/inventario/compras/registrar-compras']);
+  }
+
+  /** ========== LOADING GROUP HELPERS ========== */
+  private startLoadingGroup(n = 1) {
+    this.pendingLoads = n;
+    this.pageLoading.start();
+  }
+
+  private finishOneLoad() {
+    this.pendingLoads = Math.max(0, this.pendingLoads - 1);
+    if (this.pendingLoads === 0) {
+      this.pageLoading.stop();
+      this.contentReady = true;
+      this.applyFilters();
+    }
+  }
 }
