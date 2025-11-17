@@ -85,6 +85,90 @@ h4.title {
   animation: spin .8s linear infinite;
 }
 
+/* =============== CONFIG PÁGINA PARA IMPRESIÓN =============== */
+@page {
+  size: A4 portrait;
+  margin: 10mm; // puedes bajarlo a 8mm si quieres más ancho
+}
+
+/* =============== MODO IMPRESIÓN GLOBAL PARA BOLETA =============== */
+@media print {
+  /* Modo impresión solo cuando el body tenga la clase print-mode */
+  body.print-mode {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.print-mode,
+  body.print-mode html {
+    width: 100% !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  body.print-mode * {
+    box-sizing: border-box !important;
+  }
+
+  /* Romper el layout de Angular Material que mete scroll */
+  body.print-mode mat-sidenav-container,
+  body.print-mode mat-sidenav-content,
+  body.print-mode .view-content,
+  body.print-mode .route-shell {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Ocultar toolbar, sidebar y cualquier otra cosa que no sea la boleta */
+  body.print-mode mat-toolbar,
+  body.print-mode mat-sidenav,
+  body.print-mode app-menu,
+  body.print-mode .page-spinner,
+  body.print-mode .no-print {
+    display: none !important;
+  }
+
+  /* Que el contenido ocupe todo el ancho utilizable */
+  body.print-mode mat-sidenav-content.content.view-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ========= Ajustar específicamente la boleta ========= */
+  body.print-mode app-compras-registradas .receipt-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+
+    /* Tamaño seguro para que NO se corte nada */
+    width: 100% !important;
+    max-width: 720px !important; /* ↓ si aún se corta, bájalo a 680px */
+    margin: 0 auto !important;
+    padding: 12px 16px !important;
+
+    page-break-inside: avoid;
+  }
+
+  /* Asegurarnos que las tablas no se “desborden” */
+  body.print-mode app-compras-registradas .receipt-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  body.print-mode app-compras-registradas .receipt-table th,
+  body.print-mode app-compras-registradas .receipt-table td {
+    padding: 4px 6px !important;
+    font-size: 12px !important;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

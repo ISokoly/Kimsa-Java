@@ -24,6 +24,7 @@ import { RecetasComponent } from "./pages/inventario/recetas/recetas.component";
 import { InventarioComponent } from "./pages/inventario/inventario.component";
 import { RegistrarComprasComponent } from "./pages/inventario/compras/registrar-compras/registrar-compras.component";
 import { ProveedoresComponent } from "./pages/usuarios/sub-paginas/proveedores/proveedores.component";
+import { ComprasRegistradasComponent } from "./pages/inventario/compras/compras-registradas/compras-registradas.component";
 
 export const routes: Routes = [
   { path: "", pathMatch: "full", redirectTo: "view" },
@@ -119,6 +120,11 @@ export const routes: Routes = [
         path: 'inventario/compras/editar/:id',
         component: RegistrarComprasComponent,
         canActivate: [AdminGuard],
+      },
+      {
+        path: 'inventario/compras/:id',
+        component: ComprasRegistradasComponent,
+        canActivate: [AdminGuard],          
       },
       {
         path: 'inventario/recetas',

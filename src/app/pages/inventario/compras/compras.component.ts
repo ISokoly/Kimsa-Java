@@ -424,7 +424,7 @@ export class ComprasComponent implements OnInit {
   viewPurchase(p: Purchase) {
     console.log('[Compras] Ver compra =>', p);
     const id = Number(p.idPurchase ?? 0);
-    if (id) this.router.navigate(['/purchases', id]);
+    if (id) this.router.navigate(['/view/inventario/compras', id]);
   }
 
   editPurchase(p: Purchase) {
@@ -439,7 +439,7 @@ export class ComprasComponent implements OnInit {
   /** ========== LOADING GROUP HELPERS ========== */
   private startLoadingGroup(n = 1) {
     this.pendingLoads = n;
-    this.isLoading = true;              // 🔹 Activamos bloqueo de botones
+    this.isLoading = true;
     this.pageLoading.start();
   }
 
@@ -448,7 +448,7 @@ export class ComprasComponent implements OnInit {
     if (this.pendingLoads === 0) {
       this.pageLoading.stop();
       this.contentReady = true;
-      this.isLoading = false;           // 🔹 Liberamos botones cuando todo termina
+      this.isLoading = false;
       this.applyFilters();
     }
   }

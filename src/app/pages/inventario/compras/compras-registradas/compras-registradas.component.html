@@ -1,0 +1,128 @@
+@if (!contentReady) {
+} @else {
+
+<div class="receipt-wrapper">
+
+    <div class="receipt-card receipt-page">
+
+        <!-- ENCABEZADO -->
+        <header class="receipt-header">
+            <div class="brand">
+                <h2>Pizzería KIMSA</h2>
+            </div>
+            <div class="receipt-meta">
+                <span class="receipt-label">BOLETA DE COMPRA </span>
+                <span class="receipt-number">
+                    N° {{ purchase?.idPurchase || '—' }}
+                </span>
+            </div>
+        </header>
+
+        <div class="divider dotted"></div>
+
+        <!-- INFO PRINCIPAL -->
+        <section class="receipt-info">
+            <div class="info-block">
+                <h3>Proveedor</h3>
+                <p><strong>Nombre:</strong> {{ supplier?.name || '—' }}</p>
+                <p><strong>Teléfono:</strong> {{ supplier?.phone || '—' }}</p>
+                <p><strong>Correo:</strong> {{ supplier?.email || '—' }}</p>
+                <p><strong>Dirección:</strong> {{ supplier?.address || '—' }}</p>
+            </div>
+
+            <div class="info-block">
+                <h3>Detalles</h3>
+                <p>
+                    <strong>Fecha:</strong>
+                    {{ purchase?.purchaseDate | date: 'dd/MM/yyyy HH:mm' }}
+                </p>
+                <p>
+                    <strong>Total:</strong>
+                    S/ {{ purchase?.total | number:'1.2-2' }}
+                </p>
+            </div>
+        </section>
+
+        <div class="divider dotted"></div>
+
+        <!-- TABLA DE ÍTEMS -->
+        <section class="items-section">
+            <h3>Detalle de la compra</h3>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="col-product">Insumo</th>
+                        <th class="col-qty">Cant.</th>
+                        <th class="col-unit">P. Unit.</th>
+                        <th class="col-sub">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!items || items.length === 0) {
+                    <tr>
+                        <td colspan="4" class="no-items">
+                            No hay ítems registrados en esta compra.
+                        </td>
+                    </tr>
+                    } @else {
+                    @for (i of items; track trackItem($index, i)) {
+                    <tr>
+                        <td class="col-product">
+                            {{ i.supply?.name || '—' }}
+                        </td>
+                        <td class="col-qty">
+                            {{ i.quantity }}
+                        </td>
+                        <td class="col-unit">
+                            S/ {{ i.unitPrice | number:'1.2-2' }}
+                        </td>
+                        <td class="col-sub">
+                            S/ {{ i.subtotal | number:'1.2-2' }}
+                        </td>
+                    </tr>
+                    }
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <div class="divider dashed"></div>
+
+        <!-- RESUMEN TOTAL -->
+        <section class="totals-section">
+            <div class="totals-row">
+                <span>Subtotal</span>
+                <span>S/ {{ purchase?.subtotal || purchase?.total | number:'1.2-2' }}</span>
+            </div>
+            <!-- Si algún día manejas IGV/otros, aquí van más filas -->
+            <div class="totals-row total-final">
+                <span>Total a pagar</span>
+                <span>S/ {{ purchase?.total | number:'1.2-2' }}</span>
+            </div>
+        </section>
+
+        <div class="divider dotted"></div>
+
+        <!-- PIE -->
+        <footer class="receipt-footer-text">
+            <p class="small-text">Pizzería KIMSA - Sistema de Compras</p>
+        </footer>
+
+    </div>
+
+    <!-- BOTONES (no se imprimen) -->
+    <div class="receipt-actions no-print">
+        <button mat-raised-button color="primary" class="no-print" (click)="printReceipt()">
+            Imprimir
+        </button>
+
+        <button mat-raised-button color="accent" (click)="volver()">
+            <mat-icon>arrow_back</mat-icon>
+            Volver
+        </button>
+    </div>
+
+</div>
+
+}
