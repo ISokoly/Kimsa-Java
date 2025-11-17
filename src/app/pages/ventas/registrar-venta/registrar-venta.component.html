@@ -1,5 +1,6 @@
 @if (!contentReady) {
-} @else {<div class="ventas-container">
+} @else {
+<div class="ventas-container">
     <h1 class="title">Registrar Venta</h1>
 
     <div class="ventas-grid">
@@ -38,8 +39,7 @@
                 <tr>
                     @if (isGeneric) {
                     <td><strong>Cliente genérico</strong></td>
-                    }
-                    @else {
+                    } @else {
                     <td><strong>Cliente</strong></td>
                     }
                     <td>
@@ -48,6 +48,7 @@
                         </button>
                     </td>
                 </tr>
+
                 @if (!isGeneric) {
                 <tr>
                     <td><strong>DNI</strong></td>
@@ -61,7 +62,6 @@
 
                             <mat-autocomplete #dniAuto="matAutocomplete"
                                 (optionSelected)="onDniSelected($event.option.value)">
-
                                 @for (c of dniSuggestions; track c.dni) {
                                 <mat-option [value]="c.dni">
                                     {{ c.dni }} — {{ c.name }}
@@ -69,16 +69,16 @@
                                 }
                             </mat-autocomplete>
                         </mat-form-field>
-
                     </td>
                 </tr>
+
                 <tr>
                     <td><strong>Nombre</strong></td>
                     <td>
                         <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
                             <mat-label>Nombre del cliente</mat-label>
                             <input matInput [(ngModel)]="customerName" placeholder="Nombre del cliente"
-                                [disabled]="isExistingClient" /> <!-- ⬅️ aquí -->
+                                [disabled]="isExistingClient" />
                         </mat-form-field>
                     </td>
                 </tr>
@@ -88,11 +88,11 @@
                     <td>
                         <mat-form-field appearance="outline" style="width:90%;" class="cliente-field">
                             <mat-label>Fecha de nacimiento</mat-label>
-                            <input matInput type="date" [(ngModel)]="customerBirthdate" [disabled]="isExistingClient" />
+                            <input matInput type="date" [(ngModel)]="customerBirthdate" [disabled]="isExistingClient"
+                                (ngModelChange)="onCustomerBirthdateChange()" />
                         </mat-form-field>
                     </td>
                 </tr>
-
                 }
             </table>
 
@@ -132,7 +132,6 @@
                                 }
                             </mat-autocomplete>
                         </mat-form-field>
-
                     </td>
                     <td>
                         <mat-form-field appearance="outline" class="cantidad-field">
@@ -143,7 +142,9 @@
                     <td>—</td>
                     <td>—</td>
                     <td>
-                        <button mat-icon-button color="primary" (click)="addToCart()"><mat-icon>add</mat-icon></button>
+                        <button mat-icon-button color="primary" (click)="addToCart()">
+                            <mat-icon>add</mat-icon>
+                        </button>
                     </td>
                 </tr>
 
@@ -167,8 +168,9 @@
                         S/{{ item.subtotal }}
                     </td>
                     <td>
-                        <button mat-icon-button color="warn"
-                            (click)="removeItem(item)"><mat-icon>delete</mat-icon></button>
+                        <button mat-icon-button color="warn" (click)="removeItem(item)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
                     </td>
                 </tr>
                 }
@@ -213,4 +215,5 @@
             </div>
         </div>
     </div>
-</div>}
+</div>
+}

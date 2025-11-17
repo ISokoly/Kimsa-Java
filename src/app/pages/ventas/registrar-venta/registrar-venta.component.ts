@@ -18,7 +18,15 @@ import { ConfirmDialogComponent } from '../../../view/confirm-dialog/confirm-dia
 import { PageLoadingService } from '../../../core/services/page-loading.service';
 
 const GENERIC_DNI = '00000001';
-type DayWeek = 'Lunes' | 'Martes' | 'Miercoles' | 'Jueves' | 'Viernes' | 'Sabado' | 'Domingo' | 'General';
+type DayWeek =
+  | 'Lunes'
+  | 'Martes'
+  | 'Miercoles'
+  | 'Jueves'
+  | 'Viernes'
+  | 'Sabado'
+  | 'Domingo'
+  | 'General';
 
 type Product = { idProduct: number; name: string; price: number; disabled: boolean };
 type CartItem = {
@@ -287,6 +295,7 @@ export class RegistrarVentaComponent implements OnInit {
 
             this.api.consumeInventory(idOrder, true).subscribe({
               next: () => {
+                this.checkLowStockWarnings(); // ⚠️ revisar insumos bajos
                 this.toast.mostrarMensaje('✅ Venta registrada y stock actualizado');
                 this.isSaving = false;
                 this.goBack();
@@ -315,6 +324,7 @@ export class RegistrarVentaComponent implements OnInit {
               next: () => {
                 this.api.consumeInventory(idOrder, true).subscribe({
                   next: () => {
+                    this.checkLowStockWarnings(); // ⚠️ revisar insumos bajos
                     this.toast.mostrarMensaje('✅ Venta actualizada y stock ajustado');
                     this.isSaving = false;
                     this.goBack();
@@ -347,12 +357,13 @@ export class RegistrarVentaComponent implements OnInit {
     }
   }
 
-
   /* ==================== UTILIDADES ==================== */
   toggleGeneric(): void {
     this.isGeneric = !this.isGeneric;
     this.isGeneric ? this.setGenericCustomer() : this.clearCustomer();
+    this.refreshCartPricing(); // recalcular descuentos (cumpleaños, etc.)
   }
+
   onToggleDelivery(): void {
     if (this.isDelivery) this.selectedTableId = null;
   }
@@ -375,6 +386,11 @@ export class RegistrarVentaComponent implements OnInit {
         this.isExistingClient = false;
       },
     });
+  }
+
+  onCustomerBirthdateChange(): void {
+    if (this.isGeneric) return;
+    this.refreshCartPricing();
   }
 
   /* ========= AUTOCOMPLETE PRODUCTO ========= */
@@ -442,6 +458,7 @@ export class RegistrarVentaComponent implements OnInit {
     i.discountPct = pct;
     i.subtotal = subTotal(i.unitPrice, i.quantity, pct);
   }
+
   private refreshCartPricing(): void {
     this.cart.forEach((i) => this.recalcItemPricing(i));
   }
@@ -487,7 +504,6 @@ export class RegistrarVentaComponent implements OnInit {
     });
   }
 
-
   private setGenericCustomer(): void {
     this.isGeneric = true;
     this.isExistingClient = true;
@@ -496,6 +512,7 @@ export class RegistrarVentaComponent implements OnInit {
     this.customerBirthdate = '2000-01-01';
     this.currentCustomer = null;
   }
+
   private clearCustomer(): void {
     this.isExistingClient = false;
     this.customerName = '';
@@ -517,6 +534,7 @@ export class RegistrarVentaComponent implements OnInit {
     this.customerName = isGeneric ? 'Cliente Genérico' : this.currentCustomer.name;
     this.customerDni = isGeneric ? GENERIC_DNI : this.currentCustomer.dni;
     this.customerBirthdate = c?.birthdate ?? '2000-01-01';
+    this.refreshCartPricing(); // por si aplica descuento de cumpleaños
   }
 
   addToCart(): void {
@@ -558,6 +576,7 @@ export class RegistrarVentaComponent implements OnInit {
   removeItem(item: CartItem): void {
     this.cart = this.cart.filter((i) => i !== item);
   }
+
   clearCart(): void {
     this.cart = [];
   }
@@ -571,6 +590,7 @@ export class RegistrarVentaComponent implements OnInit {
   private normalizeNoAccent(s: string): string {
     return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
+
   private limaDayName(date: Date): DayWeek {
     const raw = new Intl.DateTimeFormat('es-PE', {
       timeZone: 'America/Lima',
@@ -588,12 +608,42 @@ export class RegistrarVentaComponent implements OnInit {
     };
     return map[key] ?? 'General';
   }
-  private getDiscountPct(productId: number): number {
+
+  // 🎂 ¿Es cumpleaños de un cliente NO genérico?
+  private isBirthdayNonGeneric(): boolean {
+    if (this.isGeneric) return false;
+
+    const birth = (this.customerBirthdate || '').trim();
+    if (!birth) return false;
+
+    // oxlint-disable-next-line no-unused-vars
+    const [y, m, d] = birth.split('-').map((v) => parseInt(v, 10));
+    if (!m || !d) return false;
+
+    const ref = this.saleRefDate || new Date();
+    const month = ref.getMonth() + 1;
+    const day = ref.getDate();
+
+    return month === m && day === d;
+  }
+
+  // Descuento normal según día/producto
+  private getBaseDiscountPct(productId: number): number {
     const today = this.limaDayName(this.saleRefDate);
     const active = this.discounts.filter((d) => !d.disabled && d.idProduct === productId);
     const pick = active.filter((d) => d.typeDay !== 'General' && d.typeDay === today);
     const bag = pick.length ? pick : active.filter((d) => d.typeDay === 'General');
     return bag.length ? Math.max(...bag.map((d) => d.percentage || 0)) : 0;
+  }
+
+  // Descuento final (incluye cumpleaños 50%)
+  private getDiscountPct(productId: number): number {
+    // 🎂 Si es cliente NO genérico y HOY es su cumpleaños → 50% fijo
+    if (this.isBirthdayNonGeneric()) {
+      return 50;
+    }
+
+    return this.getBaseDiscountPct(productId);
   }
 
   private buildLocalDate(orderDate: string, orderTime?: string): Date {
@@ -652,6 +702,7 @@ export class RegistrarVentaComponent implements OnInit {
     if (this.dniSuggestTimer) clearTimeout(this.dniSuggestTimer);
     this.dniSuggestTimer = setTimeout(() => this.fetchDniSuggestions(q), 200);
   }
+
   onDniSelected(dni: string): void {
     this.customerDni = dni;
     this.onDniChange();
@@ -680,8 +731,8 @@ export class RegistrarVentaComponent implements OnInit {
     }
 
     list$.subscribe({
-      next: (arr: any[]) => {
-        const list = Array.isArray(arr) ? arr : [];
+      next: (arrList: any[]) => {
+        const list = Array.isArray(arrList) ? arrList : [];
         this.allClientsCache = list
           .map((c) => ({
             idClient: c?.idClient ?? c?.id_cliente,
@@ -697,6 +748,50 @@ export class RegistrarVentaComponent implements OnInit {
         this.allClientsLoaded = true;
         this.allClientsCache = [];
         this.dniSuggestions = [];
+      },
+    });
+  }
+
+  // ⚠️ Avisar si el stock de insumos está por acabarse
+  private checkLowStockWarnings(): void {
+    const anyApi: any = this.api as any;
+    if (!anyApi.getSupplies) return;
+
+    anyApi.getSupplies().subscribe({
+      next: (res: any[]) => {
+        const list = Array.isArray(res) ? res : [];
+        const low: string[] = [];
+
+        for (const raw of list) {
+          const name = String(raw?.name ?? raw?.nombre ?? 'Insumo');
+          const unit = String(raw?.unit ?? raw?.unidad ?? '');
+          const stock = Number(
+            raw?.stock ??
+            raw?.currentStock ??
+            raw?.quantity ??
+            raw?.cantidad ??
+            0
+          );
+
+          if (stock <= 0) continue;
+
+          if (unit === 'Grams' && stock < 3000) {
+            low.push(`${name} (${stock} g)`);
+          } else if (unit === 'Milliliters' && stock < 3000) {
+            low.push(`${name} (${stock} ml)`);
+          } else if (unit === 'Units' && stock < 9) {
+            low.push(`${name} (${stock} u)`);
+          }
+        }
+
+        if (low.length) {
+          this.toast.mostrarMensaje(
+            '⚠️ Los siguientes insumos están a punto de acabarse: ' + low.join(', ')
+          );
+        }
+      },
+      error: () => {
+        // No interrumpir el flujo si falla
       },
     });
   }
