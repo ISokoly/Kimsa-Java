@@ -13,56 +13,41 @@ $bg-color: #f9f9f9;
   margin: 0 auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  h1.titulo, h2 {
-    color: $primary-color;
-    border-bottom: 2px dashed $primary-color;
-    padding-bottom: 8px;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    width: 100%;
-  }
-}
+  /* ======== FORMULARIO ======== */
+  .form {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: grid;
+    gap: 1rem;
 
-.form {
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  display: grid;
-  gap: 1rem;
+    mat-form-field {
+      width: 100%;
 
-  mat-form-field {
-    width: 100%;
+      .mat-mdc-text-field-wrapper {
+        border-radius: 10px;
+        background: #fff;
+      }
 
-    .mat-mdc-text-field-wrapper {
-      border-radius: 10px;
-      background: #fff;
-    }
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__trailing,
+      .mdc-notched-outline__notch {
+        border-color: #ccc;
+      }
 
-    .mdc-notched-outline__leading,
-    .mdc-notched-outline__trailing,
-    .mdc-notched-outline__notch {
-      border-color: #ccc;
-    }
-
-    &.mdc-text-field--focused .mdc-notched-outline__leading,
-    &.mdc-text-field--focused .mdc-notched-outline__trailing,
-    &.mdc-text-field--focused .mdc-notched-outline__notch {
-      border-color: $primary-color !important;
+      &.mdc-text-field--focused .mdc-notched-outline__leading,
+      &.mdc-text-field--focused .mdc-notched-outline__trailing,
+      &.mdc-text-field--focused .mdc-notched-outline__notch {
+        border-color: $primary-color !important;
+      }
     }
   }
 
   button[mat-raised-button] {
-    background-color: $primary-color !important;
-    color: #fff !important;
     font-weight: 700;
     border-radius: 8px;
     padding: 0.75rem 1.25rem;
     min-width: 180px;
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
-
-    &:hover:not(:disabled) {
-      background-color: color.scale($primary-color, $lightness: -25%) !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
 
     &:disabled {
       opacity: 0.6;
@@ -70,94 +55,118 @@ $bg-color: #f9f9f9;
       box-shadow: none;
     }
   }
-}
 
-// ======== TABLA DETALLE DE PEDIDO ========
-.ventas-tabla {
-  width: 100%;
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-
-  th[mat-header-cell] {
-    background: $primary-color;
+  .btn-verde {
+    background-color: $primary-color;
     color: #fff;
-    font-weight: 700;
+
+    &:hover:not(:disabled) {
+      background-color: color.scale($primary-color, $lightness: -25%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .boton-volver {
+    background: color.scale($primary-color, $lightness: 25%);
+    color: #fff;
+    font-weight: bold;
+    transition: 0.3s ease-in-out;
+    border-radius: 10px;
+    height: 48px;
+
+    &:hover {
+      background: color.scale($primary-color, $lightness: 10%);
+    }
+  }
+
+  /* ======== TABLA DETALLE DE PEDIDO ======== */
+  .ventas-tabla {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+    th[mat-header-cell] {
+      background: $primary-color;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      padding: 18px 10px; // header más alto
+      letter-spacing: 0.3px;
+    }
+
+    td[mat-cell] {
+      color: #333;
+      padding: 12px 10px;
+      vertical-align: middle;
+    }
+
+    tr[mat-row] {
+      &:nth-child(even) td {
+        background: #fafafa;
+      }
+
+      &:hover td {
+        background: color.scale($primary-color, $lightness: 90%);
+      }
+    }
+  }
+
+  /* ======== ALINEACIONES PERSONALIZADAS ======== */
+  .celdas-centradas {
     text-align: center;
-    padding: 18px 10px; // header más alto
-    letter-spacing: 0.3px;
   }
 
-  td[mat-cell] {
-    color: #333;
-    padding: 12px 10px;
-    vertical-align: middle;
+  .cabecera-izquierda {
+    text-align: left;
   }
 
-  tr[mat-row] {
-    &:nth-child(even) td {
-      background: #fafafa;
-    }
-
-    &:hover td {
-      background: color.scale($primary-color, $lightness: 90%);
-    }
-  }
-}
-
-// ======== ALINEACIONES PERSONALIZADAS ========
-.celdas-centradas {
-  text-align: center;
-}
-
-.cabecera-izquierda {
-  text-align: left;
-}
-
-.cabecera-derecha {
-  text-align: right;
-}
-
-// ======== SECCIÓN DE BOLETA ========
-.boleta {
-  border-radius: 10px;
-  padding: 1.25rem;
-  margin-top: 1.5rem;
-
-  .total {
+  .cabecera-derecha {
     text-align: right;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: $primary-color;
-  }
-}
-
-// ======== PANEL DEL SELECT MATERIAL ========
-.mat-mdc-select-panel {
-  border-radius: 10px !important;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
-}
-
-.mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
-  font-weight: 700;
-}
-
-// ======== RESPONSIVE ========
-@media (max-width: 768px) {
-  .pagos-container {
-    padding: 1.25rem;
   }
 
-  .form,
+  /* ======== SECCIÓN DE BOLETA ======== */
   .boleta {
-    padding: 1rem;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+
+    .total {
+      text-align: right;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: $primary-color;
+    }
   }
 
-  .ventas-tabla th[mat-header-cell],
-  .ventas-tabla td[mat-cell] {
-    padding: 10px;
+  /* ======== PANEL DEL SELECT MATERIAL (solo aquí) ======== */
+  ::ng-deep .mat-mdc-select-panel {
+    border-radius: 10px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  ::ng-deep .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+    font-weight: 700;
+  }
+
+  /* ======== RESPONSIVE ======== */
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+
+    .form,
+    .boleta {
+      padding: 1rem;
+    }
+
+    .ventas-tabla {
+
+      th[mat-header-cell],
+      td[mat-cell] {
+        padding: 10px;
+      }
+    }
   }
 }

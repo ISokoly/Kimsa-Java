@@ -4,7 +4,7 @@ import { DecimalPipe } from '@angular/common';
 import { ApiService } from '../../../core/services/api.service';
 
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ToastService } from '../../../core/services/toast.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -54,7 +54,7 @@ export class PagosComponent implements OnInit {
     private api: ApiService,
     private route: ActivatedRoute,
     private toast: ToastService,
-    private pageLoading: PageLoadingService
+    private pageLoading: PageLoadingService, private router: Router
   ) { }
 
 
@@ -238,5 +238,9 @@ export class PagosComponent implements OnInit {
   formatNumber(value: number | null | undefined, decimals: number = 2): string {
     if (value == null || isNaN(value)) return '0.00';
     return value.toFixed(decimals);
+  }
+
+  goBack(): void {
+    this.router.navigate(['/view/ventas']);
   }
 }

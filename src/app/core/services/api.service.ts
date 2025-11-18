@@ -560,4 +560,11 @@ export class ApiService {
       this.withCred({ headers: this.authHeaders() })
     );
   }
+
+  getLowStockByOrder(idOrder: number) {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/inventory/low-stock-by-order/${idOrder}`,
+      this.withCred({ headers: this.authHeaders() })
+    );
+  }
 }

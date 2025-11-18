@@ -93,6 +93,7 @@ h4.title {
 
 /* =============== MODO IMPRESIÓN GLOBAL PARA BOLETA =============== */
 @media print {
+
   /* Modo impresión solo cuando el body tenga la clase print-mode */
   body.print-mode {
     background: #fff !important;
@@ -147,7 +148,8 @@ h4.title {
 
     /* Tamaño seguro para que NO se corte nada */
     width: 100% !important;
-    max-width: 720px !important; /* ↓ si aún se corta, bájalo a 680px */
+    max-width: 720px !important;
+    /* ↓ si aún se corta, bájalo a 680px */
     margin: 0 auto !important;
     padding: 12px 16px !important;
 

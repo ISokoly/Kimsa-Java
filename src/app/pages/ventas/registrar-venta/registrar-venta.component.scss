@@ -177,6 +177,8 @@ mat-form-field {
       color: #fff;
       font-weight: bold;
       transition: 0.3s ease-in-out;
+      border-radius: 10px;
+      height: 48px;
 
       &:hover {
         background-color: color.scale($danger-color, $lightness: -20%);

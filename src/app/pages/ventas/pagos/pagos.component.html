@@ -2,7 +2,7 @@
 } @else {
 @if (!yaPagado) {
 <div class="pagos-container">
-  <h1 class="titulo">Registrar Pagos</h1>
+  <h1 class="title">Registrar Pagos</h1>
 
   <form #boletaForm="ngForm" (ngSubmit)="registrarPago()" class="form grid gap-4" autocomplete="off">
     <mat-form-field appearance="outline" class="w-full">
@@ -21,8 +21,11 @@
         autocomplete="off" />
     </mat-form-field>
 
-    <button mat-raised-button color="primary" type="submit" [disabled]="!boletaForm.valid">
+    <button mat-raised-button color="primary" class="btn-verde" type="submit" [disabled]="!boletaForm.valid">
       Registrar Pago
+    </button>
+    <button mat-raised-button color="accent" class="boton-volver" (click)="goBack()">
+      Volver
     </button>
   </form>
 
@@ -68,7 +71,7 @@
 </div>
 } @else {
 <div class="pagos-container">
-  <h1 class="titulo">Pago Registrado</h1>
+  <h1 class="title">Pago Registrado</h1>
 
   <div class="form grid gap-4">
     <mat-form-field appearance="outline" class="w-full">
@@ -87,8 +90,11 @@
         autocomplete="off" />
     </mat-form-field>
 
-    <button mat-raised-button color="primary" type="button" disabled>
+    <button mat-raised-button color="primary" class="btn-verde" type="button" disabled>
       Pago Registrado
+    </button>
+    <button mat-raised-button color="accent" class="boton-volver" (click)="goBack()">
+      Volver
     </button>
   </div>
 

@@ -253,10 +253,12 @@ export class RegistrarVentaComponent implements OnInit {
   /* ==================== GUARDAR ==================== */
   async saveSale(): Promise<void> {
     if (!this.isDelivery && !this.selectedTableId) {
-      return this.toast.mostrarMensaje('⚠️ Seleccione una mesa o marque Delivery');
+      this.toast.mostrarMensaje('⚠️ Seleccione una mesa o marque Delivery');
+      return;
     }
     if (!this.cart.length) {
-      return this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
+      this.toast.mostrarMensaje('⚠️ Agregue al menos un producto');
+      return;
     }
 
     this.isSaving = true;
@@ -295,7 +297,8 @@ export class RegistrarVentaComponent implements OnInit {
 
             this.api.consumeInventory(idOrder, true).subscribe({
               next: () => {
-                this.checkLowStockWarnings(); // ⚠️ revisar insumos bajos
+                // ✅ Venta OK → revisamos insumos bajos de ESTA venta
+                this.checkLowStockWarnings(idOrder);
                 this.toast.mostrarMensaje('✅ Venta registrada y stock actualizado');
                 this.isSaving = false;
                 this.goBack();
@@ -305,8 +308,8 @@ export class RegistrarVentaComponent implements OnInit {
                   err?.error?.message ||
                   err?.error ||
                   'Stock insuficiente o error al actualizar inventario.';
-                this.toast.mostrarMensaje('⚠️ ' + msg);
-                this.isSaving = false;
+
+                this.handleInventoryError(idOrder, msg);
               },
             });
           },
@@ -324,7 +327,7 @@ export class RegistrarVentaComponent implements OnInit {
               next: () => {
                 this.api.consumeInventory(idOrder, true).subscribe({
                   next: () => {
-                    this.checkLowStockWarnings(); // ⚠️ revisar insumos bajos
+                    this.checkLowStockWarnings(idOrder);
                     this.toast.mostrarMensaje('✅ Venta actualizada y stock ajustado');
                     this.isSaving = false;
                     this.goBack();
@@ -334,8 +337,7 @@ export class RegistrarVentaComponent implements OnInit {
                       err?.error?.message ||
                       err?.error ||
                       'Stock insuficiente o error al actualizar inventario.';
-                    this.toast.mostrarMensaje('⚠️ ' + msg);
-                    this.isSaving = false;
+                    this.handleInventoryError(idOrder, msg);
                   },
                 });
               },
@@ -356,6 +358,84 @@ export class RegistrarVentaComponent implements OnInit {
       this.isSaving = false;
     }
   }
+  private handleInventoryError(idOrder: number, msg: string): void {
+    this.api.updateSale(idOrder, { status: 'Cancelled' }).subscribe({
+      next: () => {
+        this.toast.mostrarMensaje('❌ ' + msg + ' La venta fue anulada.');
+        this.isSaving = false;
+      },
+      error: () => {
+        this.toast.mostrarMensaje(
+          '❌ ' + msg + ' Además, no se pudo marcar la venta como anulada.'
+        );
+        this.isSaving = false;
+      },
+    });
+  }
+
+  private checkLowStockWarnings(idOrder: number): void {
+    const anyApi: any = this.api as any;
+
+    if (!anyApi.getLowStockByOrder) {
+      return;
+    }
+
+    anyApi.getLowStockByOrder(idOrder).subscribe({
+      next: (res: any[]) => {
+        const list = Array.isArray(res) ? res : [];
+        const critical: string[] = [];
+        const low: string[] = [];
+
+        for (const raw of list) {
+          const name = String(raw?.name ?? raw?.nombre ?? 'Insumo');
+
+          const stock = Number(
+            raw?.currentStock ??
+            raw?.stock ??
+            raw?.quantity ??
+            raw?.cantidad ??
+            0
+          );
+
+          const unitRaw = String(raw?.unit ?? raw?.unidad ?? '').toLowerCase().trim();
+
+          if (Number.isNaN(stock)) continue;
+
+          // 🔴 Sin stock
+          if (stock <= 0) {
+            critical.push(`${name} (0 ${unitRaw || ''})`);
+            continue;
+          }
+
+          // 🟡 A punto de acabarse según tipo de unidad (tolerante al texto)
+          const isGram = unitRaw.includes('gram');         // grams, gramos, grams_unit, etc.
+          const isMl = unitRaw.includes('ml') || unitRaw.includes('mili');
+          const isUnit = unitRaw.includes('unit') || unitRaw.includes('uni');
+
+          if (isGram && stock < 3000) {
+            low.push(`${name} (${stock} g)`);
+          } else if (isMl && stock < 3000) {
+            low.push(`${name} (${stock} ml)`);
+          } else if (isUnit && stock < 9) {
+            low.push(`${name} (${stock} u)`);
+          }
+        }
+
+        if (critical.length) {
+          this.toast.mostrarMensaje(
+            '❌ Insumos sin stock relacionados a la venta: ' + critical.join(', ')
+          );
+        }
+
+        if (low.length) {
+          this.toast.mostrarMensaje(
+            '⚠️ Insumos casi agotados relacionados a la venta: ' + low.join(', ')
+          );
+        }
+      },
+    });
+  }
+
 
   /* ==================== UTILIDADES ==================== */
   toggleGeneric(): void {
@@ -748,50 +828,6 @@ export class RegistrarVentaComponent implements OnInit {
         this.allClientsLoaded = true;
         this.allClientsCache = [];
         this.dniSuggestions = [];
-      },
-    });
-  }
-
-  // ⚠️ Avisar si el stock de insumos está por acabarse
-  private checkLowStockWarnings(): void {
-    const anyApi: any = this.api as any;
-    if (!anyApi.getSupplies) return;
-
-    anyApi.getSupplies().subscribe({
-      next: (res: any[]) => {
-        const list = Array.isArray(res) ? res : [];
-        const low: string[] = [];
-
-        for (const raw of list) {
-          const name = String(raw?.name ?? raw?.nombre ?? 'Insumo');
-          const unit = String(raw?.unit ?? raw?.unidad ?? '');
-          const stock = Number(
-            raw?.stock ??
-            raw?.currentStock ??
-            raw?.quantity ??
-            raw?.cantidad ??
-            0
-          );
-
-          if (stock <= 0) continue;
-
-          if (unit === 'Grams' && stock < 3000) {
-            low.push(`${name} (${stock} g)`);
-          } else if (unit === 'Milliliters' && stock < 3000) {
-            low.push(`${name} (${stock} ml)`);
-          } else if (unit === 'Units' && stock < 9) {
-            low.push(`${name} (${stock} u)`);
-          }
-        }
-
-        if (low.length) {
-          this.toast.mostrarMensaje(
-            '⚠️ Los siguientes insumos están a punto de acabarse: ' + low.join(', ')
-          );
-        }
-      },
-      error: () => {
-        // No interrumpir el flujo si falla
       },
     });
   }
