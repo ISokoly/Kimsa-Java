@@ -18,7 +18,7 @@ export interface UsuarioLigero {
 
 @Injectable({ providedIn: "root" })
 export class ApiService {
-  public url = "http://localhost:8080";
+  public url = "https://thundering-maris-sokoly-organization-a9bc493a.koyeb.app";
   private apiUrl = `${this.url}/api`;
 
   private SESSION_FLAG = "kimsa_has_session";
@@ -83,7 +83,6 @@ export class ApiService {
   }
 
   private withCred(options?: { headers?: HttpHeaders; observe?: any }) {
-    // mantenemos withCredentials por si el backend usa cookies además del header
     return { withCredentials: true, ...options } as const;
   }
 
@@ -109,7 +108,6 @@ export class ApiService {
             token = res.token;
             user = res.user as UsuarioLigero;
           } else if (res && (res.idUser || res.username)) {
-            // backend antiguo: devuelve el usuario directamente
             user = res as UsuarioLigero;
           }
 

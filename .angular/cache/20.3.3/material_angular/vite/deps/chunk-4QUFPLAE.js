@@ -3,13 +3,10 @@ import {
   createFlexibleConnectedPositionStrategy,
   createOverlayRef,
   createRepositionScrollStrategy
-} from "./chunk-G5AC6WWQ.js";
-import {
-  ScrollDispatcher
-} from "./chunk-G3ZT27MI.js";
+} from "./chunk-JOAS7G3K.js";
 import {
   _animationsDisabled
-} from "./chunk-MOXQPS7M.js";
+} from "./chunk-VK6GY3BP.js";
 import {
   coerceBooleanProperty
 } from "./chunk-GWFLKVBH.js";
@@ -19,14 +16,17 @@ import {
   FocusMonitor,
   hasModifierKey,
   normalizePassiveListenerOptions
-} from "./chunk-HAIRIHHM.js";
+} from "./chunk-YMVPGO6L.js";
 import {
-  Directionality
-} from "./chunk-B6Q77AK3.js";
+  ScrollDispatcher
+} from "./chunk-32UU7V5A.js";
 import {
   Platform,
   coerceNumberProperty
-} from "./chunk-QVM7YCKW.js";
+} from "./chunk-J2CJJ44I.js";
+import {
+  Directionality
+} from "./chunk-B6Q77AK3.js";
 import {
   NgClass
 } from "./chunk-QCDBD2C7.js";
@@ -1010,4 +1010,4 @@ export {
   MatTooltip,
   TooltipComponent
 };
-//# sourceMappingURL=chunk-QLESFSD5.js.map
+//# sourceMappingURL=chunk-4QUFPLAE.js.map

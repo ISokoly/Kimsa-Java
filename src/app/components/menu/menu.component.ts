@@ -227,7 +227,7 @@ export class MenuComponent {
           label: c.name,
           route: ["categoria/producto", c.name], // sin slash inicial
         }));
-    } catch {}
+    } catch { }
 
     const items: MenuItem[] = [];
 
