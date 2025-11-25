@@ -118,10 +118,13 @@
               placeholder="Ej: Grande, Vidrio..." />
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="button" (click)="agregarCaracteristicaBorrador()"
-            [disabled]="isLoading">
-            <mat-icon>add</mat-icon> Agregar
-          </button>
+          <div>
+            <button mat-raised-button color="primary" class="boton-azul"
+              style="letter-spacing: .3px; margin-top: -75px;" type="button" (click)="agregarCaracteristicaBorrador()"
+               [disabled]="isLoading">
+              <mat-icon>add</mat-icon> Agregar
+            </button>
+          </div>
         </div>
 
         <div class="lista-product-features" [ngClass]="{'grid-list': draftFeatures.length > 3}">
@@ -195,10 +198,13 @@
             <span matSuffix>{{ etiquetaUnidadPorInsumo(newRecetaItem.idSupply) }}&nbsp;</span>
           </mat-form-field>
 
-          <button mat-raised-button color="primary" type="button" (click)="agregarItemReceta()"
-            [disabled]="isLoading || !puedeAgregarItemReceta">
-            <mat-icon>add</mat-icon> Agregar
-          </button>
+          <div>
+            <button mat-raised-button color="primary" class="boton-azul"
+              style="letter-spacing: .3px; margin-top: -75px;" type="button" (click)="agregarItemReceta()"
+              [disabled]="isLoading || !puedeAgregarItemReceta">
+              <mat-icon>add</mat-icon> Agregar
+            </button>
+          </div>
         </div>
 
         <div class="cards-grid"

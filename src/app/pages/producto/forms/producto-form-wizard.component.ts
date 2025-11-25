@@ -1,8 +1,5 @@
 // oxlint-disable no-unused-expressions
-import {
-  CommonModule,
-  NgClass,
-} from '@angular/common';
+import { CommonModule, NgClass } from "@angular/common";
 import {
   Component,
   ElementRef,
@@ -14,34 +11,34 @@ import {
   Output,
   TemplateRef,
   ViewChild,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
+} from "@angular/core";
+import { FormsModule } from "@angular/forms";
 
-import { MatButtonModule } from '@angular/material/button';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCardModule } from '@angular/material/card';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from "@angular/material/button";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
+import { MatCardModule } from "@angular/material/card";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
-import { ApiService } from '../../../core/services/api.service';
-import { ToastService } from '../../../core/services/toast.service';
-import { firstValueFrom } from 'rxjs';
+import { ApiService } from "../../../core/services/api.service";
+import { ToastService } from "../../../core/services/toast.service";
+import { firstValueFrom } from "rxjs";
 import {
   OverlayHandle,
   OverlayPortalService,
-} from '../../../core/services/overlay-portal.service';
-import { MarcasComponent } from './marcas/marcas.component';
-import { CaracteristicasComponent } from './caracteristicas/caracteristicas.component';
+} from "../../../core/services/overlay-portal.service";
+import { MarcasComponent } from "./marcas/marcas.component";
+import { CaracteristicasComponent } from "./caracteristicas/caracteristicas.component";
 
 type Brand = { idBrand: number; name: string; idCategory?: number };
 type Feature = { idFeature: number; featureName: string };
 type Supply = { idSupply: number; name: string; unit?: string };
 
 @Component({
-  selector: 'app-producto-form-wizard',
+  selector: "app-producto-form-wizard",
   standalone: true,
   imports: [
     CommonModule,
@@ -58,8 +55,8 @@ type Supply = { idSupply: number; name: string; unit?: string };
     MarcasComponent,
     CaracteristicasComponent,
   ],
-  templateUrl: './producto-form-wizard.component.html',
-  styleUrls: ['./producto-form-wizard.component.scss'],
+  templateUrl: "./producto-form-wizard.component.html",
+  styleUrls: ["./producto-form-wizard.component.scss"],
 })
 export class ProductoFormWizardComponent implements OnInit, OnChanges {
   /* ===== Inputs ===== */
@@ -73,13 +70,13 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   @Output() created = new EventEmitter<void>();
   @Output() marcasChanged = new EventEmitter<void>(); // avisa al padre para refrescar detail
   @Output() updated = new EventEmitter<number>(); // idProduct actualizado/creado
-  
-  @ViewChild('featureInput') featureInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('supplyInput') supplyInput!: ElementRef<HTMLInputElement>;
+
+  @ViewChild("featureInput") featureInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("supplyInput") supplyInput!: ElementRef<HTMLInputElement>;
 
   /* ===== Paso 1 ===== */
   formData = {
-    name: '',
+    name: "",
     price: 0,
     brand: null as number | null,
   };
@@ -101,10 +98,10 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     featureName: string;
     featureValue: string;
   }> = [];
-  newFeature = { idFeature: null as number | null, featureValue: '' };
+  newFeature = { idFeature: null as number | null, featureValue: "" };
 
   /* Autocomplete Características */
-  textoCaracteristica = '';
+  textoCaracteristica = "";
   caracteristicasFiltradas: Feature[] = [];
 
   /* Receta */
@@ -118,20 +115,20 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   newRecetaItem = { idSupply: null as number | null, gramsQuantity: 0 };
 
   /* Autocomplete Insumos */
-  textoInsumo = '';
+  textoInsumo = "";
   insumosFiltrados: Supply[] = [];
 
   /* Marcas overlay */
-  @ViewChild('formCrearMarcaTpl') formCrearMarcaTpl!: TemplateRef<any>;
+  @ViewChild("formCrearMarcaTpl") formCrearMarcaTpl!: TemplateRef<any>;
   private overlay = inject(OverlayPortalService);
   private crearMarcaRef?: OverlayHandle;
 
   /* Características overlay (solo formulario) */
-  @ViewChild('formCrearFeatureTpl') formCrearFeatureTpl!: TemplateRef<any>;
+  @ViewChild("formCrearFeatureTpl") formCrearFeatureTpl!: TemplateRef<any>;
   private crearFeatureRef?: OverlayHandle;
 
   /* Insumo rápido overlay */
-  @ViewChild('formCrearSupplyTpl') formCrearSupplyTpl!: TemplateRef<any>;
+  @ViewChild("formCrearSupplyTpl") formCrearSupplyTpl!: TemplateRef<any>;
   private crearSupplyRef?: OverlayHandle;
 
   /* Para diff/edición */
@@ -145,16 +142,16 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
 
   /* Datos del mini formulario de insumo */
   nuevoInsumo = {
-    name: '',
+    name: "",
     unitPrice: 0,
-    unit: 'Units' as string,
+    unit: "Units" as string,
   };
 
-  constructor(private api: ApiService, private toast: ToastService) { }
+  constructor(private api: ApiService, private toast: ToastService) {}
 
   async ngOnInit(): Promise<void> {
     if (!this.categoriaId) {
-      this.toast.mostrarMensaje('❌ Falta categoría.');
+      this.toast.mostrarMensaje("❌ Falta categoría.");
       this.cerrar();
       return;
     }
@@ -164,7 +161,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       const raw = (await firstValueFrom(this.api.getFeatures())) as any[];
       this.featuresBase = (raw || []).map((f) => ({
         idFeature: Number(f.idFeature),
-        featureName: String(f.featureName || ''),
+        featureName: String(f.featureName || ""),
       }));
       this.caracteristicasFiltradas = [...this.featuresBase];
     } catch {
@@ -209,9 +206,9 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
         (m) =>
           Number(
             (m as any).idCategory ??
-            (m as any).category ??
-            (m as any).id_category,
-          ) === idCategory,
+              (m as any).category ??
+              (m as any).id_category
+          ) === idCategory
       );
     } catch {
       this.marcas = [];
@@ -255,7 +252,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       this.formData.price > 0 &&
       !!this.categoriaId;
     if (!ok) {
-      this.toast.mostrarMensaje('❌ Complete los campos requeridos');
+      this.toast.mostrarMensaje("❌ Complete los campos requeridos");
     }
     return ok;
   }
@@ -273,7 +270,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     const MAX_BYTES = 1 * 1024 * 1024;
     if (!file) return this.reiniciarSeleccionImagen();
     if (file.size > MAX_BYTES) {
-      this.toast.mostrarMensaje('❌ La imagen no puede ser mayor a 1 MB.');
+      this.toast.mostrarMensaje("❌ La imagen no puede ser mayor a 1 MB.");
       return this.reiniciarSeleccionImagen();
     }
     this.selectedFile = file;
@@ -291,22 +288,24 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
 
   /* ===== Helpers ===== */
   private minusculas(s: any) {
-    return String(s ?? '').trim().toLowerCase();
+    return String(s ?? "")
+      .trim()
+      .toLowerCase();
   }
 
   etiquetaUnidad(unit?: string): string {
     const map: Record<string, string> = {
-      Grams: 'g',
-      Milliliters: 'ml',
-      Units: 'u',
+      Grams: "g",
+      Milliliters: "ml",
+      Units: "u",
     };
-    return unit ? map[unit] ?? unit : '';
+    return unit ? map[unit] ?? unit : "";
   }
 
   etiquetaUnidadPorInsumo(idSupply: number | null): string {
-    if (!idSupply) return '';
+    if (!idSupply) return "";
     const s = this.suppliesMap.get(Number(idSupply));
-    return s ? this.etiquetaUnidad(s.unit) : '';
+    return s ? this.etiquetaUnidad(s.unit) : "";
   }
 
   /* ===== Autocomplete: Características ===== */
@@ -318,20 +317,20 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       return;
     }
     this.caracteristicasFiltradas = this.featuresBase.filter((f) =>
-      this.minusculas(f.featureName).includes(q),
+      this.minusculas(f.featureName).includes(q)
     );
   }
 
   alSeleccionarCaracteristica(value: any): void {
     // Opción especial: crear nueva característica
-    if (value === '__create_feature__') {
+    if (value === "__create_feature__") {
       // Limpiar estado lógico
       this.newFeature.idFeature = null;
-      this.textoCaracteristica = '';
+      this.textoCaracteristica = "";
 
       // Limpiar el input real del DOM (por si Angular escribió algo raro)
       if (this.featureInput?.nativeElement) {
-        this.featureInput.nativeElement.value = '';
+        this.featureInput.nativeElement.value = "";
       }
 
       // Restaurar lista normal
@@ -343,7 +342,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     }
 
     // Selección normal
-    const f = this.featuresBase.find(x => x.idFeature === Number(value));
+    const f = this.featuresBase.find((x) => x.idFeature === Number(value));
     if (!f) return;
 
     this.newFeature.idFeature = f.idFeature;
@@ -351,10 +350,9 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     this.caracteristicasFiltradas = [f];
   }
 
-
   limpiarCaracteristicaSeleccion(): void {
     this.newFeature.idFeature = null;
-    this.textoCaracteristica = '';
+    this.textoCaracteristica = "";
     this.caracteristicasFiltradas = [...this.featuresBase];
   }
 
@@ -362,20 +360,20 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   agregarCaracteristicaBorrador(): void {
     if (!this.newFeature.idFeature || !this.newFeature.featureValue.trim()) {
       this.toast.mostrarMensaje(
-        '⚠️ Selecciona una característica y escribe un valor.',
+        "⚠️ Selecciona una característica y escribe un valor."
       );
       return;
     }
     const base = this.featuresBase.find(
-      (f) => f.idFeature === this.newFeature.idFeature,
+      (f) => f.idFeature === this.newFeature.idFeature
     );
     if (!base) {
-      this.toast.mostrarMensaje('❌ Característica base inválida.');
+      this.toast.mostrarMensaje("❌ Característica base inválida.");
       return;
     }
 
     const idx = this.draftFeatures.findIndex(
-      (x) => x.idFeature === base.idFeature,
+      (x) => x.idFeature === base.idFeature
     );
     const item = {
       idFeature: base.idFeature,
@@ -385,8 +383,8 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     if (idx >= 0) this.draftFeatures[idx] = item;
     else this.draftFeatures = [...this.draftFeatures, item];
 
-    this.newFeature = { idFeature: null, featureValue: '' };
-    this.textoCaracteristica = '';
+    this.newFeature = { idFeature: null, featureValue: "" };
+    this.textoCaracteristica = "";
     this.caracteristicasFiltradas = [...this.featuresBase];
   }
 
@@ -396,7 +394,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     featureValue: string;
   }): void {
     this.draftFeatures = this.draftFeatures.filter(
-      (x) => x.idFeature !== f.idFeature,
+      (x) => x.idFeature !== f.idFeature
     );
   }
 
@@ -408,7 +406,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     this.newFeature = { idFeature: f.idFeature, featureValue: f.featureValue };
     this.textoCaracteristica = f.featureName;
     this.draftFeatures = this.draftFeatures.filter(
-      (x) => x.idFeature !== f.idFeature,
+      (x) => x.idFeature !== f.idFeature
     );
     this.caracteristicasFiltradas = [...this.featuresBase];
   }
@@ -427,7 +425,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       const raw = (await firstValueFrom(this.api.getFeatures())) as any[];
       this.featuresBase = (raw || []).map((f) => ({
         idFeature: Number(f.idFeature),
-        featureName: String(f.featureName || ''),
+        featureName: String(f.featureName || ""),
       }));
       this.caracteristicasFiltradas = [...this.featuresBase];
     } catch {
@@ -445,18 +443,18 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       return;
     }
     this.insumosFiltrados = this.supplies.filter((s) =>
-      this.minusculas(s.name).includes(q),
+      this.minusculas(s.name).includes(q)
     );
   }
 
   alSeleccionarInsumo(value: any): void {
     // Opción especial: crear nuevo insumo
-    if (value === '__create_supply__') {
+    if (value === "__create_supply__") {
       this.newRecetaItem.idSupply = null;
-      this.textoInsumo = '';
+      this.textoInsumo = "";
 
       if (this.supplyInput?.nativeElement) {
-        this.supplyInput.nativeElement.value = '';
+        this.supplyInput.nativeElement.value = "";
       }
 
       this.insumosFiltrados = [...this.supplies];
@@ -475,47 +473,41 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
 
   limpiarInsumoSeleccion(): void {
     this.newRecetaItem.idSupply = null;
-    this.textoInsumo = '';
+    this.textoInsumo = "";
     this.insumosFiltrados = [...this.supplies];
   }
 
   /* ===== Receta (draft) ===== */
   get puedeAgregarItemReceta(): boolean {
     return (
-      typeof this.newRecetaItem.idSupply === 'number' &&
+      typeof this.newRecetaItem.idSupply === "number" &&
       (Number(this.newRecetaItem.gramsQuantity) || 0) > 0
     );
   }
 
   ajustarCantidadNueva(): void {
-    const g = Math.max(
-      0.01,
-      Number(this.newRecetaItem.gramsQuantity) || 0.01,
-    );
+    const g = Math.max(0.01, Number(this.newRecetaItem.gramsQuantity) || 0.01);
     this.newRecetaItem.gramsQuantity =
       Math.round((g + Number.EPSILON) * 100) / 100;
   }
 
   agregarItemReceta(): void {
     if (!this.puedeAgregarItemReceta) {
-      this.toast.mostrarMensaje('⚠️ Selecciona insumo y cantidad > 0');
+      this.toast.mostrarMensaje("⚠️ Selecciona insumo y cantidad > 0");
       return;
     }
     const s = this.suppliesMap.get(Number(this.newRecetaItem.idSupply));
     if (!s) {
-      this.toast.mostrarMensaje('❌ Insumo inválido');
+      this.toast.mostrarMensaje("❌ Insumo inválido");
       return;
     }
 
     const exists = this.draftRecipe.find((d) => d.idSupply === s.idSupply);
     const qty =
       Math.round(
-        (Math.max(
-          0.01,
-          Number(this.newRecetaItem.gramsQuantity) || 0,
-        ) +
+        (Math.max(0.01, Number(this.newRecetaItem.gramsQuantity) || 0) +
           Number.EPSILON) *
-        100,
+          100
       ) / 100;
 
     if (exists) {
@@ -534,7 +526,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     }
 
     this.newRecetaItem = { idSupply: null, gramsQuantity: 0 };
-    this.textoInsumo = '';
+    this.textoInsumo = "";
     this.insumosFiltrados = [...this.supplies];
   }
 
@@ -552,11 +544,11 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
     file: File | null,
     nombre: string,
     categoriaId: number,
-    currentIdImage: number | null,
+    currentIdImage: number | null
   ): Promise<number | null> {
     if (!file) return currentIdImage;
     const res = (await firstValueFrom(
-      this.api.uploadImage(file, nombre, 'producto', String(categoriaId)),
+      this.api.uploadImage(file, nombre, "producto", String(categoriaId))
     )) as any;
     const imgId = res?.idImage ?? res?.id ?? null;
     return imgId ?? null;
@@ -565,18 +557,20 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   /* ===== Validación ===== */
   puedeFinalizar(): boolean {
     const basicsOk = this.requerirCamposBasicos();
-    return basicsOk && this.draftFeatures.length > 0 && this.draftRecipe.length > 0;
+    return (
+      basicsOk && this.draftFeatures.length > 0 && this.draftRecipe.length > 0
+    );
   }
 
   private minusculasCmp(s: string) {
-    return (s || '').trim().toLowerCase();
+    return (s || "").trim().toLowerCase();
   }
 
   /* ===== Crear/Actualizar producto + features + receta ===== */
   async finalizar(): Promise<void> {
     if (!this.puedeFinalizar()) {
       this.toast.mostrarMensaje(
-        '⚠️ Completa datos, al menos 1 característica y 1 insumo en la receta.',
+        "⚠️ Completa datos, al menos 1 característica y 1 insumo en la receta."
       );
       return;
     }
@@ -596,12 +590,12 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
           const conflict = (productos || []).some(
             (p: any) =>
               this.minusculasCmp(p.name) === newName &&
-              Number(p.idProduct) !== idProduct,
+              Number(p.idProduct) !== idProduct
           );
           if (conflict) {
             this.isLoading = false;
             return this.toast.mostrarMensaje(
-              '❌ Ya existe un producto con este nombre.',
+              "❌ Ya existe un producto con este nombre."
             );
           }
         }
@@ -610,7 +604,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
           this.selectedFile,
           name,
           this.categoriaId,
-          this.productoEditar.idImage ?? null,
+          this.productoEditar.idImage ?? null
         );
 
         await firstValueFrom(
@@ -623,7 +617,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
               : null,
             idImage,
             disabled: false,
-          }),
+          })
         );
 
         // upsert características
@@ -650,7 +644,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
                   featureValue: d.featureValue,
                   product: { idProduct },
                   feature: { idFeature: d.idFeature },
-                }),
+                })
               );
             }
             existingByFeature.delete(d.idFeature);
@@ -660,14 +654,14 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
                 featureValue: d.featureValue,
                 product: { idProduct },
                 feature: { idFeature: d.idFeature },
-              }),
+              })
             );
           }
         }
 
         for (const leftover of existingByFeature.values()) {
           await firstValueFrom(
-            this.api.deleteProductFeature(leftover.idProductFeature),
+            this.api.deleteProductFeature(leftover.idProductFeature)
           );
         }
 
@@ -682,29 +676,29 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
             this.api.updateRecipe(this.existingRecipeId, {
               idProduct,
               items,
-            }),
+            })
           );
         } else {
           await firstValueFrom(
             this.api.createRecipe({
               idProduct,
               items,
-            }),
+            })
           );
         }
 
-        this.toast.mostrarMensaje('✅ Producto actualizado correctamente');
+        this.toast.mostrarMensaje("✅ Producto actualizado correctamente");
         this.created.emit();
         this.updated.emit(idProduct);
       } else {
         // CREATE
         const conflict = (productos || []).some(
-          (p: any) => this.minusculasCmp(p.name) === this.minusculasCmp(name),
+          (p: any) => this.minusculasCmp(p.name) === this.minusculasCmp(name)
         );
         if (conflict) {
           this.isLoading = false;
           return this.toast.mostrarMensaje(
-            '❌ Ya existe un producto con este nombre.',
+            "❌ Ya existe un producto con este nombre."
           );
         }
 
@@ -712,7 +706,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
           this.selectedFile,
           name,
           this.categoriaId,
-          null,
+          null
         );
 
         const created: any = await firstValueFrom(
@@ -725,11 +719,11 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
               : null,
             idImage,
             disabled: false,
-          }),
+          })
         );
         const idProduct = Number(created?.idProduct ?? created?.id);
         if (!Number.isFinite(idProduct)) {
-          throw new Error('No se obtuvo idProduct');
+          throw new Error("No se obtuvo idProduct");
         }
 
         for (const pf of this.draftFeatures) {
@@ -738,7 +732,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
               featureValue: pf.featureValue,
               product: { idProduct },
               feature: { idFeature: pf.idFeature },
-            }),
+            })
           );
         }
 
@@ -749,16 +743,16 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
               idSupply: d.idSupply,
               gramsQuantity: d.gramsQuantity,
             })),
-          }),
+          })
         );
 
-        this.toast.mostrarMensaje('✅ Producto creado correctamente');
+        this.toast.mostrarMensaje("✅ Producto creado correctamente");
         this.created.emit();
         this.updated.emit(idProduct);
       }
     } catch {
       this.toast.mostrarMensaje(
-        '❌ Error al guardar el producto y su configuración',
+        "❌ Error al guardar el producto y su configuración"
       );
     } finally {
       this.isLoading = false;
@@ -767,7 +761,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
 
   /* ===== Precarga edición ===== */
   private async cargarDatosExistentesProducto(
-    idProduct: number,
+    idProduct: number
   ): Promise<void> {
     try {
       const [features, recipeSummaryOrId, recipeDetails] = await Promise.all([
@@ -781,8 +775,8 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
       this.existingPF = (features || []).map((f: any) => ({
         idProductFeature: Number(f.idProductFeature),
         idFeature: Number(f.feature?.idFeature ?? f.idFeature),
-        featureName: String(f.feature?.featureName ?? ''),
-        featureValue: String(f.featureValue ?? ''),
+        featureName: String(f.feature?.featureName ?? ""),
+        featureValue: String(f.featureValue ?? ""),
       }));
 
       this.draftFeatures = this.existingPF.map((x) => ({
@@ -801,7 +795,7 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
           idSupply,
           name: s?.name ?? d.supply?.name ?? `#${idSupply}`,
           gramsQuantity: Math.max(0.01, Number(d.gramsQuantity) || 0),
-          unit: s?.unit ?? d.supply?.unit ?? '',
+          unit: s?.unit ?? d.supply?.unit ?? "",
         };
       });
     } catch {
@@ -815,9 +809,9 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   /* ===== Mini formulario de insumo ===== */
   abrirCrearInsumo(): void {
     this.nuevoInsumo = {
-      name: '',
+      name: "",
       unitPrice: 0,
-      unit: 'Units',
+      unit: "Units",
     };
     this.crearSupplyRef = this.overlay.open(this.formCrearSupplyTpl);
   }
@@ -844,9 +838,11 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
   }
 
   async guardarNuevoInsumo(): Promise<void> {
-    const name = (this.nuevoInsumo.name || '').trim();
+    const name = (this.nuevoInsumo.name || "").trim();
     if (!name) {
-      this.toast.mostrarMensaje('❌ El nombre del insumo no puede estar vacío.');
+      this.toast.mostrarMensaje(
+        "❌ El nombre del insumo no puede estar vacío."
+      );
       return;
     }
 
@@ -856,17 +852,17 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
         this.api.createSupply({
           name,
           unitPrice: Number(this.nuevoInsumo.unitPrice) || 0,
-          unit: this.nuevoInsumo.unit || 'Units',
-        }),
+          unit: this.nuevoInsumo.unit || "Units",
+        })
       );
 
-      this.toast.mostrarMensaje('✅ Insumo creado correctamente');
+      this.toast.mostrarMensaje("✅ Insumo creado correctamente");
       await this.recargarInsumos();
 
-      this.nuevoInsumo = { name: '', unitPrice: 0, unit: 'Units' };
+      this.nuevoInsumo = { name: "", unitPrice: 0, unit: "Units" };
       this.cancelarNuevoInsumo();
     } catch {
-      this.toast.mostrarMensaje('❌ Error al crear el insumo');
+      this.toast.mostrarMensaje("❌ Error al crear el insumo");
     } finally {
       this.isLoading = false;
     }
@@ -884,13 +880,13 @@ export class ProductoFormWizardComponent implements OnInit, OnChanges {
 
   private restablecerFormulario(): void {
     this.productoEditar = null;
-    this.formData = { name: '', price: 0, brand: null };
+    this.formData = { name: "", price: 0, brand: null };
     this.draftFeatures = [];
     this.draftRecipe = [];
-    this.newFeature = { idFeature: null, featureValue: '' };
+    this.newFeature = { idFeature: null, featureValue: "" };
     this.newRecetaItem = { idSupply: null, gramsQuantity: 0 };
-    this.textoCaracteristica = '';
-    this.textoInsumo = '';
+    this.textoCaracteristica = "";
+    this.textoInsumo = "";
     this.caracteristicasFiltradas = [...this.featuresBase];
     this.insumosFiltrados = [...this.supplies];
     this.mostrarMasOpciones = false;
