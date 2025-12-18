@@ -9,29 +9,35 @@
                 <tr>
                     <th colspan="2" class="cabecera-principal-1">Datos de la venta</th>
                 </tr>
-                <tr>
+                <!--<tr>
                     <td><strong>Delivery</strong></td>
                     <td>
                         <mat-checkbox [(ngModel)]="isDelivery" (change)="onToggleDelivery()">
                             Pedido por delivery
                         </mat-checkbox>
                     </td>
-                </tr>
+                </tr>-->
 
                 <tr>
                     <td><strong>Mesa</strong></td>
                     <td>
                         <mat-form-field appearance="outline" style="width:90%;">
                             <mat-label>Selecciona una mesa</mat-label>
-                            <mat-select [(ngModel)]="selectedTableId" [disabled]="isDelivery">
-                                <mat-option [value]="null" disabled>Seleccione</mat-option>
+
+                            <mat-select [(ngModel)]="selectedTableId" (selectionChange)="onMesaChange($event.value)">
+                                <!-- DELIVERY -->
+                                <mat-option [value]="null">
+                                    Sin mesa (Pedido para llevar)
+                                </mat-option>
+
                                 @for (mesa of sortedTables; track mesa.idTable) {
                                 <mat-option [value]="mesa.idTable">
-                                    {{ mesa.number === 'delivery' ? 'Delivery' : ('Mesa ' + mesa.number) }}
+                                    Mesa {{ mesa.number }}
                                     @if (mesa.active) { - (ocupada) }
                                 </mat-option>
                                 }
                             </mat-select>
+
                         </mat-form-field>
                     </td>
                 </tr>

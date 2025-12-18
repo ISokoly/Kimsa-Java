@@ -448,6 +448,16 @@ export class RegistrarVentaComponent implements OnInit {
     if (this.isDelivery) this.selectedTableId = null;
   }
 
+  onMesaChange(value: number | null): void {
+    if (value === null) {
+      this.isDelivery = true;
+      this.selectedTableId = null;
+    } else {
+      this.isDelivery = false;
+      this.selectedTableId = value;
+    }
+  }
+
   onDniChange(): void {
     const dni = (this.customerDni || '').trim();
     if (!dni || dni.length < 8 || this.isGeneric) {

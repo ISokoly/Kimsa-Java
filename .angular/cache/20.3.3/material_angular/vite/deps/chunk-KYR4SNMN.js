@@ -1,14 +1,14 @@
 import {
-  BidiModule
-} from "./chunk-B6Q77AK3.js";
-import {
   _CdkPrivateStyleLoader
 } from "./chunk-2WBYOXEK.js";
+import {
+  BidiModule
+} from "./chunk-B6Q77AK3.js";
 import {
   Platform,
   coerceElement,
   coerceNumberProperty
-} from "./chunk-QVM7YCKW.js";
+} from "./chunk-J2CJJ44I.js";
 import {
   APP_ID,
   CSP_NONCE,
@@ -3164,4 +3164,4 @@ export {
   MATERIAL_SANITY_CHECKS,
   MatCommonModule
 };
-//# sourceMappingURL=chunk-HAIRIHHM.js.map
+//# sourceMappingURL=chunk-KYR4SNMN.js.map
